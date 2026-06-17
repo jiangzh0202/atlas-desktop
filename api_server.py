@@ -372,9 +372,50 @@ def get_trace(quote_id):
 # ─── 报价历史 ───
 @app.route("/api/history")
 def list_history():
-    from ledger.trace import audit
-    quote_ids = audit.get_all_quotes()
-    return jsonify({"ok": True, "data": quote_ids, "count": len(quote_ids)})
+    """返回完整报价历史（含金额/日期/配件数/状态）"""
+    try:
+        from core import get_db
+        conn = get_db()
+        quotes = conn.execute("""
+            SELECT q.id, q.created_at, q.total_amount, q.status,
+                   q.customer_name, q.trade_term, q.payment_term,
+                   COUNT(ql.id) as line_count
+            FROM quotations q
+            LEFT JOIN quotation_lines ql ON ql.quotation_id = q.id
+            GROUP BY q.id
+            ORDER BY q.created_at DESC
+            LIMIT 50
+        """).fetchall()
+        conn.close()
+
+        data = []
+        for q in quotes:
+            data.append({
+                "id": q["id"],
+                "created_at": q["created_at"] or "",
+                "total_amount": q["total_amount"] or 0,
+                "item_count": q["line_count"] or 0,
+                "status": q["status"] or "draft",
+                "customer_name": q["customer_name"] or "",
+                "trade_term": q["trade_term"] or "",
+                "payment_term": q["payment_term"] or "",
+                "line_count": q["line_count"] or 0,
+            })
+
+        # 回退：如果 quotations 表为空，用审计日志
+        if not data:
+            from ledger.trace import audit
+            quote_ids = audit.get_all_quotes()
+            data = [{"id": qid, "created_at": "", "total_amount": 0,
+                     "item_count": 0, "status": "archived",
+                     "customer_name": "", "trade_term": "", "payment_term": "",
+                     "line_count": 0} for qid in quote_ids]
+
+        return jsonify({"ok": True, "data": data, "count": len(data)})
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({"ok": False, "error": str(e)})
 
 # ─── 库存查询 ───
 @app.route("/api/stock")
@@ -857,6 +898,83 @@ def update_price():
             "event_id": event["id"],
             "message": "价格已更新，price.changed 事件已发布"
         })
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({"ok": False, "error": str(e)})
+
+# ─── 首页看板 ───
+@app.route("/api/dashboard")
+def dashboard():
+    """返回首页看板数据：核心指标 + 库存预警 + 最近活动"""
+    try:
+        from core import get_db
+        from ledger.trace import audit
+        conn = get_db()
+
+        # 核心指标
+        parts_count = conn.execute("SELECT COUNT(*) FROM parts").fetchone()[0]
+        stock_count = conn.execute("SELECT COUNT(*) FROM stock").fetchone()[0]
+        alert_count = conn.execute(
+            "SELECT COUNT(*) FROM stock WHERE quantity <= safety_line"
+        ).fetchone()[0]
+        brands = conn.execute(
+            "SELECT COUNT(DISTINCT brand_channel) FROM parts WHERE brand_channel != ''"
+        ).fetchone()[0]
+        pricing_modes = conn.execute(
+            "SELECT pricing_mode, COUNT(*) as cnt FROM parts "
+            "GROUP BY pricing_mode ORDER BY cnt DESC"
+        ).fetchall()
+
+        # 最近报价
+        recent_quotes = conn.execute("""
+            SELECT q.id, q.created_at, q.total_amount, q.status, q.customer_name,
+                   COUNT(ql.id) as line_count
+            FROM quotations q
+            LEFT JOIN quotation_lines ql ON ql.quotation_id = q.id
+            GROUP BY q.id
+            ORDER BY q.created_at DESC LIMIT 5
+        """).fetchall()
+
+        # 库存预警列表
+        alerts = conn.execute("""
+            SELECT s.part_oe, s.quantity, s.safety_line, p.name_cn, p.brand_channel, p.list_price
+            FROM stock s LEFT JOIN parts p ON s.part_oe = p.oe_number
+            WHERE s.quantity <= s.safety_line
+            ORDER BY (s.safety_line - s.quantity) DESC
+            LIMIT 10
+        """).fetchall()
+
+        conn.close()
+
+        # 最近活动（从审计日志）
+        trace_ids = audit.get_all_quotes()
+        recent_activity = trace_ids[:10] if trace_ids else []
+
+        return jsonify({"ok": True, "data": {
+            "stats": {
+                "parts": parts_count,
+                "stock": stock_count,
+                "alerts": alert_count,
+                "brands": brands,
+                "modes": [{"mode": m[0], "count": m[1]} for m in pricing_modes],
+            },
+            "recent_quotes": [{
+                "id": q["id"], "created_at": q["created_at"] or "",
+                "total_amount": q["total_amount"] or 0,
+                "item_count": q["line_count"] or 0,
+                "status": q["status"] or "draft",
+                "customer_name": q["customer_name"] or "",
+            } for q in recent_quotes],
+            "stock_alerts": [{
+                "part_oe": a["part_oe"], "name_cn": a["name_cn"] or "",
+                "quantity": a["quantity"], "safety_line": a["safety_line"],
+                "brand": a["brand_channel"] or "",
+                "list_price": a["list_price"] or 0,
+                "gap": a["safety_line"] - a["quantity"],
+            } for a in alerts],
+            "recent_activity": recent_activity,
+        }})
     except Exception as e:
         import traceback
         traceback.print_exc()

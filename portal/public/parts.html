@@ -1,1 +1,204 @@
-<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><title>配件查询 · 元策擎天</title><style>:root{--bg:#f2f2f4;--card:#fff;--green:#7ecf5e;--text:#1a1a2e;--muted:#888;--red:#e94560}*{margin:0;padding:0;box-sizing:border-box}body{font-family:"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--text);min-height:100vh}.topbar{background:var(--card);padding:12px 20px;display:flex;justify-content:space-between;box-shadow:0 1px 4px rgba(0,0,0,.06)}.topbar .logo{font-size:1.1rem;font-weight:700}.topbar .logo span{color:var(--green)}.topbar a{color:var(--muted);text-decoration:none;font-size:.85rem;margin-left:8px}.container{max-width:900px;margin:0 auto;padding:20px}.card{background:var(--card);border-radius:14px;padding:24px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,.04)}.card h2{font-size:1.05rem;margin-bottom:14px}.btn{display:inline-block;padding:10px 24px;border-radius:10px;font-size:.9rem;font-weight:600;cursor:pointer;border:none}.btn-p{background:var(--green);color:#fff}.btn-s{background:var(--bg);color:var(--text);border:1px solid #ddd}input{width:100%;padding:10px 14px;border:1px solid #ddd;border-radius:10px;font-size:.9rem;outline:none}input:focus{border-color:var(--green)}table{width:100%;border-collapse:collapse;font-size:.82rem}th{background:var(--bg);padding:8px 10px;text-align:left}td{padding:8px 10px;border-bottom:1px solid #f0f0f0}.empty{padding:40px;text-align:center;color:var(--muted)}</style></head><body><div class="topbar"><div class="logo"><a href="/" style="text-decoration:none;color:inherit"><span>元策</span>·擎天</a></div><div><a href="/">首页</a><a href="/quotation">报价</a><a href="/parts">配件</a><a href="/customers">客户</a><a href="/rules">规则</a><a href="/history">历史</a><a href="/stock">📦库存</a><a href="/agents">🤖智能体</a><a href="/trade">🌍贸易</a><a href="#" onclick="logout()">退出</a></div></div><div class="container"><div class="card"><h2>🔧 配件查询</h2><div style="display:flex;gap:10px"><input id="pq" placeholder="输入 OE号 / 中文名 / 俄文名"><button class="btn btn-p" onclick="search()">搜索</button></div><div id="result" style="margin-top:12px"></div></div></div><script>if(!localStorage.getItem('atlas_token'))location='/login';function logout(){localStorage.removeItem('atlas_token');location='/login'}</script><script>async function search(){const q=document.getElementById('pq').value;if(!q)return;const r=await fetch('/api/parts?q='+encodeURIComponent(q));const d=await r.json();const el=document.getElementById('result');if(!d.data||!d.data.length){el.innerHTML='<div class="empty">未找到匹配配件</div>';return}el.innerHTML='<table><tr><th>OE号</th><th>品名</th><th>品牌</th><th>牌价</th></tr>'+d.data.map(p=>`<tr><td>${p.oe_number||'-'}</td><td>${p.name_cn||p.name_ru||'-'}</td><td>${p.brand_channel||'-'}</td><td>¥${p.list_price||0}</td></tr>`).join('')+'</table>'}</script></body></html>
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>配件查询 · 元策擎天</title>
+<style>
+:root{--bg:#f2f2f4;--card:#fff;--green:#7ecf5e;--green-soft:#e8f7e0;--text:#1a1a2e;--muted:#888;--red:#e94560;--amber:#f59e0b;--blue:#3b82f6;--line:rgba(0,0,0,0.06)}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+a{color:var(--green);text-decoration:none}
+.topbar{background:var(--card);padding:12px 24px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 1px 4px rgba(0,0,0,.06);position:sticky;top:0;z-index:100}
+.topbar .logo{font-size:1.2rem;font-weight:700}
+.topbar .logo span{color:var(--green)}
+.topbar nav{display:flex;gap:4px;flex-wrap:wrap}
+.topbar nav a{color:var(--muted);text-decoration:none;font-size:.82rem;padding:6px 12px;border-radius:8px;transition:all .15s}
+.topbar nav a:hover,.topbar nav a.active{background:var(--green-soft);color:var(--green)}
+.container{max-width:1040px;margin:0 auto;padding:20px 24px}
+.card{background:var(--card);border-radius:14px;padding:20px;box-shadow:0 1px 3px rgba(0,0,0,.04);margin-bottom:16px;border:1px solid var(--line)}
+.card h2{font-size:1.05rem;margin-bottom:14px}
+.search-bar{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+.search-bar input,.search-bar select{padding:8px 12px;border:1px solid #ddd;border-radius:10px;font-size:.85rem;outline:none}
+.search-bar input:focus,.search-bar select:focus{border-color:var(--green)}
+.search-bar input{flex:1;min-width:160px}
+table{width:100%;border-collapse:collapse;font-size:.82rem}
+th{background:var(--bg);padding:10px 12px;text-align:left;font-weight:600;border-bottom:2px solid #eee;white-space:nowrap}
+td{padding:10px 12px;border-bottom:1px solid #f0f0f0}
+tr:hover td{background:#fafafa}
+.tag{display:inline-block;padding:2px 8px;border-radius:8px;font-size:.7rem;font-weight:600}
+.tag-ok{background:#d4f5e0;color:#0d7a3e}
+.tag-warn{background:#fef3c7;color:#92400e}
+.tag-err{background:#fee2e2;color:#991b1b}
+.tag-info{background:#dbeafe;color:#1e40af}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:10px;font-size:.85rem;font-weight:600;cursor:pointer;border:none;transition:all .15s}
+.btn-p{background:var(--green);color:#fff}
+.btn-p:hover{opacity:.9}
+.btn-s{background:var(--bg);color:var(--text);border:1px solid #ddd}
+.btn-s:hover{background:#e8e8ea}
+.pagination{display:flex;justify-content:center;align-items:center;gap:8px;margin-top:16px}
+.pagination button{padding:6px 14px;border:1px solid #ddd;border-radius:8px;background:var(--card);cursor:pointer;font-size:.82rem}
+.pagination button:disabled{opacity:.4}
+.pagination span{font-size:.82rem;color:var(--muted)}
+.empty{padding:40px;text-align:center;color:var(--muted);font-size:.85rem}
+.spinner{display:inline-block;width:20px;height:20px;border:2px solid #ddd;border-top-color:var(--green);border-radius:50%;animation:spin .6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+/* Detail row */
+.detail-row{background:#fafbfc}
+.detail-row td{padding:12px 16px}
+.meta-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;font-size:.78rem}
+.meta-item{display:flex;flex-direction:column}
+.meta-item .key{color:var(--muted);font-size:.7rem}
+.meta-item .val{font-weight:500}
+</style></head>
+<body>
+<div class="topbar">
+  <div class="logo"><span>元策</span>·擎天</div>
+  <nav>
+    <a href="/">📊 首页</a>
+    <a href="/quotation">📋 报价</a>
+    <a href="/parts" class="active">🔧 配件</a>
+    <a href="/customers">👥 客户</a>
+    <a href="/rules">📐 规则</a>
+    <a href="/history">📜 历史</a>
+    <a href="/stock">📦 库存</a>
+    <a href="/agents">🤖 智能体</a>
+    <a href="/trade">🌍 贸易</a>
+    <a href="#" onclick="logout()" style="color:var(--red)">退出</a>
+  </nav>
+</div>
+
+<div class="container">
+  <!-- 搜索区 -->
+  <div class="card">
+    <h2>🔧 配件查询 <span style="font-weight:400;font-size:.75rem;color:var(--muted)" id="totalCount"></span></h2>
+    <div class="search-bar">
+      <input id="searchQ" placeholder="输入 OE号 / 中文名 / 俄文名..." onkeyup="debounceSearch()">
+      <select id="brandFilter" onchange="search()"><option value="">全部品牌</option></select>
+      <select id="modeFilter" onchange="search()">
+        <option value="">全部定价模式</option>
+        <option value="STANDARD">标准折扣</option>
+        <option value="FIXED_STOCK">一口价</option>
+        <option value="COST_BASED">成本加成</option>
+      </select>
+      <button class="btn btn-p" onclick="search()">🔍 搜索</button>
+      <button class="btn btn-s" onclick="clearSearch()">重置</button>
+    </div>
+    <div id="resultTable"><div class="empty">输入条件开始搜索</div></div>
+    <div id="pagination" class="pagination"></div>
+  </div>
+</div>
+
+<script>
+if(!localStorage.getItem('atlas_token'))location='/login';
+function logout(){localStorage.removeItem('atlas_token');location='/login'}
+
+let allData=[], page=1, pageSize=15, searchTimer;
+
+// Load brands for filter
+async function loadBrands(){
+  try{
+    const r=await fetch('/api/parts?q=ALL&limit=200');
+    const d=await r.json();
+    if(!d.ok)return;
+    // Extract unique brands from results
+    const brands=new Set();
+    const modes=new Set();
+    (d.data||[]).forEach(p=>{if(p.brand_channel)brands.add(p.brand_channel);if(p.pricing_mode)modes.add(p.pricing_mode)});
+    const sel=document.getElementById('brandFilter');
+    [...brands].sort().forEach(b=>{const o=document.createElement('option');o.value=b;o.textContent=b;sel.appendChild(o)});
+  }catch(e){}
+}
+
+async function search(){
+  const q=document.getElementById('searchQ').value.trim();
+  const el=document.getElementById('resultTable');
+  if(!q){el.innerHTML='<div class="empty">输入条件开始搜索</div>';return}
+  el.innerHTML='<div class="empty"><span class="spinner"></span>搜索中...</div>';
+
+  try{
+    const r=await fetch('/api/parts?q='+encodeURIComponent(q)+'&limit=200');
+    const d=await r.json();
+    if(!d.ok){el.innerHTML='<div class="empty">搜索失败: '+d.error+'</div>';return}
+
+    allData=d.data||[];
+
+    // Client-side filters
+    const brand=document.getElementById('brandFilter').value;
+    const mode=document.getElementById('modeFilter').value;
+    if(brand) allData=allData.filter(p=>p.brand_channel===brand);
+    if(mode) allData=allData.filter(p=>p.pricing_mode===mode);
+
+    document.getElementById('totalCount').textContent='共 '+allData.length+' 个配件';
+    page=1;
+    renderTable();
+  }catch(e){el.innerHTML='<div class="empty">网络错误</div>'}
+}
+
+function renderTable(){
+  const el=document.getElementById('resultTable');
+  if(!allData.length){el.innerHTML='<div class="empty">📭 未找到匹配配件</div>';renderPagination(0);return}
+
+  const start=(page-1)*pageSize, end=start+pageSize;
+  const pageData=allData.slice(start,end);
+
+  const modeLabels={STANDARD:'标准折扣',FIXED_STOCK:'一口价',COST_BASED:'成本加成',NEGOTIATED:'一单一议'};
+
+  el.innerHTML='<table><tr><th>OE号</th><th>品名</th><th>品牌</th><th>牌价</th><th>定价模式</th><th>详情</th></tr>'+
+    pageData.map(p=>`<tr>
+      <td style="font-family:monospace;font-size:.78rem">${p.oe_number||'-'}</td>
+      <td>${p.name_cn||p.name_ru||'-'}</td>
+      <td>${p.brand_channel||'-'}</td>
+      <td style="font-weight:600">¥${(p.list_price||0).toLocaleString()}</td>
+      <td><span class="tag tag-${p.pricing_mode==='FIXED_STOCK'?'info':p.pricing_mode==='COST_BASED'?'warn':'ok'}">${modeLabels[p.pricing_mode]||p.pricing_mode||'-'}</span></td>
+      <td><button class="btn btn-s" style="padding:4px 10px;font-size:.75rem" onclick="toggleDetail(this,'${(p.oe_number||'').replace(/'/g,"\'")}')">展开</button></td>
+    </tr>`).join('')+'</table>';
+
+  renderPagination(allData.length);
+}
+
+function toggleDetail(btn, oe){
+  const row=btn.closest('tr');
+  const existing=row.nextElementSibling;
+  if(existing&&existing.classList.contains('detail-row')){existing.remove();btn.textContent='展开';return}
+
+  const p=allData.find(x=>x.oe_number===oe);
+  if(!p)return;
+
+  const modes={STANDARD:'标准折扣',FIXED_STOCK:'一口价',COST_BASED:'成本加成',NEGOTIATED:'一单一议'};
+  const detailRow=document.createElement('tr');
+  detailRow.className='detail-row';
+  detailRow.innerHTML=`<td colspan="6">
+    <div class="meta-grid">
+      <div class="meta-item"><div class="key">俄文名</div><div class="val">${p.name_ru||'-'}</div></div>
+      <div class="meta-item"><div class="key">英文名</div><div class="val">${p.name_en||'-'}</div></div>
+      <div class="meta-item"><div class="key">供货号</div><div class="val">${p.supply_number||'-'}</div></div>
+      <div class="meta-item"><div class="key">定价模式</div><div class="val">${modes[p.pricing_mode]||p.pricing_mode||'-'}</div></div>
+      <div class="meta-item"><div class="key">一口价</div><div class="val">${p.fixed_price?'¥'+Number(p.fixed_price).toLocaleString():'-'}</div></div>
+      <div class="meta-item"><div class="key">含税进价</div><div class="val">${p.cost_with_tax?'¥'+Number(p.cost_with_tax).toLocaleString():'-'}</div></div>
+      <div class="meta-item"><div class="key">最低起订</div><div class="val">${p.min_order_qty||'-'}</div></div>
+      <div class="meta-item"><div class="key">交期(天)</div><div class="val">${p.lead_time_days||'-'}</div></div>
+      <div class="meta-item"><div class="key">适配车型</div><div class="val">${p.vehicle_models||'-'}</div></div>
+      <div class="meta-item"><div class="key">发动机型号</div><div class="val">${p.engine_model||'-'}</div></div>
+      <div class="meta-item"><div class="key">产品线</div><div class="val">${p.product_line||'-'}</div></div>
+      <div class="meta-item"><div class="key">替代OE</div><div class="val">${p.replacement_oe||'-'}</div></div>
+    </div>
+  </td>`;
+  row.after(detailRow);
+  btn.textContent='收起';
+}
+
+function renderPagination(total){
+  const el=document.getElementById('pagination');
+  const totalPages=Math.ceil(total/pageSize);
+  if(totalPages<=1){el.innerHTML='';return}
+  let h='<button onclick="goPage('+(page-1)+')" '+(page<=1?'disabled':'')+'>‹ 上一页</button>';
+  h+='<span>'+page+' / '+totalPages+'</span>';
+  h+='<button onclick="goPage('+(page+1)+')" '+(page>=totalPages?'disabled':'')+'>下一页 ›</button>';
+  el.innerHTML=h;
+}
+
+function goPage(p){page=p;renderTable()}
+function debounceSearch(){clearTimeout(searchTimer);searchTimer=setTimeout(search,400)}
+function clearSearch(){document.getElementById('searchQ').value='';document.getElementById('brandFilter').value='';document.getElementById('modeFilter').value='';allData=[];document.getElementById('resultTable').innerHTML='<div class="empty">输入条件开始搜索</div>';document.getElementById('pagination').innerHTML='';document.getElementById('totalCount').textContent=''}
+
+loadBrands();
+</script></body></html>

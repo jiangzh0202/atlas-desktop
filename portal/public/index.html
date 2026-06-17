@@ -3,101 +3,221 @@
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>元策·擎天</title>
 <style>
-:root{--bg:#f2f2f4;--card:#fff;--green:#7ecf5e;--text:#1a1a2e;--muted:#888;--red:#e94560;--amber:#f59e0b;--blue:#3b82f6}
+:root{--bg:#f2f2f4;--card:#fff;--green:#7ecf5e;--green-soft:#e8f7e0;--text:#1a1a2e;--muted:#888;--red:#e94560;--amber:#f59e0b;--blue:#3b82f6;--line:rgba(0,0,0,0.06)}
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
-.topbar{background:var(--card);padding:12px 20px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 1px 4px rgba(0,0,0,.06);position:sticky;top:0;z-index:100}
-.topbar .logo{font-size:1.1rem;font-weight:700;color:var(--text)}
+a{color:var(--green);text-decoration:none}
+/* Topbar */
+.topbar{background:var(--card);padding:12px 24px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 1px 4px rgba(0,0,0,.06);position:sticky;top:0;z-index:100}
+.topbar .logo{font-size:1.2rem;font-weight:700}
 .topbar .logo span{color:var(--green)}
-.topbar .user{color:var(--muted);font-size:.85rem}
-.topbar .user a{color:var(--red);text-decoration:none;margin-left:12px}
-.container{max-width:900px;margin:0 auto;padding:20px}
-.card{background:var(--card);border-radius:14px;padding:24px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
-.card h2{font-size:1.05rem;margin-bottom:14px;color:var(--text)}
-.card h3{font-size:.9rem;color:var(--text);margin-bottom:8px}
-.btn{display:inline-block;padding:10px 24px;border-radius:10px;font-size:.9rem;font-weight:600;cursor:pointer;border:none;text-decoration:none;text-align:center;transition:all .15s}
+.topbar nav{display:flex;gap:4px;flex-wrap:wrap}
+.topbar nav a{color:var(--muted);text-decoration:none;font-size:.82rem;padding:6px 12px;border-radius:8px;transition:all .15s}
+.topbar nav a:hover,.topbar nav a.active{background:var(--green-soft);color:var(--green)}
+/* Container */
+.container{max-width:1040px;margin:0 auto;padding:20px 24px}
+/* Welcome */
+.welcome{padding:24px 0 8px}
+.welcome h1{font-size:1.4rem;font-weight:700}
+.welcome p{color:var(--muted);font-size:.85rem;margin-top:4px}
+/* Stat Cards */
+.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
+@media(max-width:768px){.stat-grid{grid-template-columns:repeat(2,1fr)}}
+.stat-card{background:var(--card);border-radius:14px;padding:20px;box-shadow:0 1px 3px rgba(0,0,0,.04);display:flex;flex-direction:column;gap:6px;border:1px solid var(--line);transition:box-shadow .15s}
+.stat-card:hover{box-shadow:0 2px 8px rgba(0,0,0,.08)}
+.stat-card .label{font-size:.78rem;color:var(--muted)}
+.stat-card .value{font-size:2rem;font-weight:700;line-height:1}
+.stat-card .value.green{color:var(--green)}
+.stat-card .value.red{color:var(--red)}
+.stat-card .value.amber{color:var(--amber)}
+.stat-card .sub{font-size:.75rem;color:var(--muted)}
+/* Section */
+.section{margin-bottom:20px}
+.section-title{font-size:1rem;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+/* Cards */
+.card{background:var(--card);border-radius:14px;padding:20px;box-shadow:0 1px 3px rgba(0,0,0,.04);margin-bottom:16px;border:1px solid var(--line)}
+.card h2{font-size:1.05rem;margin-bottom:14px}
+/* Two column */
+.col2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:768px){.col2{grid-template-columns:1fr}}
+/* Table */
+table{width:100%;border-collapse:collapse;font-size:.82rem}
+th{background:var(--bg);padding:10px 12px;text-align:left;font-weight:600;border-bottom:2px solid #eee;white-space:nowrap}
+td{padding:10px 12px;border-bottom:1px solid #f0f0f0}
+tr:hover td{background:#fafafa}
+/* Tags */
+.tag{display:inline-block;padding:2px 8px;border-radius:8px;font-size:.7rem;font-weight:600}
+.tag-ok{background:#d4f5e0;color:#0d7a3e}
+.tag-warn{background:#fef3c7;color:#92400e}
+.tag-err{background:#fee2e2;color:#991b1b}
+.tag-info{background:#dbeafe;color:#1e40af}
+/* Buttons */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:10px 20px;border-radius:10px;font-size:.88rem;font-weight:600;cursor:pointer;border:none;transition:all .15s;text-decoration:none}
 .btn-p{background:var(--green);color:#fff}
 .btn-p:hover{opacity:.9}
 .btn-s{background:var(--bg);color:var(--text);border:1px solid #ddd}
 .btn-s:hover{background:#e8e8ea}
-.btn-r{background:var(--red);color:#fff}
-input,textarea,select{width:100%;padding:10px 14px;border:1px solid #ddd;border-radius:10px;font-size:.9rem;font-family:inherit;outline:none;transition:border .15s}
-input:focus,textarea:focus{border-color:var(--green)}
-table{width:100%;border-collapse:collapse;font-size:.82rem}
-th{background:var(--bg);padding:8px 10px;text-align:left;font-weight:600;border-bottom:2px solid #eee}
-td{padding:8px 10px;border-bottom:1px solid #f0f0f0}
-.tag{display:inline-block;padding:2px 8px;border-radius:8px;font-size:.7rem;font-weight:600}
-.tag-ok{background:#d4f5e0;color:#0d7a3e}
-.tag-warn{background:#fef3cd;color:#8a6d14}
-.tag-err{background:#fde2e2;color:#a71d2a}
-.upload-zone{border:2px dashed #ddd;border-radius:12px;padding:40px;text-align:center;cursor:pointer;transition:all .2s}
-.upload-zone:hover,.upload-zone.dragover{border-color:var(--green);background:rgba(126,207,94,.05)}
-.upload-zone p{color:var(--muted);margin-top:8px}
+/* Quick Actions */
+.quick-actions{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+@media(max-width:768px){.quick-actions{grid-template-columns:repeat(2,1fr)}}
+.action-card{background:var(--card);border-radius:14px;padding:18px;border:1px solid var(--line);text-align:center;cursor:pointer;transition:all .15s;text-decoration:none;color:var(--text)}
+.action-card:hover{box-shadow:0 2px 8px rgba(0,0,0,.08);border-color:var(--green)}
+.action-card .icon{font-size:1.8rem;margin-bottom:6px}
+.action-card .action-label{font-size:.82rem;font-weight:600}
+.action-card .hint{font-size:.72rem;color:var(--muted);margin-top:2px}
+/* Empty */
 .empty{padding:40px;text-align:center;color:var(--muted);font-size:.85rem}
-.toast{position:fixed;top:20px;right:20px;padding:12px 20px;border-radius:10px;color:#fff;font-size:.85rem;z-index:999;opacity:0;transition:opacity .3s}
-.toast.show{opacity:1}
-.toast-ok{background:var(--green)}
-.toast-err{background:var(--red)}
-.loading{display:inline-block;width:16px;height:16px;border:2px solid #ddd;border-top-color:var(--green);border-radius:50%;animation:spin .6s linear infinite;margin-right:8px}
+/* Badge */
+.badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:.7rem;font-weight:600;margin-left:6px}
+.badge-alert{background:var(--red);color:#fff}
+/* Spinner */
+.spinner{display:inline-block;width:20px;height:20px;border:2px solid #ddd;border-top-color:var(--green);border-radius:50%;animation:spin .6s linear infinite;margin-right:8px}
 @keyframes spin{to{transform:rotate(360deg)}}
-</style>
-</head>
+</style></head>
 <body>
 <div class="topbar">
   <div class="logo"><span>元策</span>·擎天</div>
-  <div style="display:flex;align-items:center;gap:12px">
-    <a href="/quotation" style="color:var(--muted);text-decoration:none;font-size:.85rem">报价</a>
-    <a href="/parts" style="color:var(--muted);text-decoration:none;font-size:.85rem">配件</a>
-    <a href="/customers" style="color:var(--muted);text-decoration:none;font-size:.85rem">客户</a>
-    <a href="/rules" style="color:var(--muted);text-decoration:none;font-size:.85rem">规则</a>
-    <a href="/history" style="color:var(--muted);text-decoration:none;font-size:.85rem">历史</a>
-    <a href="/stock" style="color:var(--muted);text-decoration:none;font-size:.85rem">📦库存</a>
-    <a href="/agents" style="color:var(--muted);text-decoration:none;font-size:.85rem">🤖智能体</a>
-    <a href="/trade" style="color:var(--muted);text-decoration:none;font-size:.85rem">🌍贸易</a>
-    <span id="uname"></span><a href="#" onclick="logout()" style="color:var(--red);text-decoration:none;font-size:.85rem;margin-left:4px">退出</a>
-  </div>
+  <nav>
+    <a href="/" class="active">📊 首页</a>
+    <a href="/quotation">📋 报价</a>
+    <a href="/parts">🔧 配件</a>
+    <a href="/customers">👥 客户</a>
+    <a href="/rules">📐 规则</a>
+    <a href="/history">📜 历史</a>
+    <a href="/stock">📦 库存</a>
+    <a href="/agents">🤖 智能体</a>
+    <a href="/trade">🌍 贸易</a>
+    <a href="#" onclick="logout()" style="color:var(--red)">退出</a>
+  </nav>
 </div>
+
 <div class="container">
-  <div class="card">
-    <h2>🔍 搜配件</h2>
-    <div style="display:flex;gap:10px"><input id="sq" placeholder="输入 OE号 / 中文名 / 俄文名 搜配件..."><button class="btn btn-p" onclick="searchParts()">搜索</button></div>
-    <div id="sresult" style="margin-top:12px"></div>
+  <div class="welcome">
+    <h1>你好，恩同 👋</h1>
+    <p>AI 驱动的汽车配件外贸操作系统</p>
   </div>
-  <div class="card">
-    <h2>⚡ 快捷入口</h2>
-    <div style="display:flex;gap:12px;flex-wrap:wrap">
-      <a href="/quotation" class="btn btn-p">📋 新建报价</a>
-      <a href="/parts" class="btn btn-s">🔧 配件查询</a>
-      <a href="/customers" class="btn btn-s">👥 客户管理</a>
-      <a href="/rules" class="btn btn-s">📐 规则面板</a>
-      <a href="/history" class="btn btn-s">📊 报价历史</a>
-      <a href="/stock" class="btn btn-s">📦 库存看板</a>
-      <a href="/agents" class="btn btn-s">🤖 智能体面板</a>
+
+  <!-- 快捷入口 -->
+  <div class="quick-actions">
+    <a href="/quotation" class="action-card">
+      <div class="icon">📋</div>
+      <div class="action-label">新建报价</div>
+      <div class="hint">上传询盘 → 30秒出报价</div>
+    </a>
+    <a href="/parts" class="action-card">
+      <div class="icon">🔧</div>
+      <div class="action-label">查配件</div>
+      <div class="hint">168个配件随时查</div>
+    </a>
+    <a href="/stock" class="action-card">
+      <div class="icon">📦</div>
+      <div class="action-label">看库存<span id="alertBadge" class="badge badge-alert" style="display:none">0</span></div>
+      <div class="hint">实时库存预警</div>
+    </a>
+    <a href="/trade" class="action-card">
+      <div class="icon">🌍</div>
+      <div class="action-label">外贸工具</div>
+      <div class="hint">翻译 · PI · 装箱单</div>
+    </a>
+  </div>
+
+  <!-- 核心指标 -->
+  <div class="stat-grid" id="statGrid">
+    <div class="stat-card"><div class="label">配件总数</div><div class="value green" id="statParts">-</div><div class="sub">5条产品线</div></div>
+    <div class="stat-card"><div class="label">库存预警</div><div class="value red" id="statAlerts">-</div><div class="sub">低于安全线</div></div>
+    <div class="stat-card"><div class="label">品牌渠道</div><div class="value" id="statBrands">-</div><div class="sub">活跃供应商</div></div>
+    <div class="stat-card"><div class="label">库存SKU</div><div class="value amber" id="statStock">-</div><div class="sub">在库配件</div></div>
+  </div>
+
+  <!-- 双栏 -->
+  <div class="col2">
+    <!-- 库存预警 -->
+    <div class="card">
+      <h2>⚠️ 库存预警 <span style="font-weight:400;font-size:.75rem;color:var(--muted)" id="alertCount"></span></h2>
+      <div id="alertList"><div class="empty"><span class="spinner"></span>加载中...</div></div>
+    </div>
+    <!-- 最近活动 -->
+    <div class="card">
+      <h2>🕐 最近活动</h2>
+      <div id="activityList"><div class="empty"><span class="spinner"></span>加载中...</div></div>
     </div>
   </div>
+
+  <!-- 定价模式分布 -->
   <div class="card">
-    <h2>📊 最近报价</h2>
-    <div id="recent"><div class="empty">暂无报价记录</div></div>
+    <h2>📊 定价模式分布</h2>
+    <div id="modeChart" style="display:flex;gap:12px;flex-wrap:wrap"></div>
   </div>
 </div>
+
 <script>
-const token=localStorage.getItem('atlas_token');
-if(!token) location='/login';
-fetch('/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({_verify:token})}).catch(()=>{});
+if(!localStorage.getItem('atlas_token'))location='/login';
+function logout(){localStorage.removeItem('atlas_token');location='/login'}
 
-function auth(){ return {'Authorization':'Bearer '+token,'Content-Type':'application/json'} }
+async function loadDashboard(){
+  try{
+    const r=await fetch('/api/dashboard');
+    const d=await r.json();
+    if(!d.ok){console.error(d.error);return}
 
-async function searchParts(){
-  const q=document.getElementById('sq').value;
-  if(!q) return;
-  const r=await fetch('/api/parts?q='+encodeURIComponent(q));
-  const d=await r.json();
-  const el=document.getElementById('sresult');
-  if(!d.data||!d.data.length){ el.innerHTML='<div class="empty">未找到匹配配件</div>'; return }
-  el.innerHTML='<table><tr><th>OE号</th><th>品名</th><th>品牌</th><th>牌价</th></tr>'+d.data.map(p=>`<tr><td>${p.oe_number||'-'}</td><td>${p.name_cn||p.name_ru||'-'}</td><td>${p.brand_channel||'-'}</td><td>¥${p.list_price||0}</td></tr>`).join('')+'</table>';
+    const s=d.data.stats;
+    document.getElementById('statParts').textContent=s.parts;
+    document.getElementById('statAlerts').textContent=s.alerts;
+    document.getElementById('statBrands').textContent=s.brands;
+    document.getElementById('statStock').textContent=s.stock;
+
+    // Alert badge
+    const badge=document.getElementById('alertBadge');
+    if(s.alerts>0){badge.style.display='inline-block';badge.textContent=s.alerts}
+    else badge.style.display='none';
+
+    // Stock alerts
+    const alerts=d.data.stock_alerts||[];
+    document.getElementById('alertCount').textContent=`共${alerts.length}项`;
+    const al=document.getElementById('alertList');
+    if(!alerts.length){al.innerHTML='<div class="empty">✅ 所有库存正常</div>'}
+    else{
+      al.innerHTML='<table><tr><th>配件</th><th>库存</th><th>安全线</th><th>缺口</th><th>预估成本</th></tr>'+
+        alerts.map(a=>`<tr>
+          <td title="${a.part_oe}">${a.name_cn||a.part_oe}</td>
+          <td><span class="tag tag-${a.quantity<=a.safety_line*0.5?'err':'warn'}">${a.quantity}</span></td>
+          <td>${a.safety_line}</td>
+          <td style="color:var(--red)">${a.gap}</td>
+          <td>¥${(a.list_price*a.gap).toLocaleString()}</td>
+        </tr>`).join('')+'</table>';
+    }
+
+    // Recent activity
+    const act=d.data.recent_activity||[];
+    const actl=document.getElementById('activityList');
+    if(!act.length){actl.innerHTML='<div class="empty">暂无活动记录</div>'}
+    else{
+      actl.innerHTML=act.map(a=>`<div style="padding:10px 0;border-bottom:1px solid #f0f0f0;font-size:.82rem">
+        <span style="color:var(--muted)">📋</span>
+        <a href="#" onclick="viewTrace('${a}')" style="color:var(--green)">${a}</a>
+      </div>`).join('');
+    }
+
+    // Mode chart
+    const mc=document.getElementById('modeChart');
+    const total= (s.modes||[]).reduce((sum,m)=>sum+m.count,0);
+    mc.innerHTML=(s.modes||[]).map(m=>{
+      const pct=total>0?Math.round(m.count/total*100):0;
+      const colors={STANDARD:'#7ecf5e',FIXED_STOCK:'#3b82f6',COST_BASED:'#f59e0b',NEGOTIATED:'#e94560'};
+      const labels={STANDARD:'标准折扣',FIXED_STOCK:'一口价',COST_BASED:'成本加成',NEGOTIATED:'一单一议'};
+      return `<div style="flex:1;min-width:120px;background:var(--card);border-radius:12px;padding:14px;text-align:center;border:1px solid var(--line)">
+        <div style="font-size:1.5rem;font-weight:700;color:${colors[m.mode]||'#888'}">${m.count}</div>
+        <div style="font-size:.75rem;color:var(--muted)">${labels[m.mode]||m.mode}</div>
+        <div style="font-size:.7rem;color:var(--muted);margin-top:2px">${pct}%</div>
+      </div>`;
+    }).join('');
+  }catch(e){console.error(e)}
 }
 
-function logout(){ localStorage.removeItem('atlas_token'); location='/login' }
-document.getElementById('uname').textContent='admin';
-</script>
-</body></html>
+function viewTrace(id){fetch('/api/trace/'+id).then(r=>r.json()).then(d=>{
+  const steps=(d.data||[]).map(s=>`${s.step}: ${s.agent} → ${s.decision||'OK'}`).join('\n');
+  alert('AI计算链:\n\n'+steps.slice(0,800));
+})}
+
+loadDashboard();
+</script></body></html>
