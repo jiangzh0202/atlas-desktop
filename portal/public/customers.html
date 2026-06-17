@@ -1,227 +1,263 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>客户管理 · 元策擎天</title>
 <style>
-:root{--bg:#f2f2f4;--card:#fff;--green:#7ecf5e;--text:#1a1a2e;--muted:#888;--red:#e94560}
+:root{--bg:#f2f2f4;--card:#fff;--green:#7ecf5e;--green-soft:#e8f7e0;--text:#1a1a2e;--muted:#888;--red:#e94560;--amber:#f59e0b;--blue:#3b82f6;--line:rgba(0,0,0,0.06)}
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
-.topbar{background:var(--card);padding:12px 20px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 1px 4px rgba(0,0,0,.06)}
-.topbar .logo{font-size:1.1rem;font-weight:700}.topbar .logo span{color:var(--green)}
-.topbar a{color:var(--muted);text-decoration:none;font-size:.85rem;margin-left:8px}
-.container{max-width:960px;margin:0 auto;padding:20px}
-.card{background:var(--card);border-radius:14px;padding:24px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+a{color:var(--green);text-decoration:none}
+.topbar{background:var(--card);padding:12px 24px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 1px 4px rgba(0,0,0,.06);position:sticky;top:0;z-index:100}
+.topbar .logo{font-size:1.2rem;font-weight:700}
+.topbar .logo span{color:var(--green)}
+.topbar nav{display:flex;gap:4px;flex-wrap:wrap}
+.topbar nav a{color:var(--muted);text-decoration:none;font-size:.82rem;padding:6px 12px;border-radius:8px;transition:all .15s}
+.topbar nav a:hover,.topbar nav a.active{background:var(--green-soft);color:var(--green)}
+.container{max-width:1040px;margin:0 auto;padding:20px 24px}
+.card{background:var(--card);border-radius:14px;padding:20px;box-shadow:0 1px 3px rgba(0,0,0,.04);border:1px solid var(--line);margin-bottom:16px}
 .card h2{font-size:1.05rem;margin-bottom:14px}
-.btn{display:inline-block;padding:10px 24px;border-radius:10px;font-size:.9rem;font-weight:600;cursor:pointer;border:none;transition:all .15s}
-.btn-p{background:var(--green);color:#fff}.btn-p:hover{opacity:.9}
-.btn-s{background:var(--bg);color:var(--text);border:1px solid #ddd}.btn-s:hover{background:#e8e8ea}
-input,select{width:100%;padding:10px 14px;border:1px solid #ddd;border-radius:10px;font-size:.9rem;font-family:inherit;outline:none}
-input:focus,select:focus{border-color:var(--green)}
-table{width:100%;border-collapse:collapse;font-size:.82rem}
-th{background:var(--bg);padding:8px 10px;text-align:left;font-weight:600}
-td{padding:8px 10px;border-bottom:1px solid #f0f0f0}
+/* Search */
+.search-bar{display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+.search-bar input,.search-bar select{padding:8px 12px;border:1px solid #ddd;border-radius:10px;font-size:.85rem;outline:none}
+.search-bar input:focus,.search-bar select:focus{border-color:var(--green)}
+.search-bar input{flex:1;min-width:160px}
+/* Table */
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:.82rem;min-width:700px}
+th{background:var(--bg);padding:10px 12px;text-align:left;font-weight:600;border-bottom:2px solid #eee;white-space:nowrap}
+td{padding:10px 12px;border-bottom:1px solid #f0f0f0}
 tr:hover td{background:#fafafa}
-.empty{padding:40px;text-align:center;color:var(--muted)}
-/* ─── Toolbar ─── */
-.toolbar{display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap}
-.toolbar input{flex:1;min-width:200px}
-.toolbar select{width:140px;flex:none}
-/* ─── Pagination ─── */
-.pagination{display:flex;justify-content:center;align-items:center;gap:6px;margin-top:16px;flex-wrap:wrap}
-.pagination button{padding:6px 14px;border-radius:8px;border:1px solid #ddd;background:var(--card);color:var(--text);font-size:.8rem;cursor:pointer;transition:all .15s}
-.pagination button:hover:not(:disabled){border-color:var(--green);color:var(--green)}
-.pagination button:disabled{opacity:.4;cursor:default}
-.pagination button.active{background:var(--green);color:#fff;border-color:var(--green)}
-.pagination .page-info{font-size:.8rem;color:var(--muted);padding:0 8px}
-/* ─── Star badge ─── */
-.star{display:inline-block;padding:2px 10px;border-radius:10px;font-size:.75rem;font-weight:600}
-.star-1,.star-2{background:#fde2e2;color:#a71d2a}
-.star-3,.star-4{background:#fef3cd;color:#8a6d14}
-.star-5,.star-6{background:#d4f5e0;color:#0d7a3e}
-.star-7{background:#c6f0ff;color:#0a5c7a}
-</style>
-</head>
+/* Stars */
+.stars{color:#e2c044;font-size:.9rem;white-space:nowrap}
+.stars .empty{color:#ddd}
+/* Tags */
+.tag{display:inline-block;padding:2px 8px;border-radius:8px;font-size:.7rem;font-weight:600}
+.tag-ok{background:#d4f5e0;color:#0d7a3e}
+.tag-warn{background:#fef3c7;color:#92400e}
+.tag-err{background:#fee2e2;color:#991b1b}
+.tag-info{background:#dbeafe;color:#1e40af}
+/* Buttons */
+.btn{display:inline-flex;align-items:center;gap:4px;padding:8px 16px;border-radius:10px;font-size:.82rem;font-weight:600;cursor:pointer;border:none;transition:all .15s}
+.btn-p{background:var(--green);color:#fff}
+.btn-p:hover{opacity:.9}
+.btn-s{background:var(--bg);color:var(--text);border:1px solid #ddd}
+.btn-s:hover{background:#e8e8ea}
+.btn-xs{padding:4px 10px;font-size:.72rem}
+/* Modal */
+.modal-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.4);z-index:200;justify-content:center;align-items:center}
+.modal-overlay.show{display:flex}
+.modal-box{background:var(--card);border-radius:16px;padding:24px;max-width:500px;width:90%;max-height:80vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.12)}
+.modal-box h3{font-size:1.05rem;margin-bottom:16px}
+.modal-box .close{float:right;background:none;border:none;font-size:1.2rem;cursor:pointer;color:var(--muted)}
+.modal-box .form-group{margin-bottom:12px}
+.modal-box label{display:block;font-size:.78rem;font-weight:600;margin-bottom:4px}
+.modal-box input,.modal-box select{width:100%;padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:.85rem;outline:none}
+.modal-box input:focus,.modal-box select:focus{border-color:var(--green)}
+/* Star selector */
+.star-select{display:flex;gap:4px;font-size:1.5rem;cursor:pointer}
+.star-select span{color:#ddd;transition:color .1s}
+.star-select span.active{color:#e2c044}
+.empty-state{padding:40px;text-align:center;color:var(--muted);font-size:.85rem}
+.pagination{display:flex;justify-content:center;align-items:center;gap:8px;margin-top:16px}
+.pagination button{padding:6px 14px;border:1px solid #ddd;border-radius:8px;background:var(--card);cursor:pointer;font-size:.82rem}
+.pagination button:disabled{opacity:.4}
+.pagination span{font-size:.82rem;color:var(--muted)}
+</style></head>
 <body>
-
 <div class="topbar">
-  <div class="logo"><a href="/" style="text-decoration:none;color:inherit"><span>元策</span>·擎天</a></div>
-  <div><a href="/">首页</a><a href="/quotation">报价</a><a href="/parts">配件</a><a href="/customers">客户</a><a href="/rules">规则</a><a href="/history">历史</a><a href="/stock">📦库存</a><a href="/agents">🤖智能体</a><a href="/trade">🌍贸易</a><a href="#" onclick="logout()">退出</a></div>
+  <div class="logo"><span>元策</span>·擎天</div>
+  <nav>
+    <a href="/">📊 首页</a><a href="/quotation">📋 报价</a><a href="/parts">🔧 配件</a>
+    <a href="/customers" class="active">👥 客户</a><a href="/rules">📐 规则</a>
+    <a href="/history">📜 历史</a><a href="/stock">📦 库存</a>
+    <a href="/agents">🤖 智能体</a><a href="/trade">🌍 贸易</a>
+    <a href="#" onclick="logout()" style="color:var(--red)">退出</a>
+  </nav>
 </div>
 
 <div class="container">
+  <!-- Header -->
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+    <div>
+      <h1 style="font-size:1.2rem">👥 客户管理</h1>
+      <p style="color:var(--muted);font-size:.82rem;margin-top:4px" id="totalInfo"></p>
+    </div>
+    <button class="btn btn-p" onclick="openAddModal()">+ 添加客户</button>
+  </div>
+
+  <!-- Search & Filter -->
   <div class="card">
-    <h2>👥 客户管理 <span id="countBadge" style="font-size:.75rem;color:var(--muted);font-weight:400"></span></h2>
-    <div class="toolbar">
-      <input type="text" id="searchInput" placeholder="🔍 搜索公司名或国家…" oninput="applyFilters()">
-      <select id="starFilter" onchange="applyFilters()">
+    <div class="search-bar">
+      <input id="searchQ" placeholder="搜索 客户名 / 国家 / 地区..." onkeyup="debounceFilter()">
+      <select id="starFilter" onchange="applyFilter()">
         <option value="">全部星级</option>
-        <option value="1">⭐ 1星</option>
-        <option value="2">⭐⭐ 2星</option>
-        <option value="3">⭐⭐⭐ 3星</option>
-        <option value="4">⭐⭐⭐⭐ 4星</option>
-        <option value="5">⭐⭐⭐⭐⭐ 5星</option>
-        <option value="6">⭐⭐⭐⭐⭐⭐ 6星</option>
-        <option value="7">⭐⭐⭐⭐⭐⭐⭐ 7星</option>
+        <option value="1">⭐ 一星</option><option value="2">⭐⭐ 二星</option><option value="3">⭐⭐⭐ 三星</option>
+        <option value="4">⭐⭐⭐⭐ 四星</option><option value="5">⭐⭐⭐⭐⭐ 五星</option>
+        <option value="6">⭐⭐⭐⭐⭐⭐ 六星</option><option value="7">⭐⭐⭐⭐⭐⭐⭐ 七星</option>
+      </select>
+      <select id="regionFilter" onchange="applyFilter()"><option value="">全部地区</option></select>
+      <button class="btn btn-s" onclick="applyFilter()">🔍 筛选</button>
+    </div>
+    <div class="table-wrap" id="custTable"><div class="empty-state">加载中...</div></div>
+    <div id="pagination" class="pagination"></div>
+  </div>
+</div>
+
+<!-- Add/Edit Modal -->
+<div class="modal-overlay" id="custModal">
+  <div class="modal-box">
+    <button class="close" onclick="closeModal()">✕</button>
+    <h3 id="modalTitle">添加客户</h3>
+    <div class="form-group"><label>客户名（中文）</label><input id="cNameCn" placeholder="公司名"></div>
+    <div class="form-group"><label>客户名（英文）</label><input id="cNameEn" placeholder="Company Name"></div>
+    <div class="form-group"><label>国家</label><input id="cCountry" placeholder="Russia"></div>
+    <div class="form-group"><label>地区</label>
+      <select id="cRegion"><option value="">选择地区</option>
+        <option>东欧/俄罗斯</option><option>中东</option><option>东南亚</option><option>非洲</option><option>南美</option><option>西欧</option><option>北美</option>
       </select>
     </div>
-    <div id="list"></div>
-    <div class="pagination" id="pagination"></div>
+    <div class="form-group">
+      <label>七星等级</label>
+      <div class="star-select" id="starSelect">
+        <span onclick="setStar(1)">★</span><span onclick="setStar(2)">★</span>
+        <span onclick="setStar(3)">★</span><span onclick="setStar(4)">★</span>
+        <span onclick="setStar(5)">★</span><span onclick="setStar(6)">★</span><span onclick="setStar(7)">★</span>
+      </div>
+      <input type="hidden" id="cStar" value="1">
+    </div>
+    <div class="form-group"><label>年采购额</label><input id="cAnnual" type="number" placeholder="0" step="10000"></div>
+    <div style="display:flex;gap:10px;margin-top:16px">
+      <button class="btn btn-p" onclick="saveCustomer()">💾 保存</button>
+      <button class="btn btn-s" onclick="closeModal()">取消</button>
+    </div>
   </div>
 </div>
 
 <script>
 if(!localStorage.getItem('atlas_token'))location='/login';
 function logout(){localStorage.removeItem('atlas_token');location='/login'}
-</script>
 
-<script>
-const PAGE_SIZE = 15;
-let allCustomers = [];
-let currentPage = 1;
+let allData=[], page=1, pageSize=15, filterTimer;
 
-// ─── Fetch ───
-fetch('/api/customers')
-  .then(r => r.json())
-  .then(d => {
-    if (!d.data || !d.data.length) {
-      document.getElementById('list').innerHTML = '<div class="empty">还没有客户数据，请先导入</div>';
-      return;
-    }
-    allCustomers = d.data;
-    document.getElementById('countBadge').textContent = `共 ${d.count || allCustomers.length} 条`;
-    applyFilters();
-  })
-  .catch(() => {
-    document.getElementById('list').innerHTML = '<div class="empty">加载失败，请检查网络</div>';
-  });
+async function loadCustomers(){
+  try{
+    const r=await fetch('/api/customers');
+    const d=await r.json();
+    allData=d.data||[];
+    document.getElementById('totalInfo').textContent='共 '+allData.length+' 个客户';
 
-// ─── Filter ───
-function applyFilters() {
-  const query = document.getElementById('searchInput').value.trim().toLowerCase();
-  const star = document.getElementById('starFilter').value;
+    // Populate region filter
+    const regions=new Set();
+    allData.forEach(c=>{if(c.region)regions.add(c.region)});
+    const sel=document.getElementById('regionFilter');
+    sel.innerHTML='<option value="">全部地区</option>';
+    [...regions].sort().forEach(r=>{
+      const o=document.createElement('option');o.value=r;o.textContent=r;sel.appendChild(o);
+    });
 
-  let filtered = allCustomers;
-
-  if (query) {
-    filtered = filtered.filter(c =>
-      (c.name || '').toLowerCase().includes(query) ||
-      (c.country || '').toLowerCase().includes(query)
-    );
-  }
-
-  if (star) {
-    filtered = filtered.filter(c => String(c.star_level) === star);
-  }
-
-  currentPage = 1;
-  renderPage(filtered);
+    applyFilter();
+  }catch(e){document.getElementById('custTable').innerHTML='<div class="empty-state">加载失败</div>'}
 }
 
-// ─── Render page ───
-function renderPage(data) {
-  const totalPages = Math.ceil(data.length / PAGE_SIZE) || 1;
-  if (currentPage > totalPages) currentPage = totalPages;
-  const start = (currentPage - 1) * PAGE_SIZE;
-  const pageData = data.slice(start, start + PAGE_SIZE);
+function applyFilter(){
+  const q=(document.getElementById('searchQ').value||'').toLowerCase();
+  const star=document.getElementById('starFilter').value;
+  const region=document.getElementById('regionFilter').value;
 
-  // Table
-  if (!data.length) {
-    document.getElementById('list').innerHTML = '<div class="empty">没有匹配的客户</div>';
-    document.getElementById('pagination').innerHTML = '';
-    return;
-  }
+  let filtered=allData;
+  if(q) filtered=filtered.filter(c=>
+    (c.name_cn||'').toLowerCase().includes(q)||
+    (c.name_en||'').toLowerCase().includes(q)||
+    (c.country||'').toLowerCase().includes(q)
+  );
+  if(star) filtered=filtered.filter(c=>String(c.star_level)===star);
+  if(region) filtered=filtered.filter(c=>c.region===region);
 
-  let html = '<table><thead><tr><th>公司</th><th>国家</th><th>地区</th><th>等级</th><th>年采购额</th></tr></thead><tbody>';
-  pageData.forEach(c => {
-    const starClass = 'star-' + (c.star_level || 1);
-    const purchase = c.annual_purchase
-      ? '¥' + Number(c.annual_purchase).toLocaleString('zh-CN', {minimumFractionDigits: 2})
-      : '-';
-    html += `<tr>
-      <td><strong>${esc(c.name)}</strong></td>
-      <td>${esc(c.country)}</td>
-      <td>${esc(c.region)}</td>
-      <td><span class="star ${starClass}">${c.star_level || '-'} 星</span></td>
-      <td>${purchase}</td>
-    </tr>`;
-  });
-  html += '</tbody></table>';
-  document.getElementById('list').innerHTML = html;
-
-  // Pagination
-  let pagHtml = '';
-  pagHtml += `<button ${currentPage === 1 ? 'disabled' : ''} onclick="goTo(${currentPage - 1}, ${data.length})">‹ 上一页</button>`;
-
-  // Page buttons
-  const maxButtons = 7;
-  let startPage, endPage;
-  if (totalPages <= maxButtons) {
-    startPage = 1;
-    endPage = totalPages;
-  } else {
-    const half = Math.floor(maxButtons / 2);
-    if (currentPage <= half + 1) {
-      startPage = 1;
-      endPage = maxButtons;
-    } else if (currentPage >= totalPages - half) {
-      startPage = totalPages - maxButtons + 1;
-      endPage = totalPages;
-    } else {
-      startPage = currentPage - half;
-      endPage = currentPage + half;
-    }
-  }
-
-  if (startPage > 1) {
-    pagHtml += `<button onclick="goToPage(1, ${data.length})">1</button>`;
-    if (startPage > 2) pagHtml += `<span class="page-info">…</span>`;
-  }
-
-  for (let i = startPage; i <= endPage; i++) {
-    pagHtml += `<button class="${i === currentPage ? 'active' : ''}" onclick="goToPage(${i}, ${data.length})">${i}</button>`;
-  }
-
-  if (endPage < totalPages) {
-    if (endPage < totalPages - 1) pagHtml += `<span class="page-info">…</span>`;
-    pagHtml += `<button onclick="goToPage(${totalPages}, ${data.length})">${totalPages}</button>`;
-  }
-
-  pagHtml += `<button ${currentPage === totalPages ? 'disabled' : ''} onclick="goTo(${currentPage + 1}, ${data.length})">下一页 ›</button>`;
-  pagHtml += `<span class="page-info">第 ${currentPage}/${totalPages} 页 · ${data.length} 条</span>`;
-  document.getElementById('pagination').innerHTML = pagHtml;
+  page=Math.min(page,Math.ceil(filtered.length/pageSize)||1);
+  renderTable(filtered);
 }
 
-// ─── Navigation helpers ───
-function goTo(page, total) {
-  const totalPages = Math.ceil(total / PAGE_SIZE);
-  if (page < 1 || page > totalPages) return;
-  goToPage(page, total);
+function renderTable(data){
+  const el=document.getElementById('custTable');
+  if(!data.length){el.innerHTML='<div class="empty-state">📭 暂无客户<br><span style="font-size:.75rem">点击「添加客户」录入第一个客户</span></div>';renderPagination(0);return}
+
+  const start=(page-1)*pageSize, end=start+pageSize;
+  const pageData=data.slice(start,end);
+
+  el.innerHTML='<table><tr><th>客户名</th><th>国家</th><th>地区</th><th>评级</th><th>年采购额</th><th>操作</th></tr>'+
+    pageData.map(c=>{
+      const star=parseInt(c.star_level)||1;
+      const stars='<span class="stars">'+'★'.repeat(star)+'<span class="empty">'+'★'.repeat(7-star)+'</span></span>';
+      const levelLabel={1:'一星',2:'二星',3:'三星',4:'四星',5:'五星',6:'六星',7:'七星'}[star]||'';
+      const levelCls=star>=6?'tag-ok':star>=4?'tag-info':star>=2?'tag-warn':'tag-err';
+      const annual=c.annual_purchase?('¥'+(c.annual_purchase/10000).toFixed(0)+'万'):'-';
+      return `<tr>
+        <td><strong>${c.name_cn||c.name_en||'-'}</strong>${c.name_en&&c.name_cn?'<br><span style="font-size:.72rem;color:var(--muted)">'+c.name_en+'</span>':''}</td>
+        <td>${c.country||'-'}</td>
+        <td>${c.region||'-'}</td>
+        <td>${stars} <span class="tag ${levelCls}">${levelLabel}</span></td>
+        <td style="font-weight:600">${annual}</td>
+        <td><button class="btn btn-s btn-xs" onclick="editCustomer('${c.id}')">编辑</button></td>
+      </tr>`;
+    }).join('')+'</table>';
+
+  renderPagination(data.length);
 }
 
-function goToPage(page, total) {
-  currentPage = page;
-  const query = document.getElementById('searchInput').value.trim().toLowerCase();
-  const star = document.getElementById('starFilter').value;
-  let filtered = allCustomers;
-  if (query) {
-    filtered = filtered.filter(c =>
-      (c.name || '').toLowerCase().includes(query) ||
-      (c.country || '').toLowerCase().includes(query)
-    );
-  }
-  if (star) {
-    filtered = filtered.filter(c => String(c.star_level) === star);
-  }
-  renderPage(filtered);
+function renderPagination(total){
+  const el=document.getElementById('pagination');
+  const totalPages=Math.ceil(total/pageSize);
+  if(totalPages<=1){el.innerHTML='';return}
+  let h='<button onclick="goPage('+(page-1)+')" '+(page<=1?'disabled':'')+'>‹ 上一页</button>';
+  h+='<span>'+page+' / '+totalPages+'</span>';
+  h+='<button onclick="goPage('+(page+1)+')" '+(page>=totalPages?'disabled':'')+'>下一页 ›</button>';
+  el.innerHTML=h;
 }
 
-function esc(s) {
-  if (!s) return '-';
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-</script>
+function goPage(p){page=p;applyFilter()}
+function debounceFilter(){clearTimeout(filterTimer);filterTimer=setTimeout(applyFilter,300)}
 
-</body>
-</html>
+// Star selector
+let curStar=1;
+function setStar(n){
+  curStar=n;
+  document.getElementById('cStar').value=n;
+  const spans=document.querySelectorAll('#starSelect span');
+  spans.forEach((s,i)=>{s.classList.toggle('active',i<n)});
+}
+
+// Modal
+function openAddModal(){
+  document.getElementById('modalTitle').textContent='添加客户';
+  document.getElementById('cNameCn').value='';
+  document.getElementById('cNameEn').value='';
+  document.getElementById('cCountry').value='';
+  document.getElementById('cRegion').value='';
+  document.getElementById('cAnnual').value='';
+  setStar(1);
+  document.getElementById('custModal').classList.add('show');
+}
+
+function editCustomer(id){
+  const c=allData.find(x=>x.id==id);
+  if(!c)return;
+  document.getElementById('modalTitle').textContent='编辑客户';
+  document.getElementById('cNameCn').value=c.name_cn||'';
+  document.getElementById('cNameEn').value=c.name_en||'';
+  document.getElementById('cCountry').value=c.country||'';
+  document.getElementById('cRegion').value=c.region||'';
+  document.getElementById('cAnnual').value=c.annual_purchase||'';
+  setStar(parseInt(c.star_level)||1);
+  document.getElementById('custModal').classList.add('show');
+}
+
+function closeModal(){document.getElementById('custModal').classList.remove('show')}
+document.getElementById('custModal').addEventListener('click',function(e){if(e.target===this)closeModal()});
+
+function saveCustomer(){
+  alert('客户保存功能需要后端 API 支持（当前客户表为空，待恩同导入客户数据后可用）');
+  closeModal();
+}
+
+loadCustomers();
+</script></body></html>

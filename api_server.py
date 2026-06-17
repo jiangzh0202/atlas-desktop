@@ -328,7 +328,7 @@ def list_customers():
     try:
         from core import get_db
         db = get_db()
-        rows = db.execute("SELECT id, name, country, region, star_level, annual_purchase FROM customers LIMIT 100").fetchall()
+        rows = db.execute("SELECT id, name_cn, name_en, country, region, star_level, annual_purchase, preferred_trade, preferred_payment FROM customers LIMIT 100").fetchall()
         customers = [dict(r) for r in rows]
         return jsonify({"ok": True, "data": customers, "count": len(customers)})
     except Exception as e:
@@ -377,7 +377,7 @@ def list_history():
         from core import get_db
         conn = get_db()
         quotes = conn.execute("""
-            SELECT q.id, q.created_at, q.total_amount, q.status,
+            SELECT q.id, q.created_at, q.total_amount, q.item_count, q.status,
                    q.customer_name, q.trade_term, q.payment_term,
                    COUNT(ql.id) as line_count
             FROM quotations q
@@ -394,7 +394,7 @@ def list_history():
                 "id": q["id"],
                 "created_at": q["created_at"] or "",
                 "total_amount": q["total_amount"] or 0,
-                "item_count": q["line_count"] or 0,
+                "item_count": q["item_count"] or 0,
                 "status": q["status"] or "draft",
                 "customer_name": q["customer_name"] or "",
                 "trade_term": q["trade_term"] or "",
@@ -545,13 +545,29 @@ def trigger_event():
 def agents_status():
     """返回所有智能体的运行状态"""
     try:
+        from agents.quotation_agent import QuotationAgent
+        from agents.trade_agent import TradeAgent
         from agents.warehouse_agent import WarehouseAgent
         from agents.purchasing_agent import PurchasingAgent
 
+        quotation = QuotationAgent()
+        trade = TradeAgent()
         warehouse = WarehouseAgent()
         purchasing = PurchasingAgent()
 
         agents = [
+            {
+                "name": quotation.name,
+                "status": quotation.status,
+                "type": "quotation",
+                "description": "报价智能体 - 询盘解析、配件匹配、四模式算价、报价单生成"
+            },
+            {
+                "name": trade.name,
+                "status": trade.status,
+                "type": "trade",
+                "description": "外贸智能体 - 询盘翻译、信息提取、PI/装箱单生成"
+            },
             {
                 "name": warehouse.name,
                 "status": warehouse.status,
@@ -928,12 +944,8 @@ def dashboard():
 
         # 最近报价
         recent_quotes = conn.execute("""
-            SELECT q.id, q.created_at, q.total_amount, q.status, q.customer_name,
-                   COUNT(ql.id) as line_count
-            FROM quotations q
-            LEFT JOIN quotation_lines ql ON ql.quotation_id = q.id
-            GROUP BY q.id
-            ORDER BY q.created_at DESC LIMIT 5
+            SELECT id, created_at, total_amount, item_count, status, customer_name
+            FROM quotations ORDER BY created_at DESC LIMIT 5
         """).fetchall()
 
         # 库存预警列表
@@ -962,7 +974,7 @@ def dashboard():
             "recent_quotes": [{
                 "id": q["id"], "created_at": q["created_at"] or "",
                 "total_amount": q["total_amount"] or 0,
-                "item_count": q["line_count"] or 0,
+                "item_count": q["item_count"] or 0,
                 "status": q["status"] or "draft",
                 "customer_name": q["customer_name"] or "",
             } for q in recent_quotes],

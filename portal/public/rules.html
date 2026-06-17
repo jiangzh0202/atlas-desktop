@@ -1,1 +1,237 @@
-<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><title>规则面板 · 元策擎天</title><style>:root{--bg:#f2f2f4;--card:#fff;--green:#7ecf5e;--text:#1a1a2e;--muted:#888;--red:#e94560}*{margin:0;padding:0;box-sizing:border-box}body{font-family:"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--text);min-height:100vh}.topbar{background:var(--card);padding:12px 20px;display:flex;justify-content:space-between;box-shadow:0 1px 4px rgba(0,0,0,.06)}.topbar .logo{font-size:1.1rem;font-weight:700}.topbar .logo span{color:var(--green)}.topbar a{color:var(--muted);text-decoration:none;font-size:.85rem;margin-left:8px}.container{max-width:900px;margin:0 auto;padding:20px}.card{background:var(--card);border-radius:14px;padding:24px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,.04)}.card h2{font-size:1.05rem;margin-bottom:14px}.btn{display:inline-block;padding:10px 24px;border-radius:10px;font-size:.9rem;font-weight:600;cursor:pointer;border:none}.btn-p{background:var(--green);color:#fff}.btn-s{background:var(--bg);color:var(--text);border:1px solid #ddd}input{width:100%;padding:10px 14px;border:1px solid #ddd;border-radius:10px;font-size:.9rem;outline:none}input:focus{border-color:var(--green)}table{width:100%;border-collapse:collapse;font-size:.82rem}th{background:var(--bg);padding:8px 10px;text-align:left}td{padding:8px 10px;border-bottom:1px solid #f0f0f0}.empty{padding:40px;text-align:center;color:var(--muted)}</style></head><body><div class="topbar"><div class="logo"><a href="/" style="text-decoration:none;color:inherit"><span>元策</span>·擎天</a></div><div><a href="/">首页</a><a href="/quotation">报价</a><a href="/parts">配件</a><a href="/customers">客户</a><a href="/rules">规则</a><a href="/history">历史</a><a href="/stock">📦库存</a><a href="/agents">🤖智能体</a><a href="/trade">🌍贸易</a><a href="#" onclick="logout()">退出</a></div></div><div class="container"><div class="card"><h2>📐 规则面板</h2><p style="color:var(--muted);font-size:.8rem;margin-bottom:10px">用大白话写规则，保存即生效。老板自己能改。</p><textarea id="content" style="width:100%;height:400px;font-family:monospace;font-size:.82rem;padding:14px;border:1px solid #ddd;border-radius:10px" placeholder="加载中..."></textarea><div style="margin-top:12px;display:flex;gap:10px"><button class="btn btn-p" onclick="save()">💾 保存</button><button class="btn btn-s" onclick="load()">刷新</button> <span id="msg" style="color:var(--green);font-size:.85rem;align-self:center"></span></div></div></div><script>if(!localStorage.getItem('atlas_token'))location='/login';function logout(){localStorage.removeItem('atlas_token');location='/login'}</script><script>async function load(){const r=await fetch('/api/rules');const d=await r.json();document.getElementById('content').value=d.raw||''}async function save(){const r=await fetch('/api/rules',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({content:document.getElementById('content').value})});const d=await r.json();document.getElementById('msg').textContent=d.ok?'✅ 已保存':'❌ 保存失败: '+d.error;setTimeout(()=>document.getElementById('msg').textContent='',3000)}load()</script></body></html>
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>规则面板 · 元策擎天</title>
+<style>
+:root{--bg:#f2f2f4;--card:#fff;--green:#7ecf5e;--green-soft:#e8f7e0;--text:#1a1a2e;--muted:#888;--red:#e94560;--amber:#f59e0b;--blue:#3b82f6;--line:rgba(0,0,0,0.06)}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+a{color:var(--green);text-decoration:none}
+.topbar{background:var(--card);padding:12px 24px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 1px 4px rgba(0,0,0,.06);position:sticky;top:0;z-index:100}
+.topbar .logo{font-size:1.2rem;font-weight:700}
+.topbar .logo span{color:var(--green)}
+.topbar nav{display:flex;gap:4px;flex-wrap:wrap}
+.topbar nav a{color:var(--muted);text-decoration:none;font-size:.82rem;padding:6px 12px;border-radius:8px;transition:all .15s}
+.topbar nav a:hover,.topbar nav a.active{background:var(--green-soft);color:var(--green)}
+.container{max-width:1200px;margin:0 auto;padding:20px 24px}
+/* Split layout */
+.split{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:768px){.split{grid-template-columns:1fr}}
+.card{background:var(--card);border-radius:14px;padding:20px;box-shadow:0 1px 3px rgba(0,0,0,.04);border:1px solid var(--line)}
+.card h2{font-size:1.05rem;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+/* Editor */
+.editor-toolbar{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+#content{width:100%;height:380px;font-family:"SF Mono","Consolas","Monaco",monospace;font-size:.8rem;padding:14px;border:1px solid #ddd;border-radius:10px;resize:vertical;outline:none;line-height:1.6}
+#content:focus{border-color:var(--green)}
+/* Preview */
+.preview-section{max-height:420px;overflow-y:auto;font-size:.82rem}
+.rule-block{margin-bottom:16px;padding:12px;background:var(--bg);border-radius:10px;border:1px solid var(--line)}
+.rule-block h4{font-size:.85rem;margin-bottom:8px;color:var(--green)}
+.rule-item{display:flex;align-items:center;gap:8px;padding:4px 0;font-size:.78rem}
+.rule-item .icon{font-size:1rem}
+/* Stars */
+.star{color:#e2c044}
+/* Buttons */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:10px 20px;border-radius:10px;font-size:.88rem;font-weight:600;cursor:pointer;border:none;transition:all .15s}
+.btn-p{background:var(--green);color:#fff}
+.btn-p:hover{opacity:.9}
+.btn-s{background:var(--bg);color:var(--text);border:1px solid #ddd}
+.btn-s:hover{background:#e8e8ea}
+.btn-r{background:var(--red);color:#fff}
+/* Toast */
+.toast{position:fixed;top:20px;right:20px;padding:12px 20px;border-radius:10px;font-size:.85rem;z-index:300;animation:fadeIn .3s;box-shadow:0 4px 12px rgba(0,0,0,.1)}
+.toast-ok{background:var(--green-soft);color:var(--green);border:1px solid var(--green)}
+.toast-err{background:#fee2e2;color:var(--red);border:1px solid var(--red)}
+@keyframes fadeIn{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}
+/* Badge */
+.badge{display:inline-block;padding:2px 6px;border-radius:6px;font-size:.65rem;font-weight:600}
+.badge-ok{background:#d4f5e0;color:#0d7a3e}
+</style></head>
+<body>
+<div class="topbar">
+  <div class="logo"><span>元策</span>·擎天</div>
+  <nav>
+    <a href="/">📊 首页</a><a href="/quotation">📋 报价</a><a href="/parts">🔧 配件</a>
+    <a href="/customers">👥 客户</a><a href="/rules" class="active">📐 规则</a>
+    <a href="/history">📜 历史</a><a href="/stock">📦 库存</a>
+    <a href="/agents">🤖 智能体</a><a href="/trade">🌍 贸易</a>
+    <a href="#" onclick="logout()" style="color:var(--red)">退出</a>
+  </nav>
+</div>
+
+<div class="container">
+  <div style="margin-bottom:16px">
+    <h1 style="font-size:1.2rem">📐 规则面板</h1>
+    <p style="color:var(--muted);font-size:.82rem;margin-top:4px">用大白话写规则，保存即生效。老板自己能改。</p>
+  </div>
+
+  <div class="split">
+    <!-- Left: Editor -->
+    <div class="card">
+      <h2>✏️ 编辑规则</h2>
+      <div class="editor-toolbar">
+        <button class="btn btn-s" style="padding:6px 12px;font-size:.78rem" onclick="insertTemplate('tier')">+ 客户分级</button>
+        <button class="btn btn-s" style="padding:6px 12px;font-size:.78rem" onclick="insertTemplate('brand')">+ 品牌折扣</button>
+        <button class="btn btn-s" style="padding:6px 12px;font-size:.78rem" onclick="insertTemplate('approval')">+ 审核规则</button>
+        <button class="btn btn-s" style="padding:6px 12px;font-size:.78rem" onclick="insertTemplate('floor')">+ 价格底线</button>
+      </div>
+      <textarea id="content" placeholder="加载中..." oninput="previewRules()"></textarea>
+      <div style="margin-top:10px;display:flex;gap:10px;align-items:center">
+        <button class="btn btn-p" onclick="save()">💾 保存规则</button>
+        <button class="btn btn-s" onclick="load()">🔄 重新加载</button>
+        <span id="status" style="font-size:.8rem;color:var(--muted)"></span>
+      </div>
+    </div>
+
+    <!-- Right: Preview -->
+    <div class="card">
+      <h2>👁️ 规则预览 <span id="previewBadge" class="badge badge-ok" style="display:none">已解析</span></h2>
+      <div class="preview-section" id="preview">
+        <div style="text-align:center;color:var(--muted);padding:40px">在左侧编辑规则，这里实时显示解析结果</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast" style="display:none"></div>
+
+<script>
+if(!localStorage.getItem('atlas_token'))location='/login';
+function logout(){localStorage.removeItem('atlas_token');location='/login'}
+
+let currentMd='';
+
+async function load(){
+  document.getElementById('content').value='加载中...';
+  document.getElementById('status').textContent='加载中...';
+  try{
+    const r=await fetch('/api/rules');
+    const d=await r.json();
+    if(d.ok){
+      currentMd=d.raw||'';
+      document.getElementById('content').value=currentMd;
+      document.getElementById('status').textContent='已加载 '+currentMd.length+' 字符';
+      previewRules();
+    }else{
+      document.getElementById('content').value='# 加载失败
+'+d.error;
+      document.getElementById('status').textContent='❌';
+    }
+  }catch(e){
+    document.getElementById('content').value='# 网络错误';
+    document.getElementById('status').textContent='❌';
+  }
+}
+
+async function save(){
+  const content=document.getElementById('content').value;
+  document.getElementById('status').textContent='保存中...';
+  try{
+    const r=await fetch('/api/rules',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({content:content})
+    });
+    const d=await r.json();
+    if(d.ok){
+      currentMd=content;
+      document.getElementById('status').textContent='✅ 已保存 ('+new Date().toLocaleTimeString()+')';
+      toast('✅ 规则已保存，即时生效','ok');
+      previewRules();
+    }else{
+      document.getElementById('status').textContent='❌ 保存失败';
+      toast('❌ '+d.error,'err');
+    }
+  }catch(e){
+    document.getElementById('status').textContent='❌ 网络错误';
+    toast('❌ 网络错误','err');
+  }
+}
+
+function previewRules(){
+  const md=document.getElementById('content').value;
+  const el=document.getElementById('preview');
+  const badge=document.getElementById('previewBadge');
+
+  if(!md.trim()){
+    el.innerHTML='<div style="text-align:center;color:var(--muted);padding:40px">输入规则后这里显示解析结果</div>';
+    badge.style.display='none';
+    return;
+  }
+
+  // Parse sections
+  const sections=[];
+  const lines=md.split('\n');
+  let currentSection=null;
+
+  for(const line of lines){
+    if(line.startsWith('## ')){
+      if(currentSection) sections.push(currentSection);
+      currentSection={title:line.replace('## ',''), items:[]};
+    }else if(line.startsWith('- ') && currentSection){
+      currentSection.items.push(line.replace('- ',''));
+    }else if(line.startsWith('### ') && currentSection){
+      currentSection.items.push({sub:line.replace('### ',''), children:[]});
+    }
+  }
+  if(currentSection) sections.push(currentSection);
+
+  if(!sections.length){
+    el.innerHTML='<div style="text-align:center;color:var(--muted);padding:20px">未识别到规则块<br><span style="font-size:.72rem">请用 ## 开头写段落标题，- 开头写规则条目</span></div>';
+    badge.style.display='none';
+    return;
+  }
+
+  badge.style.display='inline-block';
+
+  let h='';
+  for(const sec of sections){
+    const icon={'客户分级':'⭐','品牌折扣':'🏷️','临时政策':'📌','审核规则':'🔍','价格底线':'🛡️'}[sec.title]||'📋';
+    h+='<div class="rule-block"><h4>'+icon+' '+sec.title+'</h4>';
+
+    for(const item of sec.items){
+      if(typeof item==='string'){
+        // Parse star level customer tiers
+        const starMatch=item.match(/^(.)星客户[：:](.+)/);
+        if(starMatch){
+          const stars='★'.repeat(parseInt(starMatch[1])||1);
+          h+='<div class="rule-item"><span class="star">'+stars+'</span> '+starMatch[2]+'</div>';
+        }else{
+          h+='<div class="rule-item"><span class="icon">•</span> '+item+'</div>';
+        }
+      }else if(item.sub){
+        h+='<div class="rule-item" style="font-weight:600;margin-top:4px">▸ '+item.sub+'</div>';
+        for(const c of item.children||[]){
+          h+='<div class="rule-item" style="padding-left:16px"><span class="icon">◦</span> '+c+'</div>';
+        }
+      }
+    }
+    h+='</div>';
+  }
+
+  el.innerHTML=h;
+}
+
+function insertTemplate(type){
+  const templates={
+    tier:'\n## 客户分级\n- 一星客户: 只报标准件，利润率>=25%\n- 二星客户: 标准件+常见件，利润率>=20%\n- 三星客户: 大部分件可报，利润率>=15%\n',
+    brand:'\n## 品牌折扣矩阵\n### 新品牌\n- 单价<=100: 折扣10%\n- 100~1000: 折扣15%\n- 1000以上: 折扣20%\n',
+    approval:'\n## 审核规则\n- 总额<5万 -> 报价员自己批\n- 总额5-20万 -> 主管加签\n- 总额>20万 -> 老板终审\n',
+    floor:'\n## 价格底线\n- 折后价不得低于含税进价*1.05\n- 最低价: XXX元\n'
+  };
+  const ta=document.getElementById('content');
+  ta.value+=templates[type]||'';
+  ta.focus();
+  previewRules();
+}
+
+function toast(msg,type){
+  const el=document.getElementById('toast');
+  el.className='toast toast-'+(type||'ok');
+  el.textContent=msg;
+  el.style.display='block';
+  setTimeout(()=>el.style.display='none',3000);
+}
+
+load();
+</script></body></html>

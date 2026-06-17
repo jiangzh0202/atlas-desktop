@@ -3,62 +3,144 @@
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>登录 · 元策擎天</title>
 <style>
-:root{--bg:#f2f2f4;--card:#fff;--green:#7ecf5e;--text:#1a1a2e;--muted:#888;--red:#e94560;--amber:#f59e0b;--blue:#3b82f6}
+:root{--bg:#f2f2f4;--card:#fff;--green:#7ecf5e;--green-soft:#e8f7e0;--text:#1a1a2e;--muted:#888;--red:#e94560;--blue:#3b82f6;--line:rgba(0,0,0,0.06)}
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
-.topbar{background:var(--card);padding:12px 20px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 1px 4px rgba(0,0,0,.06);position:sticky;top:0;z-index:100}
-.topbar .logo{font-size:1.1rem;font-weight:700;color:var(--text)}
-.topbar .logo span{color:var(--green)}
-.topbar .user{color:var(--muted);font-size:.85rem}
-.topbar .user a{color:var(--red);text-decoration:none;margin-left:12px}
-.container{max-width:900px;margin:0 auto;padding:20px}
-.card{background:var(--card);border-radius:14px;padding:24px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
-.card h2{font-size:1.05rem;margin-bottom:14px;color:var(--text)}
-.card h3{font-size:.9rem;color:var(--text);margin-bottom:8px}
-.btn{display:inline-block;padding:10px 24px;border-radius:10px;font-size:.9rem;font-weight:600;cursor:pointer;border:none;text-decoration:none;text-align:center;transition:all .15s}
+body{font-family:"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;align-items:center;justify-content:center}
+.login-wrapper{width:100%;max-width:400px;padding:20px}
+.login-card{background:var(--card);border-radius:16px;padding:32px 28px;box-shadow:0 2px 16px rgba(0,0,0,.06);border:1px solid var(--line)}
+.login-card .hero{text-align:center;margin-bottom:28px}
+.login-card .hero .icon{font-size:2.5rem;margin-bottom:8px}
+.login-card .hero h1{font-size:1.3rem;font-weight:700}
+.login-card .hero h1 span{color:var(--green)}
+.login-card .hero p{font-size:.82rem;color:var(--muted);margin-top:4px}
+.form-group{margin-bottom:16px}
+.form-group label{display:block;font-size:.8rem;font-weight:600;margin-bottom:6px;color:var(--text)}
+.form-group input{width:100%;padding:12px 14px;border:1px solid #ddd;border-radius:10px;font-size:.9rem;outline:none;transition:border .15s}
+.form-group input:focus{border-color:var(--green);box-shadow:0 0 0 3px rgba(126,207,94,.15)}
+.form-options{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;font-size:.8rem}
+.form-options label{display:flex;align-items:center;gap:6px;color:var(--muted);cursor:pointer}
+.btn{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:12px 24px;border-radius:10px;font-size:.95rem;font-weight:600;cursor:pointer;border:none;transition:all .15s}
 .btn-p{background:var(--green);color:#fff}
 .btn-p:hover{opacity:.9}
-.btn-s{background:var(--bg);color:var(--text);border:1px solid #ddd}
-.btn-s:hover{background:#e8e8ea}
-.btn-r{background:var(--red);color:#fff}
-input,textarea,select{width:100%;padding:10px 14px;border:1px solid #ddd;border-radius:10px;font-size:.9rem;font-family:inherit;outline:none;transition:border .15s}
-input:focus,textarea:focus{border-color:var(--green)}
-table{width:100%;border-collapse:collapse;font-size:.82rem}
-th{background:var(--bg);padding:8px 10px;text-align:left;font-weight:600;border-bottom:2px solid #eee}
-td{padding:8px 10px;border-bottom:1px solid #f0f0f0}
-.tag{display:inline-block;padding:2px 8px;border-radius:8px;font-size:.7rem;font-weight:600}
-.tag-ok{background:#d4f5e0;color:#0d7a3e}
-.tag-warn{background:#fef3cd;color:#8a6d14}
-.tag-err{background:#fde2e2;color:#a71d2a}
-.upload-zone{border:2px dashed #ddd;border-radius:12px;padding:40px;text-align:center;cursor:pointer;transition:all .2s}
-.upload-zone:hover,.upload-zone.dragover{border-color:var(--green);background:rgba(126,207,94,.05)}
-.upload-zone p{color:var(--muted);margin-top:8px}
-.empty{padding:40px;text-align:center;color:var(--muted);font-size:.85rem}
-.toast{position:fixed;top:20px;right:20px;padding:12px 20px;border-radius:10px;color:#fff;font-size:.85rem;z-index:999;opacity:0;transition:opacity .3s}
-.toast.show{opacity:1}
-.toast-ok{background:var(--green)}
-.toast-err{background:var(--red)}
-.loading{display:inline-block;width:16px;height:16px;border:2px solid #ddd;border-top-color:var(--green);border-radius:50%;animation:spin .6s linear infinite;margin-right:8px}
+.btn-p:disabled{opacity:.5;cursor:not-allowed}
+.error-msg{background:#fee2e2;color:var(--red);padding:10px 14px;border-radius:10px;font-size:.82rem;margin-bottom:14px;display:none}
+.error-msg.show{display:block}
+.links{text-align:center;margin-top:20px;font-size:.8rem;color:var(--muted)}
+.links a{color:var(--green);text-decoration:none}
+.links span{margin:0 8px;color:#ddd}
+/* Already logged in */
+.already-card{text-align:center;padding:40px 20px}
+.already-card .icon{font-size:3rem;margin-bottom:12px}
+.already-card h2{font-size:1.1rem;margin-bottom:8px}
+.already-card p{color:var(--muted);font-size:.85rem;margin-bottom:20px}
+.spinner{display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
-</style>
-</head>
-<body style="display:flex;align-items:center;justify-content:center;min-height:100vh">
-<div class="card" style="width:360px;text-align:center">
-  <h1 style="font-size:1.5rem;margin-bottom:4px"><span style="color:var(--green)">元策</span>·擎天</h1>
-  <p style="color:var(--muted);font-size:.8rem;margin-bottom:20px">汽车配件 AI 成交引擎</p>
-  <div style="margin-bottom:14px"><input id="user" placeholder="用户名" autofocus></div>
-  <div style="margin-bottom:14px"><input id="pass" type="password" placeholder="密码"></div>
-  <button class="btn btn-p" style="width:100%" onclick="login()">登录</button>
-  <p id="err" style="color:var(--red);font-size:.8rem;margin-top:10px"></p>
+</style></head>
+<body>
+<div class="login-wrapper">
+  <div class="login-card" id="loginForm">
+    <div class="hero">
+      <div class="icon">🏭</div>
+      <h1><span>元策</span>·擎天</h1>
+      <p>AI Native 汽车配件外贸操作系统</p>
+    </div>
+
+    <div class="error-msg" id="errorMsg"></div>
+
+    <div class="form-group">
+      <label>邮箱</label>
+      <input type="email" id="email" placeholder="your@email.com" autocomplete="email">
+    </div>
+
+    <div class="form-group">
+      <label>密码</label>
+      <input type="password" id="password" placeholder="输入密码" autocomplete="current-password" onkeydown="if(event.key==='Enter')login()">
+    </div>
+
+    <div class="form-options">
+      <label><input type="checkbox" id="remember"> 记住我</label>
+    </div>
+
+    <button class="btn btn-p" id="loginBtn" onclick="login()">登 录</button>
+
+    <div class="links">
+      <a href="/">← 返回首页</a>
+    </div>
+  </div>
+
+  <!-- Already logged in state -->
+  <div class="login-card already-card" id="alreadyLogged" style="display:none">
+    <div class="icon">✅</div>
+    <h2>已登录</h2>
+    <p>你已登录，直接进入系统</p>
+    <button class="btn btn-p" onclick="goHome()">进入控制台 →</button>
+    <div class="links" style="margin-top:16px">
+      <a href="#" onclick="doLogout()">退出登录</a>
+    </div>
+  </div>
 </div>
+
 <script>
-async function login() {
-  const u=document.getElementById('user').value,p=document.getElementById('pass').value;
-  const r=await fetch('/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user:u,pass:p})});
-  const d=await r.json();
-  if(d.ok){ localStorage.setItem('atlas_token',d.token); location='/' }
-  else{ document.getElementById('err').textContent=d.error }
+// Check if already logged in
+(function(){
+  const token=localStorage.getItem('atlas_token');
+  if(token){
+    document.getElementById('loginForm').style.display='none';
+    document.getElementById('alreadyLogged').style.display='block';
+  }
+  // Restore remembered email
+  const saved=localStorage.getItem('atlas_email');
+  if(saved) document.getElementById('email').value=saved;
+})();
+
+async function login(){
+  const email=document.getElementById('email').value.trim();
+  const pass=document.getElementById('password').value;
+  const btn=document.getElementById('loginBtn');
+  const err=document.getElementById('errorMsg');
+
+  if(!email||!pass){showError('请输入邮箱和密码');return}
+  if(!email.includes('@')){showError('请输入有效的邮箱地址');return}
+
+  btn.disabled=true;
+  btn.innerHTML='<span class="spinner"></span> 登录中...';
+  err.classList.remove('show');
+
+  try{
+    const r=await fetch('/api/login',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({email:email,password:pass})
+    });
+    const d=await r.json();
+
+    if(d.ok){
+      localStorage.setItem('atlas_token',d.token);
+      if(document.getElementById('remember').checked){
+        localStorage.setItem('atlas_email',email);
+      }
+      location.href='/';
+    }else{
+      showError(d.error||'登录失败，请检查邮箱和密码');
+      btn.disabled=false;
+      btn.textContent='登 录';
+    }
+  }catch(e){
+    showError('网络错误，请检查连接');
+    btn.disabled=false;
+    btn.textContent='登 录';
+  }
 }
-document.getElementById('pass').addEventListener('keydown',e=>{if(e.key==='Enter')login()});
-</script>
-</body></html>
+
+function showError(msg){
+  const err=document.getElementById('errorMsg');
+  err.textContent=msg;
+  err.classList.add('show');
+}
+
+function goHome(){location.href='/'}
+function doLogout(){
+  localStorage.removeItem('atlas_token');
+  location.reload();
+}
+</script></body></html>
