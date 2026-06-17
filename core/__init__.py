@@ -210,6 +210,32 @@ def init_db():
             operator TEXT DEFAULT 'system',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
+        CREATE TABLE IF NOT EXISTS stock (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            part_oe TEXT UNIQUE NOT NULL,
+            name_cn TEXT DEFAULT '',
+            quantity INTEGER DEFAULT 0,
+            safety_line INTEGER DEFAULT 0,
+            max_stock INTEGER DEFAULT 0,
+            location TEXT DEFAULT '',
+            last_check TEXT DEFAULT '',
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+        CREATE TABLE IF NOT EXISTS aliases (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            part_id INTEGER NOT NULL,
+            alias_text TEXT NOT NULL,
+            lang TEXT DEFAULT 'zh',
+            confirmed INTEGER DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (part_id) REFERENCES parts(id)
+        );
+        CREATE VIRTUAL TABLE IF NOT EXISTS aliases_fts USING fts5(
+            alias_text,
+            lang,
+            content='aliases',
+            content_rowid='id'
+        );
     """)
     conn.commit()
     conn.close()
@@ -275,6 +301,94 @@ def rebuild_fts():
     conn.execute("INSERT INTO parts_fts(parts_fts) VALUES('rebuild')")
     conn.commit()
     conn.close()
+
+# ═══════════ 库存查询 ═══════════
+
+def get_stock() -> list:
+    """返回所有库存记录，带预警标记"""
+    conn = get_db()
+    rows = conn.execute("""
+        SELECT s.*, p.name_cn, p.name_ru, p.brand_channel, p.list_price
+        FROM stock s
+        LEFT JOIN parts p ON s.part_oe = p.oe_number
+        ORDER BY (s.quantity * 1.0 / MAX(s.safety_line, 1)) ASC
+    """).fetchall()
+    conn.close()
+    result = []
+    alerts = 0
+    for r in rows:
+        d = dict(r)
+        d['below_safety'] = d['quantity'] < d['safety_line']
+        if d['below_safety']:
+            alerts += 1
+        result.append(d)
+    return result, alerts
+
+def get_stock_alerts() -> list:
+    """只返回低于安全线的配件"""
+    conn = get_db()
+    rows = conn.execute("""
+        SELECT s.*, p.name_cn, p.name_ru, p.brand_channel, p.list_price
+        FROM stock s
+        LEFT JOIN parts p ON s.part_oe = p.oe_number
+        WHERE s.quantity < s.safety_line
+        ORDER BY (s.quantity * 1.0 / MAX(s.safety_line, 1)) ASC
+    """).fetchall()
+    conn.close()
+    result = []
+    for r in rows:
+        d = dict(r)
+        d['below_safety'] = True
+        result.append(d)
+    return result
+
+def import_stock_samples(count: int = 50, alert_count: int = 5):
+    """从 parts 表随机取 N 个配件生成模拟库存"""
+    import random
+    from datetime import datetime, timedelta
+
+    conn = get_db()
+    # 获取所有配件 OE
+    oe_rows = conn.execute("SELECT oe_number FROM parts ORDER BY RANDOM() LIMIT ?", (count,)).fetchall()
+    if not oe_rows:
+        conn.close()
+        print("❌ parts 表为空，无法生成库存")
+        return
+
+    oes = [r[0] for r in oe_rows]
+    # 随机选 alert_count 个作为预警
+    alert_oes = set(random.sample(oes, min(alert_count, len(oes))))
+
+    locations = ['A-01', 'A-02', 'A-03', 'B-01', 'B-02', 'B-03', 'C-01', 'C-02',
+                 'D-01', 'D-02', 'E-01', 'E-02', 'F-01', 'G-01', 'H-01']
+    now = datetime.now()
+
+    inserted = 0
+    for oe in oes:
+        quantity = random.randint(1, 500)
+        safety_line = int(quantity * random.uniform(0.20, 0.40))
+        max_stock = safety_line * random.randint(3, 5)
+
+        # 预警配件：quantity < safety_line
+        if oe in alert_oes:
+            safety_line = random.randint(100, 400)
+            quantity = random.randint(1, safety_line - 1)
+            max_stock = safety_line * random.randint(3, 5)
+
+        location = random.choice(locations)
+        days_ago = random.randint(0, 30)
+        last_check = (now - timedelta(days=days_ago)).strftime('%Y-%m-%d')
+
+        conn.execute(
+            "INSERT OR REPLACE INTO stock (part_oe, quantity, safety_line, max_stock, location, last_check) VALUES (?,?,?,?,?,?)",
+            (oe, quantity, safety_line, max_stock, location, last_check)
+        )
+        inserted += 1
+
+    conn.commit()
+    conn.close()
+    print(f"✅ 库存数据已生成: {inserted} 条 (其中 {len(alert_oes)} 条预警)")
+
 
 if __name__ == "__main__":
     init_db()

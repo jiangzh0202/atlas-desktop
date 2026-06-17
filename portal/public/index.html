@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>元策·擎天</title>
+<style>
+:root{--bg:#f2f2f4;--card:#fff;--green:#7ecf5e;--text:#1a1a2e;--muted:#888;--red:#e94560;--amber:#f59e0b;--blue:#3b82f6}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+.topbar{background:var(--card);padding:12px 20px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 1px 4px rgba(0,0,0,.06);position:sticky;top:0;z-index:100}
+.topbar .logo{font-size:1.1rem;font-weight:700;color:var(--text)}
+.topbar .logo span{color:var(--green)}
+.topbar .user{color:var(--muted);font-size:.85rem}
+.topbar .user a{color:var(--red);text-decoration:none;margin-left:12px}
+.container{max-width:900px;margin:0 auto;padding:20px}
+.card{background:var(--card);border-radius:14px;padding:24px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.card h2{font-size:1.05rem;margin-bottom:14px;color:var(--text)}
+.card h3{font-size:.9rem;color:var(--text);margin-bottom:8px}
+.btn{display:inline-block;padding:10px 24px;border-radius:10px;font-size:.9rem;font-weight:600;cursor:pointer;border:none;text-decoration:none;text-align:center;transition:all .15s}
+.btn-p{background:var(--green);color:#fff}
+.btn-p:hover{opacity:.9}
+.btn-s{background:var(--bg);color:var(--text);border:1px solid #ddd}
+.btn-s:hover{background:#e8e8ea}
+.btn-r{background:var(--red);color:#fff}
+input,textarea,select{width:100%;padding:10px 14px;border:1px solid #ddd;border-radius:10px;font-size:.9rem;font-family:inherit;outline:none;transition:border .15s}
+input:focus,textarea:focus{border-color:var(--green)}
+table{width:100%;border-collapse:collapse;font-size:.82rem}
+th{background:var(--bg);padding:8px 10px;text-align:left;font-weight:600;border-bottom:2px solid #eee}
+td{padding:8px 10px;border-bottom:1px solid #f0f0f0}
+.tag{display:inline-block;padding:2px 8px;border-radius:8px;font-size:.7rem;font-weight:600}
+.tag-ok{background:#d4f5e0;color:#0d7a3e}
+.tag-warn{background:#fef3cd;color:#8a6d14}
+.tag-err{background:#fde2e2;color:#a71d2a}
+.upload-zone{border:2px dashed #ddd;border-radius:12px;padding:40px;text-align:center;cursor:pointer;transition:all .2s}
+.upload-zone:hover,.upload-zone.dragover{border-color:var(--green);background:rgba(126,207,94,.05)}
+.upload-zone p{color:var(--muted);margin-top:8px}
+.empty{padding:40px;text-align:center;color:var(--muted);font-size:.85rem}
+.toast{position:fixed;top:20px;right:20px;padding:12px 20px;border-radius:10px;color:#fff;font-size:.85rem;z-index:999;opacity:0;transition:opacity .3s}
+.toast.show{opacity:1}
+.toast-ok{background:var(--green)}
+.toast-err{background:var(--red)}
+.loading{display:inline-block;width:16px;height:16px;border:2px solid #ddd;border-top-color:var(--green);border-radius:50%;animation:spin .6s linear infinite;margin-right:8px}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="logo"><span>元策</span>·擎天</div>
+  <div style="display:flex;align-items:center;gap:12px">
+    <a href="/quotation" style="color:var(--muted);text-decoration:none;font-size:.85rem">报价</a>
+    <a href="/parts" style="color:var(--muted);text-decoration:none;font-size:.85rem">配件</a>
+    <a href="/customers" style="color:var(--muted);text-decoration:none;font-size:.85rem">客户</a>
+    <a href="/rules" style="color:var(--muted);text-decoration:none;font-size:.85rem">规则</a>
+    <a href="/history" style="color:var(--muted);text-decoration:none;font-size:.85rem">历史</a>
+    <a href="/stock" style="color:var(--muted);text-decoration:none;font-size:.85rem">📦库存</a>
+    <a href="/agents" style="color:var(--muted);text-decoration:none;font-size:.85rem">🤖智能体</a>
+    <span id="uname"></span><a href="#" onclick="logout()" style="color:var(--red);text-decoration:none;font-size:.85rem;margin-left:4px">退出</a>
+  </div>
+</div>
+<div class="container">
+  <div class="card">
+    <h2>🔍 搜配件</h2>
+    <div style="display:flex;gap:10px"><input id="sq" placeholder="输入 OE号 / 中文名 / 俄文名 搜配件..."><button class="btn btn-p" onclick="searchParts()">搜索</button></div>
+    <div id="sresult" style="margin-top:12px"></div>
+  </div>
+  <div class="card">
+    <h2>⚡ 快捷入口</h2>
+    <div style="display:flex;gap:12px;flex-wrap:wrap">
+      <a href="/quotation" class="btn btn-p">📋 新建报价</a>
+      <a href="/parts" class="btn btn-s">🔧 配件查询</a>
+      <a href="/customers" class="btn btn-s">👥 客户管理</a>
+      <a href="/rules" class="btn btn-s">📐 规则面板</a>
+      <a href="/history" class="btn btn-s">📊 报价历史</a>
+      <a href="/stock" class="btn btn-s">📦 库存看板</a>
+      <a href="/agents" class="btn btn-s">🤖 智能体面板</a>
+    </div>
+  </div>
+  <div class="card">
+    <h2>📊 最近报价</h2>
+    <div id="recent"><div class="empty">暂无报价记录</div></div>
+  </div>
+</div>
+<script>
+const token=localStorage.getItem('atlas_token');
+if(!token) location='/login';
+fetch('/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({_verify:token})}).catch(()=>{});
+
+function auth(){ return {'Authorization':'Bearer '+token,'Content-Type':'application/json'} }
+
+async function searchParts(){
+  const q=document.getElementById('sq').value;
+  if(!q) return;
+  const r=await fetch('/api/parts?q='+encodeURIComponent(q));
+  const d=await r.json();
+  const el=document.getElementById('sresult');
+  if(!d.data||!d.data.length){ el.innerHTML='<div class="empty">未找到匹配配件</div>'; return }
+  el.innerHTML='<table><tr><th>OE号</th><th>品名</th><th>品牌</th><th>牌价</th></tr>'+d.data.map(p=>`<tr><td>${p.oe_number||'-'}</td><td>${p.name_cn||p.name_ru||'-'}</td><td>${p.brand_channel||'-'}</td><td>¥${p.list_price||0}</td></tr>`).join('')+'</table>';
+}
+
+function logout(){ localStorage.removeItem('atlas_token'); location='/login' }
+document.getElementById('uname').textContent='admin';
+</script>
+</body></html>

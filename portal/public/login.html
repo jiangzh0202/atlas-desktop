@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>登录 · 元策擎天</title>
+<style>
+:root{--bg:#f2f2f4;--card:#fff;--green:#7ecf5e;--text:#1a1a2e;--muted:#888;--red:#e94560;--amber:#f59e0b;--blue:#3b82f6}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+.topbar{background:var(--card);padding:12px 20px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 1px 4px rgba(0,0,0,.06);position:sticky;top:0;z-index:100}
+.topbar .logo{font-size:1.1rem;font-weight:700;color:var(--text)}
+.topbar .logo span{color:var(--green)}
+.topbar .user{color:var(--muted);font-size:.85rem}
+.topbar .user a{color:var(--red);text-decoration:none;margin-left:12px}
+.container{max-width:900px;margin:0 auto;padding:20px}
+.card{background:var(--card);border-radius:14px;padding:24px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.card h2{font-size:1.05rem;margin-bottom:14px;color:var(--text)}
+.card h3{font-size:.9rem;color:var(--text);margin-bottom:8px}
+.btn{display:inline-block;padding:10px 24px;border-radius:10px;font-size:.9rem;font-weight:600;cursor:pointer;border:none;text-decoration:none;text-align:center;transition:all .15s}
+.btn-p{background:var(--green);color:#fff}
+.btn-p:hover{opacity:.9}
+.btn-s{background:var(--bg);color:var(--text);border:1px solid #ddd}
+.btn-s:hover{background:#e8e8ea}
+.btn-r{background:var(--red);color:#fff}
+input,textarea,select{width:100%;padding:10px 14px;border:1px solid #ddd;border-radius:10px;font-size:.9rem;font-family:inherit;outline:none;transition:border .15s}
+input:focus,textarea:focus{border-color:var(--green)}
+table{width:100%;border-collapse:collapse;font-size:.82rem}
+th{background:var(--bg);padding:8px 10px;text-align:left;font-weight:600;border-bottom:2px solid #eee}
+td{padding:8px 10px;border-bottom:1px solid #f0f0f0}
+.tag{display:inline-block;padding:2px 8px;border-radius:8px;font-size:.7rem;font-weight:600}
+.tag-ok{background:#d4f5e0;color:#0d7a3e}
+.tag-warn{background:#fef3cd;color:#8a6d14}
+.tag-err{background:#fde2e2;color:#a71d2a}
+.upload-zone{border:2px dashed #ddd;border-radius:12px;padding:40px;text-align:center;cursor:pointer;transition:all .2s}
+.upload-zone:hover,.upload-zone.dragover{border-color:var(--green);background:rgba(126,207,94,.05)}
+.upload-zone p{color:var(--muted);margin-top:8px}
+.empty{padding:40px;text-align:center;color:var(--muted);font-size:.85rem}
+.toast{position:fixed;top:20px;right:20px;padding:12px 20px;border-radius:10px;color:#fff;font-size:.85rem;z-index:999;opacity:0;transition:opacity .3s}
+.toast.show{opacity:1}
+.toast-ok{background:var(--green)}
+.toast-err{background:var(--red)}
+.loading{display:inline-block;width:16px;height:16px;border:2px solid #ddd;border-top-color:var(--green);border-radius:50%;animation:spin .6s linear infinite;margin-right:8px}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body style="display:flex;align-items:center;justify-content:center;min-height:100vh">
+<div class="card" style="width:360px;text-align:center">
+  <h1 style="font-size:1.5rem;margin-bottom:4px"><span style="color:var(--green)">元策</span>·擎天</h1>
+  <p style="color:var(--muted);font-size:.8rem;margin-bottom:20px">汽车配件 AI 成交引擎</p>
+  <div style="margin-bottom:14px"><input id="user" placeholder="用户名" autofocus></div>
+  <div style="margin-bottom:14px"><input id="pass" type="password" placeholder="密码"></div>
+  <button class="btn btn-p" style="width:100%" onclick="login()">登录</button>
+  <p id="err" style="color:var(--red);font-size:.8rem;margin-top:10px"></p>
+</div>
+<script>
+async function login() {
+  const u=document.getElementById('user').value,p=document.getElementById('pass').value;
+  const r=await fetch('/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user:u,pass:p})});
+  const d=await r.json();
+  if(d.ok){ localStorage.setItem('atlas_token',d.token); location='/' }
+  else{ document.getElementById('err').textContent=d.error }
+}
+document.getElementById('pass').addEventListener('keydown',e=>{if(e.key==='Enter')login()});
+</script>
+</body></html>

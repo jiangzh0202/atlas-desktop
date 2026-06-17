@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>报价工作台 · 元策擎天</title>
+<style>
+:root{--bg:#f2f2f4;--card:#fff;--green:#7ecf5e;--text:#1a1a2e;--muted:#888;--red:#e94560;--amber:#f59e0b}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+.topbar{background:var(--card);padding:12px 20px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.topbar .logo{font-size:1.1rem;font-weight:700}.topbar .logo span{color:var(--green)}
+.topbar a{color:var(--muted);text-decoration:none;font-size:.85rem;margin-left:8px}
+.container{max-width:960px;margin:0 auto;padding:20px}
+.card{background:var(--card);border-radius:14px;padding:24px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.card h2{font-size:1.05rem;margin-bottom:14px}
+.btn{display:inline-block;padding:10px 24px;border-radius:10px;font-size:.9rem;font-weight:600;cursor:pointer;border:none;transition:all .15s}
+.btn-p{background:var(--green);color:#fff}.btn-p:hover{opacity:.9}
+.btn-s{background:var(--bg);color:var(--text);border:1px solid #ddd}.btn-s:hover{background:#e8e8ea}
+.btn-r{background:var(--red);color:#fff}
+input,select{width:100%;padding:10px 14px;border:1px solid #ddd;border-radius:10px;font-size:.9rem;font-family:inherit;outline:none}
+input:focus{border-color:var(--green)}
+table{width:100%;border-collapse:collapse;font-size:.82rem}
+th{background:var(--bg);padding:8px 10px;text-align:left;font-weight:600}
+td{padding:8px 10px;border-bottom:1px solid #f0f0f0}
+.tag{display:inline-block;padding:2px 8px;border-radius:8px;font-size:.7rem;font-weight:600}
+.tag-ok{background:#d4f5e0;color:#0d7a3e}.tag-warn{background:#fef3cd;color:#8a6d14}.tag-err{background:#fde2e2;color:#a71d2a}
+.upload-zone{border:2px dashed #ddd;border-radius:12px;padding:40px;text-align:center;cursor:pointer;transition:.2s}
+.upload-zone:hover,.upload-zone.dragover{border-color:var(--green);background:rgba(126,207,94,.05)}
+.upload-zone p{color:var(--muted);margin-top:8px}
+.toast{position:fixed;top:20px;right:20px;padding:12px 20px;border-radius:10px;color:#fff;font-size:.85rem;z-index:999;opacity:0;transition:opacity .3s}
+.toast.show{opacity:1}.toast-ok{background:var(--green)}.toast-err{background:var(--red)}
+.steps{display:flex;gap:8px;margin-bottom:18px}
+.step{flex:1;text-align:center;padding:8px;border-radius:8px;font-size:.78rem;color:var(--muted);background:var(--bg)}
+.step.active{background:var(--green);color:#fff}
+.audit-box{background:var(--bg);border-radius:10px;padding:14px;font-family:monospace;font-size:.75rem;line-height:1.8;max-height:300px;overflow-y:auto;white-space:pre-wrap;color:var(--text)}
+#fileInput{display:none}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="logo"><a href="/" style="text-decoration:none;color:inherit"><span>元策</span>·擎天</a></div>
+  <div><a href="/">首页</a><a href="/quotation">报价</a><a href="/parts">配件</a><a href="/customers">客户</a><a href="/rules">规则</a><a href="/history">历史</a><a href="/stock">📦库存</a><a href="/agents">🤖智能体</a><a href="#" onclick="logout()">退出</a></div>
+</div>
+<div class="container">
+
+<!-- 步骤指示器 -->
+<div class="steps">
+  <div class="step active" id="step1">① 上传询盘</div>
+  <div class="step" id="step2">② 解析预览</div>
+  <div class="step" id="step3">③ 生成报价</div>
+  <div class="step" id="step4">④ 审核导出</div>
+</div>
+
+<!-- Step 1: 上传 -->
+<div class="card" id="uploadCard">
+  <h2>📤 上传客户询盘 Excel</h2>
+  <div class="upload-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+    <p style="font-size:2rem">📁</p>
+    <p><strong>点击上传或拖拽 Excel 文件到此处</strong></p>
+    <p style="font-size:.8rem">支持 .xlsx .xls 格式</p>
+  </div>
+  <input type="file" id="fileInput" accept=".xlsx,.xls" onchange="uploadFile(this.files[0])">
+</div>
+
+<!-- Step 2: 解析预览 -->
+<div class="card" id="previewCard" style="display:none">
+  <h2>🔍 解析预览 — <span id="parseStatus"></span></h2>
+  <div id="previewTable"></div>
+  <div style="margin-top:14px;display:flex;gap:10px">
+    <button class="btn btn-p" onclick="generateQuote()">⚡ 生成报价</button>
+    <button class="btn btn-s" onclick="resetAll()">重新上传</button>
+  </div>
+</div>
+
+<!-- Step 3: 报价结果 -->
+<div class="card" id="quoteCard" style="display:none">
+  <h2>💰 报价结果 — <span id="quoteInfo"></span></h2>
+  <div id="quoteTable"></div>
+  <div style="margin-top:14px"><strong>合计：</strong><span id="totalAmount" style="font-size:1.3rem;color:var(--green)"></span></div>
+  <div id="warnings" style="margin-top:8px"></div>
+  <div style="margin-top:14px;display:flex;gap:10px">
+    <button class="btn btn-p" onclick="approveQuote()">✅ 审核通过</button>
+    <button class="btn btn-s" onclick="showTrace()">🔍 AI怎么算的</button>
+    <button class="btn btn-s" onclick="recalculate()">🔄 重新计算</button>
+  </div>
+</div>
+
+<!-- Step 4: 审核完成 -->
+<div class="card" id="doneCard" style="display:none">
+  <h2>✅ 报价已审核</h2>
+  <p style="color:var(--muted);margin:8px 0">报价单已生成，可导出 Excel 发给客户。</p>
+  <div style="display:flex;gap:10px">
+    <button class="btn btn-p" onclick="exportExcel()">📥 导出 Excel</button>
+    <button class="btn btn-s" onclick="resetAll()">📋 新建报价</button>
+  </div>
+</div>
+
+<!-- 审计追溯 -->
+<div class="card" id="traceCard" style="display:none">
+  <h2>🔍 AI 计算链路</h2>
+  <div class="audit-box" id="traceContent"></div>
+  <button class="btn btn-s" style="margin-top:10px" onclick="document.getElementById('traceCard').style.display='none'">收起</button>
+</div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const token=localStorage.getItem('atlas_token');
+if(!token) location='/login';
+function auth(){ return {'Authorization':'Bearer '+token} }
+
+let parsedItems=[], quoteData=null, traceData=null;
+
+// ─── Upload ───
+async function uploadFile(file){
+  if(!file) return;
+  showToast('解析中...','ok');
+  const fd=new FormData(); fd.append('file',file);
+  const r=await fetch('/api/parse',{method:'POST',body:fd});
+  const d=await r.json();
+  if(!d.ok){ showToast('解析失败: '+d.error,'err'); return; }
+  
+  parsedItems=d.data.items||d.data||[];
+  if(!parsedItems.length){ showToast('未解析到询盘数据','err'); return }
+  
+  renderPreview(parsedItems);
+  document.getElementById('parseStatus').textContent=`找到 ${parsedItems.length} 条配件`;
+  document.getElementById('uploadCard').style.display='none';
+  document.getElementById('previewCard').style.display='';
+  setStep(2);
+  showToast(`解析完成：${parsedItems.length} 条`,'ok');
+}
+
+// ─── Preview ───
+function renderPreview(items){
+  let html='<table><tr><th>OE号</th><th>品名</th><th>数量</th><th>品牌</th><th>匹配</th></tr>';
+  items.forEach((p,i)=>{
+    const conf=p.matched!==false?'tag-ok':'tag-warn';
+    const confText=p.matched!==false?'已匹配':'需确认';
+    html+=`<tr>
+      <td><input value="${p.oe_number||''}" onchange="parsedItems[${i}].oe_number=this.value" style="width:100px"></td>
+      <td><input value="${p.name_cn||p.name_ru||''}" onchange="parsedItems[${i}].name_cn=this.value"></td>
+      <td><input type="number" value="${p.quantity||1}" onchange="parsedItems[${i}].quantity=parseInt(this.value)||1" style="width:70px"></td>
+      <td><input value="${p.brand_channel||''}" style="width:80px"></td>
+      <td><span class="tag ${conf}">${confText}</span></td>
+    </tr>`;
+  });
+  document.getElementById('previewTable').innerHTML=html+'</table>';
+}
+
+// ─── Generate Quote ───
+async function generateQuote(){
+  showToast('算价中...','ok');
+  const r=await fetch('/api/quote',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({items:parsedItems,customer_id:'',trade_term:'FOB',payment_term:'prepaid'})});
+  const d=await r.json();
+  if(!d.ok){ showToast('报价失败: '+d.error,'err'); return }
+  
+  quoteData=d.data; traceData=d.trace;
+  renderQuote(quoteData);
+  document.getElementById('previewCard').style.display='none';
+  document.getElementById('quoteCard').style.display='';
+  setStep(3);
+  showToast('报价生成完成','ok');
+}
+
+function renderQuote(data){
+  document.getElementById('quoteInfo').textContent=`${data.quotation_id} · ${data.item_count}条 · 审核人:${data.approver}`;
+  
+  let html='<table><tr><th>OE号</th><th>品名</th><th>数量</th><th>单价</th><th>小计</th></tr>';
+  data.items.forEach(p=>{
+    html+=`<tr><td>${p.oe_number}</td><td>${p.name_cn||''}</td><td>${p.quantity}</td><td>¥${(p.unit_price||0).toFixed(2)}</td><td>¥${(p.total_amount||0).toFixed(2)}</td></tr>`;
+  });
+  document.getElementById('quoteTable').innerHTML=html+'</table>';
+  document.getElementById('totalAmount').textContent='¥'+data.total_amount.toLocaleString('zh-CN',{minimumFractionDigits:2});
+  
+  if(data.warnings&&data.warnings.length){
+    document.getElementById('warnings').innerHTML='<div style="color:var(--amber);margin-top:8px">⚠️ '+data.warnings.join('<br>⚠️ ')+'</div>';
+  }
+}
+
+// ─── Trace ───
+function showTrace(){
+  if(!traceData||!traceData.length){ showToast('暂无审计数据','err'); return }
+  document.getElementById('traceContent').textContent=traceData.map(t=>`[${t.step}] ${t.agent}: ${JSON.stringify(t.output).slice(0,200)}`).join('\n');
+  document.getElementById('traceCard').style.display='';
+}
+
+// ─── Approve ───
+function approveQuote(){
+  document.getElementById('quoteCard').style.display='none';
+  document.getElementById('doneCard').style.display='';
+  document.getElementById('traceCard').style.display='none';
+  setStep(4);
+  showToast('审核通过！','ok');
+}
+
+// ─── Export ───
+function exportExcel(){
+  if(!quoteData) return;
+  let csv='OE号,品名,数量,单价,小计\n';
+  quoteData.items.forEach(p=>{ csv+=`${p.oe_number},${p.name_cn||''},${p.quantity},${p.unit_price||0},${p.total_amount||0}\n` });
+  csv+=`\n合计,,,,"${quoteData.total_amount}"`;
+  const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`报价单_${quoteData.quotation_id}.csv`; a.click();
+  showToast('已下载','ok');
+}
+
+function recalculate(){ generateQuote(); }
+function resetAll(){
+  parsedItems=[]; quoteData=null; traceData=null;
+  document.getElementById('previewCard').style.display='none';
+  document.getElementById('quoteCard').style.display='none';
+  document.getElementById('doneCard').style.display='none';
+  document.getElementById('traceCard').style.display='none';
+  document.getElementById('uploadCard').style.display='';
+  document.getElementById('fileInput').value='';
+  setStep(1);
+}
+
+// ─── Helpers ───
+function setStep(n){
+  for(let i=1;i<=4;i++){
+    const el=document.getElementById('step'+i);
+    el.classList.toggle('active',i===n);
+  }
+}
+function showToast(msg,type){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.className='toast toast-'+type+' show';
+  setTimeout(()=>t.classList.remove('show'),2500);
+}
+function logout(){ localStorage.removeItem('atlas_token'); location='/login' }
+
+// Drag & drop
+const dropZone=document.getElementById('dropZone');
+dropZone.addEventListener('dragover',e=>{e.preventDefault();dropZone.classList.add('dragover')});
+dropZone.addEventListener('dragleave',()=>dropZone.classList.remove('dragover'));
+dropZone.addEventListener('drop',e=>{e.preventDefault();dropZone.classList.remove('dragover');uploadFile(e.dataTransfer.files[0])});
+</script>
+</body></html>

@@ -1,0 +1,111 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>库存看板 · 元策擎天</title>
+<style>
+:root{--bg:#f2f2f4;--card:#fff;--green:#7ecf5e;--text:#1a1a2e;--muted:#888;--red:#e94560;--amber:#f59e0b}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+.topbar{background:var(--card);padding:12px 20px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 1px 4px rgba(0,0,0,.06);position:sticky;top:0;z-index:100}
+.topbar .logo{font-size:1.1rem;font-weight:700}
+.topbar .logo a{text-decoration:none;color:inherit}
+.topbar .logo span{color:var(--green)}
+.topbar nav a{color:var(--muted);text-decoration:none;font-size:.85rem;margin-left:8px}
+.topbar nav a:hover{color:var(--text)}
+.badge{display:inline-block;background:var(--red);color:#fff;font-size:.65rem;font-weight:700;padding:2px 7px;border-radius:10px;margin-left:4px;min-width:18px;text-align:center;line-height:1.4}
+.container{max-width:960px;margin:0 auto;padding:20px}
+.card{background:var(--card);border-radius:14px;padding:24px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.card h2{font-size:1.05rem;margin-bottom:14px;color:var(--text)}
+.btn{display:inline-block;padding:10px 24px;border-radius:10px;font-size:.9rem;font-weight:600;cursor:pointer;border:none;text-decoration:none;text-align:center;transition:all .15s}
+.btn-p{background:var(--green);color:#fff}.btn-p:hover{opacity:.9}
+.btn-s{background:var(--bg);color:var(--text);border:1px solid #ddd}.btn-s:hover{background:#e8e8ea}
+input,select{width:100%;padding:10px 14px;border:1px solid #ddd;border-radius:10px;font-size:.9rem;font-family:inherit;outline:none}
+input:focus{border-color:var(--green)}
+table{width:100%;border-collapse:collapse;font-size:.82rem}
+th{background:var(--bg);padding:8px 10px;text-align:left;font-weight:600;border-bottom:2px solid #eee;white-space:nowrap}
+td{padding:8px 10px;border-bottom:1px solid #f0f0f0}
+tr.row-warn{background:#fff0f0}
+tr.row-warn td{color:var(--red);font-weight:600}
+.status-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:4px}
+.status-ok{background:var(--green)}
+.status-warn{background:var(--red)}
+.empty{padding:40px;text-align:center;color:var(--muted);font-size:.85rem}
+.summary{display:flex;gap:16px;margin-bottom:16px}
+.summary-item{flex:1;background:var(--bg);border-radius:10px;padding:14px 16px;text-align:center}
+.summary-item .num{font-size:1.4rem;font-weight:700}
+.summary-item .label{font-size:.75rem;color:var(--muted);margin-top:2px}
+.spin{display:inline-block;width:16px;height:16px;border:2px solid #ddd;border-top-color:var(--green);border-radius:50%;animation:spin .6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="logo"><a href="/"><span>元策</span>·擎天</a></div>
+  <nav>
+    <a href="/">首页</a><a href="/quotation">报价</a><a href="/parts">配件</a><a href="/customers">客户</a><a href="/rules">规则</a><a href="/history">历史</a><a href="/stock">📦库存</a><a href="/agents">🤖智能体</a><a href="#" onclick="logout()">退出</a>
+  </nav>
+</div>
+<div class="container">
+  <div class="card">
+    <h2>📦 库存看板 <span id="alertBadge" class="badge" style="display:none">0</span></h2>
+    <div id="summary" class="summary"></div>
+    <div style="margin-bottom:14px"><input id="sq" placeholder="输入 OE号 或 品名 筛选项..." oninput="filterTable()"></div>
+    <div id="tableWrap"><div class="empty"><span class="spin"></span> 正在加载库存数据...</div></div>
+  </div>
+</div>
+<script>
+var allData=[],alerts=0;
+if(!localStorage.getItem('atlas_token'))location='/login';
+function logout(){localStorage.removeItem('atlas_token');location='/login'}
+
+async function loadStock(){
+  try{
+    var r=await fetch('/api/stock');
+    var d=await r.json();
+    if(d.ok){
+      allData=d.data||[];
+      alerts=d.alerts||d.data.filter(function(x){return x.stock<=x.safety_line}).length;
+      renderSummary();
+      renderTable(allData);
+      var badge=document.getElementById('alertBadge');
+      if(alerts>0){badge.style.display='inline-block';badge.textContent=alerts}else{badge.style.display='none'}
+    }else{
+      document.getElementById('tableWrap').innerHTML='<div class="empty">加载失败：'+ (d.error||'未知错误') +'</div>';
+    }
+  }catch(e){
+    document.getElementById('tableWrap').innerHTML='<div class="empty">连接失败，请检查服务是否启动</div>';
+  }
+}
+
+function renderSummary(){
+  var total=allData.length;
+  var normal=allData.filter(function(x){return x.stock>x.safety_line}).length;
+  var warn=alerts;
+  document.getElementById('summary').innerHTML=
+    '<div class="summary-item"><div class="num" style="color:var(--text)">'+total+'</div><div class="label">库存品类</div></div>'+
+    '<div class="summary-item"><div class="num" style="color:var(--green)">'+normal+'</div><div class="label">库存正常</div></div>'+
+    '<div class="summary-item"><div class="num" style="color:var(--red)">'+warn+'</div><div class="label">需要补货</div></div>';
+}
+
+function renderTable(data){
+  if(!data.length){document.getElementById('tableWrap').innerHTML='<div class="empty">暂无库存数据</div>';return}
+  var rows=data.map(function(p){
+    var below=p.stock<=p.safety_line;
+    var statusHtml=below?'<span class="status-dot status-warn"></span>需要补货':'<span class="status-dot status-ok"></span>库存充足';
+    var rowClass=below?' class="row-warn"':'';
+    return '<tr'+rowClass+'><td>'+esc(p.oe_number||'-')+'</td><td>'+esc(p.name||p.name_cn||'-')+'</td><td>'+p.stock+'</td><td>'+p.safety_line+'</td><td>'+statusHtml+'</td></tr>';
+  }).join('');
+  document.getElementById('tableWrap').innerHTML='<table><tr><th>OE号</th><th>品名</th><th>库存量</th><th>安全库存线</th><th>状态</th></tr>'+rows+'</table>';
+}
+
+function filterTable(){
+  var q=document.getElementById('sq').value.toLowerCase();
+  var filtered=allData.filter(function(p){
+    return (p.oe_number||'').toLowerCase().indexOf(q)>=0 || (p.name||p.name_cn||'').toLowerCase().indexOf(q)>=0;
+  });
+  renderTable(filtered);
+}
+
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+
+loadStock();
+</script>
+</body></html>

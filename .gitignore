@@ -1,5 +1,10 @@
 __pycache__/
 *.pyc
-data/parts.db
+*.pyo
+data/*.db
+data/audit/*.jsonl
+data/uploads/*.xlsx
+*.log
 .env
-*.xlsx
+.DS_Store
+bridge/config.json

@@ -1,0 +1,109 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>智能体面板 · 元策擎天</title>
+<style>
+:root{--bg:#f2f2f4;--card:#fff;--green:#7ecf5e;--text:#1a1a2e;--muted:#888;--red:#e94560;--amber:#f59e0b;--blue:#3b82f6}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+.topbar{background:var(--card);padding:12px 20px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 1px 4px rgba(0,0,0,.06);position:sticky;top:0;z-index:100}
+.topbar .logo{font-size:1.1rem;font-weight:700}
+.topbar .logo a{text-decoration:none;color:inherit}
+.topbar .logo span{color:var(--green)}
+.topbar nav a{color:var(--muted);text-decoration:none;font-size:.85rem;margin-left:8px}
+.topbar nav a:hover{color:var(--text)}
+.container{max-width:900px;margin:0 auto;padding:20px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.card{background:var(--card);border-radius:14px;padding:24px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,.04);cursor:pointer;transition:box-shadow .15s}
+.card:hover{box-shadow:0 4px 16px rgba(0,0,0,.08)}
+.card h2{font-size:1.05rem;margin-bottom:14px;color:var(--text)}
+.card h3{font-size:.9rem;color:var(--text);margin-bottom:4px}
+.btn{display:inline-block;padding:10px 24px;border-radius:10px;font-size:.9rem;font-weight:600;cursor:pointer;border:none;text-decoration:none;text-align:center}
+.btn-p{background:var(--green);color:#fff}.btn-p:hover{opacity:.9}
+.btn-s{background:var(--bg);color:var(--text);border:1px solid #ddd}.btn-s:hover{background:#e8e8ea}
+.status-badge{display:inline-block;padding:3px 10px;border-radius:8px;font-size:.7rem;font-weight:700}
+.status-idle{background:#d4f5e0;color:#0d7a3e}
+.status-running{background:#dbeafe;color:#1e40af}
+.status-waiting{background:#fef3cd;color:#8a6d14}
+.status-error{background:#fde2e2;color:#a71d2a}
+.agent-icon{font-size:2rem;margin-bottom:8px}
+.log-list{margin-top:12px;display:none}
+.log-list.open{display:block}
+.log-item{padding:8px 12px;border-left:2px solid var(--green);margin-bottom:6px;font-size:.78rem;color:var(--muted);background:var(--bg);border-radius:0 8px 8px 0}
+.log-item .time{font-size:.68rem;color:#aaa}
+.empty{padding:40px;text-align:center;color:var(--muted);font-size:.85rem}
+.spin{display:inline-block;width:16px;height:16px;border:2px solid #ddd;border-top-color:var(--green);border-radius:50%;animation:spin .6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media(max-width:640px){.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="logo"><a href="/"><span>元策</span>·擎天</a></div>
+  <nav>
+    <a href="/">首页</a><a href="/quotation">报价</a><a href="/parts">配件</a><a href="/customers">客户</a><a href="/rules">规则</a><a href="/history">历史</a><a href="/stock">📦库存</a><a href="/agents">🤖智能体</a><a href="#" onclick="logout()">退出</a>
+  </nav>
+</div>
+<div class="container">
+  <div class="card" style="cursor:default">
+    <h2>🤖 智能体运行状态</h2>
+    <p style="color:var(--muted);font-size:.8rem;margin-bottom:14px">点击卡片展开最近操作记录</p>
+    <div class="grid" id="grid"><div class="empty"><span class="spin"></span> 正在加载...</div></div>
+  </div>
+</div>
+<script>
+var agentsData=[];
+if(!localStorage.getItem('atlas_token'))location='/login';
+function logout(){localStorage.removeItem('atlas_token');location='/login'}
+
+var AGENT_ICONS={quotation:'📋',purchasing:'🛒',warehouse:'🏭',trade:'🌍'};
+var AGENT_LABELS={quotation:'报价智能体',purchasing:'采购智能体',warehouse:'仓储智能体',trade:'外贸智能体'};
+var STATUS_LABELS={idle:'空闲中',running:'运行中',waiting_human:'等待确认',error:'异常'};
+
+function statusClass(s){return s==='idle'?'status-idle':s==='running'?'status-running':s==='waiting_human'?'status-waiting':'status-error'}
+
+async function loadAgents(){
+  try{
+    var r=await fetch('/api/agents/status');
+    var d=await r.json();
+    if(d.ok){
+      agentsData=d.data||[];
+      renderCards(agentsData);
+    }else{
+      document.getElementById('grid').innerHTML='<div class="empty">加载失败：'+ (d.error||'未知错误') +'</div>';
+    }
+  }catch(e){
+    document.getElementById('grid').innerHTML='<div class="empty">连接失败，请检查服务是否启动</div>';
+  }
+}
+
+function renderCards(data){
+  if(!data.length){document.getElementById('grid').innerHTML='<div class="empty">暂无智能体数据</div>';return}
+  var html=data.map(function(a,i){
+    var icon=AGENT_ICONS[a.id]||'🤖';
+    var label=AGENT_LABELS[a.id]||a.name||'智能体';
+    var statusText=STATUS_LABELS[a.status]||a.status||'未知';
+    var lastEvent=a.last_event||'暂无记录';
+    var logs=a.logs||[];
+    return '<div class="card" onclick="toggleLogs('+i+')">'+
+      '<div class="agent-icon">'+icon+'</div>'+
+      '<h3>'+esc(label)+'</h3>'+
+      '<span class="status-badge '+statusClass(a.status)+'">'+statusText+'</span>'+
+      '<p style="margin-top:8px;font-size:.8rem;color:var(--muted)">最近：'+esc(lastEvent)+'</p>'+
+      '<div class="log-list" id="logs-'+i+'">'+
+        (logs.length?logs.map(function(l){return '<div class="log-item">'+esc(l.message||l)+'<div class="time">'+(l.time||'')+'</div></div>'}).join(''):'<div class="log-item">暂无操作记录</div>')+
+      '</div>'+
+      '<p style="margin-top:8px;font-size:.7rem;color:var(--blue)">点击查看详细记录</p>'+
+    '</div>';
+  }).join('');
+  document.getElementById('grid').innerHTML=html;
+}
+
+function toggleLogs(i){
+  var el=document.getElementById('logs-'+i);
+  el.classList.toggle('open');
+}
+
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+
+loadAgents();
+</script>
+</body></html>
