@@ -76,7 +76,7 @@ class QuotationAgent:
                 "detail": {"missing_indices": missing_oe}
             }
         
-        return None  # 校验通过
+        return {"ok": True, "step": "validation"}  # 校验通过
     
     # ─── 主流程 ───
     async def process(self, inquiry_items: list, customer_id: str = None,
@@ -92,7 +92,7 @@ class QuotationAgent:
         
         # Step 0.5: 输入校验
         validation_error = self._validate_input(inquiry_items)
-        if validation_error:
+        if validation_error and not validation_error.get("ok"):
             self._transition("error")
             return validation_error
         

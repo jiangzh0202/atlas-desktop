@@ -6,17 +6,18 @@ import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from bus.eventbus import bus, QUOTATION_COMPLETED, STOCK_BELOW_SAFETY
+from bus.eventbus import EventBus, STOCK_BELOW_SAFETY, QUOTATION_COMPLETED
 from ledger.trace import audit
 
 class WarehouseAgent:
     def __init__(self):
         self.name = "warehouse"
         self.status = "idle"
-        self._alert_cache = []  # 本轮触发的预警列表
-
+        self._last_alerts = []
+    
     async def on_quotation_completed(self, event: dict):
-        """报价完成 → 从 stock 表减库存 → 检查安全线 → 发预警"""
+        """报价完成 → 减库存"""
+        bus = EventBus()  # 动态获取当前单例
         payload = event.get("payload", {})
         items = payload.get("items", [])
         quote_id = payload.get("quotation_id", "") or event.get("id", "unknown")

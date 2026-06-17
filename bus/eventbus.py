@@ -13,8 +13,10 @@ class EventBus:
 
     @classmethod
     def reset(cls):
-        """重置单例（测试用）"""
+        """重置单例（用于测试/新event loop）"""
         cls._instance = None
+        global bus
+        bus = cls()  # 更新模块级全局引用
 
     def __new__(cls):
         if cls._instance is None:
