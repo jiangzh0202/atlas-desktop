@@ -1,0 +1,4 @@
+# 擎天 Atlas 核心依赖
+openpyxl>=3.1
+pandas>=2.0
+openai>=1.0   # DeepSeek兼容OpenAI SDK
