@@ -5,7 +5,9 @@
 import json, os, uuid, time
 from pathlib import Path
 
-AUDIT_DIR = os.environ.get("ATLAS_AUDIT_DIR", "/srv/atlas/data/audit")
+AUDIT_DIR = os.environ.get("ATLAS_AUDIT_DIR") or str(
+    Path(__file__).parent.parent / "data" / "audit"
+)
 
 class AuditLog:
     """记录每一步操作，支持完整追溯链"""

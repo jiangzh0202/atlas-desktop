@@ -1,0 +1,94 @@
+{
+  "version": "2.0",
+  "description": "擎天报价规则 — 从 data/rules.md 结构化生成",
+  "source": "data/rules.md",
+  "customer_tiers": {
+    "1": "只报标准件，利润率>=25%",
+    "2": "标准件+常见件，利润率>=20%",
+    "3": "大部分件可报，利润率>=15%",
+    "4": "所有件可报，利润率>=12%",
+    "5": "所有件可报，利润率>=8%",
+    "6": "优先报价+可赊账15天，利润率>=6%",
+    "7": "优先报价+可赊账30天，利润率>=5%"
+  },
+  "brand_matrices": {
+    "A2080 ISF系列散件": [
+      {"range": "单价<=5", "rule": "无折扣"},
+      {"range": "5~50", "rule": "折扣15-17%"},
+      {"range": "50~1000, <30件", "rule": "23%"},
+      {"range": "50~1000, >=30件", "rule": "24%"},
+      {"range": "1000~10000, <10件", "rule": "24%"},
+      {"range": "1000~10000, >=10件", "rule": "25.5%（顶格=S）"}
+    ],
+    "卡友配": [
+      {"range": "总额<10万", "rule": "13-16%"},
+      {"range": "总额>=10万", "rule": "18%"}
+    ]
+  },
+  "brands": {
+    "A2080": {
+      "tiers": [
+        {"price_min": 0, "price_max": 5, "qty_threshold": null, "discount_lt": 0, "discount_gte": 0},
+        {"price_min": 5, "price_max": 50, "qty_threshold": null, "discount_lt": 16, "discount_gte": 16},
+        {"price_min": 50, "price_max": 1000, "qty_threshold": 30, "discount_lt": 23, "discount_gte": 24},
+        {"price_min": 1000, "price_max": 999999, "qty_threshold": 10, "discount_lt": 24, "discount_gte": 25.5}
+      ],
+      "cap_discount": 25.5,
+      "special_policy": "福田任务未完成 → 可突破顶格多下1-2个点"
+    },
+    "卡友配": {
+      "tiers": [
+        {"price_min": 0, "price_max": 100000, "qty_threshold": null, "discount_lt": 15, "discount_gte": 15},
+        {"price_min": 100000, "price_max": 999999, "qty_threshold": null, "discount_lt": 18, "discount_gte": 18}
+      ],
+      "cap_discount": 18,
+      "min_order_amount": 30000,
+      "special_policy": "供应部王双确认：总额>=10万下18个点"
+    },
+    "E9300": {
+      "tiers": [
+        {"price_min": 0, "price_max": 1000, "qty_threshold": null, "discount_lt": 15, "discount_gte": 15},
+        {"price_min": 1000, "price_max": 999999, "qty_threshold": 30, "discount_lt": 15, "discount_gte": 17}
+      ],
+      "cap_discount": 17
+    },
+    "东亚": {
+      "tiers": [
+        {"price_min": 0, "price_max": 999999, "qty_threshold": null, "discount_lt": 7, "discount_gte": 7}
+      ],
+      "cap_discount": 7,
+      "special_policy": "国6后处理件：4%"
+    },
+    "BOSCH": {
+      "tiers": [
+        {"price_min": 0, "price_max": 999999, "qty_threshold": null, "discount_lt": 24, "discount_gte": 24}
+      ],
+      "cap_discount": 24
+    }
+  },
+  "approval_flow": [
+    {"amount": 50000, "approver": "报价员"},
+    {"amount": 200000, "approver": "主管"},
+    {"amount": 999999999, "approver": "老板"}
+  ],
+  "price_floors": [
+    {"id": "PF001", "desc": "折后价不得低于含税进价*1.05"},
+    {"id": "PF002", "desc": "ISF3.8缸盖最低: 780元"}
+  ],
+  "temporary_policies": [
+    "福田任务未完成(缺200万) -> 额外多下1-2点 | 有效期至月底"
+  ],
+  "payment_risk_premium": {
+    "prepaid": 0.0,
+    "against_bl": 0.01,
+    "net_15": 0.02,
+    "net_30": 0.03,
+    "net_60": 0.05,
+    "net_90": 0.08
+  },
+  "warranty_premium": {
+    "none": 0.0,
+    "std": 0.03,
+    "ext": 0.08
+  }
+}

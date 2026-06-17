@@ -109,10 +109,41 @@ def calculate_quote():
         trace = audit.get_trace(result["quotation_id"])
         
         return jsonify({
-            "ok": True,
+            "ok": result.get("ok", True),
             "data": result,
-            "trace": trace
+            "trace": trace,
+            "revised_count": result.get("revised_count", 0),
+            "audit_trail_length": result.get("audit_trail_length", len(trace)),
         })
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({"ok": False, "error": str(e)})
+
+# ─── 报价对比 ───
+@app.route("/api/quote/compare", methods=["POST"])
+def compare_quote():
+    """
+    POST /api/quote/compare — 报价对比
+    请求: {
+        "quote_result": {...},           # process() 返回的完整报价结果
+        "original_excel_path": "/path/to/报价留底.xlsx"  # 原始 Excel 路径
+    }
+    返回: {"ok": true, "data": {matched, diff_lines, accuracy_pct, ...}}
+    """
+    try:
+        data = request.get_json(force=True)
+        quote_result = data.get("quote_result")
+        original_excel_path = data.get("original_excel_path", "")
+        
+        if not quote_result:
+            return jsonify({"ok": False, "error": "缺少 quote_result"})
+        if not original_excel_path:
+            return jsonify({"ok": False, "error": "缺少 original_excel_path"})
+        
+        from agents.quotation_agent import QuotationAgent
+        result = QuotationAgent.compare_with_original(quote_result, original_excel_path)
+        return jsonify(result)
     except Exception as e:
         import traceback
         traceback.print_exc()
