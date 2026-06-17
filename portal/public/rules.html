@@ -95,8 +95,7 @@ a{color:var(--green);text-decoration:none}
 
 <div id="toast" class="toast" style="display:none"></div>
 
-<script>
-if(!localStorage.getItem('atlas_token'))location='/login';
+<script>if(!localStorage.getItem('atlas_token'))location='/login';
 function logout(){localStorage.removeItem('atlas_token');location='/login'}
 
 let currentMd='';
@@ -113,13 +112,12 @@ async function load(){
       document.getElementById('status').textContent='已加载 '+currentMd.length+' 字符';
       previewRules();
     }else{
-      document.getElementById('content').value='# 加载失败
-'+d.error;
-      document.getElementById('status').textContent='❌';
+      document.getElementById('content').value='# 加载失败\n'+d.error;
+      document.getElementById('status').textContent='\u274c';
     }
   }catch(e){
     document.getElementById('content').value='# 网络错误';
-    document.getElementById('status').textContent='❌';
+    document.getElementById('status').textContent='\u274c';
   }
 }
 
@@ -135,16 +133,16 @@ async function save(){
     const d=await r.json();
     if(d.ok){
       currentMd=content;
-      document.getElementById('status').textContent='✅ 已保存 ('+new Date().toLocaleTimeString()+')';
-      toast('✅ 规则已保存，即时生效','ok');
+      document.getElementById('status').textContent='\u2705 已保存 ('+new Date().toLocaleTimeString()+')';
+      toast('\u2705 规则已保存，即时生效','ok');
       previewRules();
     }else{
-      document.getElementById('status').textContent='❌ 保存失败';
-      toast('❌ '+d.error,'err');
+      document.getElementById('status').textContent='\u274c 保存失败';
+      toast('\u274c '+d.error,'err');
     }
   }catch(e){
-    document.getElementById('status').textContent='❌ 网络错误';
-    toast('❌ 网络错误','err');
+    document.getElementById('status').textContent='\u274c 网络错误';
+    toast('\u274c 网络错误','err');
   }
 }
 
@@ -159,18 +157,18 @@ function previewRules(){
     return;
   }
 
-  // Parse sections
-  const sections=[];
-  const lines=md.split('\n');
-  let currentSection=null;
+  var sections=[];
+  var lines=md.split('\n');
+  var currentSection=null;
 
-  for(const line of lines){
-    if(line.startsWith('## ')){
+  for(var i=0;i<lines.length;i++){
+    var line=lines[i];
+    if(line.indexOf('## ')==0){
       if(currentSection) sections.push(currentSection);
       currentSection={title:line.replace('## ',''), items:[]};
-    }else if(line.startsWith('- ') && currentSection){
+    }else if(line.indexOf('- ')==0 && currentSection){
       currentSection.items.push(line.replace('- ',''));
-    }else if(line.startsWith('### ') && currentSection){
+    }else if(line.indexOf('### ')==0 && currentSection){
       currentSection.items.push({sub:line.replace('### ',''), children:[]});
     }
   }
@@ -184,25 +182,34 @@ function previewRules(){
 
   badge.style.display='inline-block';
 
-  let h='';
-  for(const sec of sections){
-    const icon={'客户分级':'⭐','品牌折扣':'🏷️','临时政策':'📌','审核规则':'🔍','价格底线':'🛡️'}[sec.title]||'📋';
+  var icons={};
+  icons['客户分级']='\u2b50';
+  icons['品牌折扣']='\ud83c\udff7\ufe0f';
+  icons['临时政策']='\ud83d\udccc';
+  icons['审核规则']='\ud83d\udd0d';
+  icons['价格底线']='\ud83d\udee1\ufe0f';
+
+  var h='';
+  for(var si=0;si<sections.length;si++){
+    var sec=sections[si];
+    var icon=icons[sec.title]||'\ud83d\udccb';
     h+='<div class="rule-block"><h4>'+icon+' '+sec.title+'</h4>';
 
-    for(const item of sec.items){
+    for(var ii=0;ii<sec.items.length;ii++){
+      var item=sec.items[ii];
       if(typeof item==='string'){
-        // Parse star level customer tiers
-        const starMatch=item.match(/^(.)星客户[：:](.+)/);
+        var starMatch=item.match(/^(.)星客户[：:](.+)/);
         if(starMatch){
-          const stars='★'.repeat(parseInt(starMatch[1])||1);
+          var stars='';
+          for(var s=0;s<(parseInt(starMatch[1])||1);s++) stars+='\u2605';
           h+='<div class="rule-item"><span class="star">'+stars+'</span> '+starMatch[2]+'</div>';
         }else{
-          h+='<div class="rule-item"><span class="icon">•</span> '+item+'</div>';
+          h+='<div class="rule-item"><span class="icon">\u2022</span> '+item+'</div>';
         }
       }else if(item.sub){
-        h+='<div class="rule-item" style="font-weight:600;margin-top:4px">▸ '+item.sub+'</div>';
-        for(const c of item.children||[]){
-          h+='<div class="rule-item" style="padding-left:16px"><span class="icon">◦</span> '+c+'</div>';
+        h+='<div class="rule-item" style="font-weight:600;margin-top:4px">\u25b8 '+item.sub+'</div>';
+        for(var ci=0;ci<(item.children||[]).length;ci++){
+          h+='<div class="rule-item" style="padding-left:16px"><span class="icon">\u25e6</span> '+item.children[ci]+'</div>';
         }
       }
     }
@@ -213,25 +220,23 @@ function previewRules(){
 }
 
 function insertTemplate(type){
-  const templates={
-    tier:'\n## 客户分级\n- 一星客户: 只报标准件，利润率>=25%\n- 二星客户: 标准件+常见件，利润率>=20%\n- 三星客户: 大部分件可报，利润率>=15%\n',
-    brand:'\n## 品牌折扣矩阵\n### 新品牌\n- 单价<=100: 折扣10%\n- 100~1000: 折扣15%\n- 1000以上: 折扣20%\n',
-    approval:'\n## 审核规则\n- 总额<5万 -> 报价员自己批\n- 总额5-20万 -> 主管加签\n- 总额>20万 -> 老板终审\n',
-    floor:'\n## 价格底线\n- 折后价不得低于含税进价*1.05\n- 最低价: XXX元\n'
-  };
-  const ta=document.getElementById('content');
-  ta.value+=templates[type]||'';
-  ta.focus();
+  var t=document.getElementById('content');
+  var tmpl={};
+  tmpl.tier='\n## 客户分级\n- 一星客户: 只报标准件，利润率>=25%\n- 二星客户: 标准件+常见件，利润率>=20%\n- 三星客户: 大部分件可报，利润率>=15%\n';
+  tmpl.brand='\n## 品牌折扣矩阵\n### 新品牌\n- 单价<=100: 折扣10%\n- 100~1000: 折扣15%\n- 1000以上: 折扣20%\n';
+  tmpl.approval='\n## 审核规则\n- 总额<5万 -> 报价员自己批\n- 总额5-20万 -> 主管加签\n- 总额>20万 -> 老板终审\n';
+  tmpl.floor='\n## 价格底线\n- 折后价不得低于含税进价*1.05\n- 最低价: XXX元\n';
+  t.value+=tmpl[type]||'';
+  t.focus();
   previewRules();
 }
 
 function toast(msg,type){
-  const el=document.getElementById('toast');
+  var el=document.getElementById('toast');
   el.className='toast toast-'+(type||'ok');
   el.textContent=msg;
   el.style.display='block';
-  setTimeout(()=>el.style.display='none',3000);
+  setTimeout(function(){el.style.display='none'},3000);
 }
 
-load();
-</script></body></html>
+load();</script></body></html>

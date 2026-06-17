@@ -377,7 +377,7 @@ def list_history():
         from core import get_db
         conn = get_db()
         quotes = conn.execute("""
-            SELECT q.id, q.created_at, q.total_amount, q.status,
+            SELECT q.id, q.created_at, q.total_amount, q.item_count, q.status,
                    q.customer_name, q.trade_term, q.payment_term,
                    COUNT(ql.id) as line_count
             FROM quotations q
@@ -394,7 +394,7 @@ def list_history():
                 "id": q["id"],
                 "created_at": q["created_at"] or "",
                 "total_amount": q["total_amount"] or 0,
-                "item_count": q["line_count"] or 0,
+                "item_count": q["item_count"] or 0,
                 "status": q["status"] or "draft",
                 "customer_name": q["customer_name"] or "",
                 "trade_term": q["trade_term"] or "",
@@ -944,12 +944,8 @@ def dashboard():
 
         # 最近报价
         recent_quotes = conn.execute("""
-            SELECT q.id, q.created_at, q.total_amount, q.status, q.customer_name,
-                   COUNT(ql.id) as line_count
-            FROM quotations q
-            LEFT JOIN quotation_lines ql ON ql.quotation_id = q.id
-            GROUP BY q.id
-            ORDER BY q.created_at DESC LIMIT 5
+            SELECT id, created_at, total_amount, item_count, status, customer_name
+            FROM quotations ORDER BY created_at DESC LIMIT 5
         """).fetchall()
 
         # 库存预警列表
@@ -978,7 +974,7 @@ def dashboard():
             "recent_quotes": [{
                 "id": q["id"], "created_at": q["created_at"] or "",
                 "total_amount": q["total_amount"] or 0,
-                "item_count": q["line_count"] or 0,
+                "item_count": q["item_count"] or 0,
                 "status": q["status"] or "draft",
                 "customer_name": q["customer_name"] or "",
             } for q in recent_quotes],
