@@ -9,7 +9,8 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import openpyxl
 from core import (Part, init_db, import_part, rebuild_fts, search_parts, get_part_by_oe, get_db)
-from sentinel import (match_discount, check_price_floor, get_approver)
+from sentinel import (check_price_floor, get_approver)
+from forge.matrix import match_discount
 from forge import calculate_line_price
 
 EXCEL = Path(__file__).parent / "fixtures" / "dmitriy_quotation.xlsx"

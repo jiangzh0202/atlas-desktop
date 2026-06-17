@@ -257,6 +257,16 @@ class QuotationAgent:
                 "total": total_amount,
                 "item_count": len(priced_items)
             })
+            try:
+                from ws_server import publish_ws
+                publish_ws(QUOTATION_COMPLETED, {
+                    "quotation_id": quote_id,
+                    "items": priced_items,
+                    "total": total_amount,
+                    "item_count": len(priced_items)
+                })
+            except Exception:
+                pass  # WebSocket 推送失败不阻断
         except Exception as e:
             # 事件发布失败不阻断结果返回
             result["event_publish_error"] = str(e)

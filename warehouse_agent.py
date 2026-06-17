@@ -76,6 +76,11 @@ class WarehouseAgent:
                         "quotation_id": payload.get("quotation_id", quote_id)
                     }
                     await bus.publish(STOCK_BELOW_SAFETY, alert_payload)
+                    try:
+                        from ws_server import publish_ws
+                        publish_ws(STOCK_BELOW_SAFETY, alert_payload)
+                    except Exception:
+                        pass
                     alerts.append(alert_payload)
 
                     audit.log(quote_id, "stock_alert", "warehouse",

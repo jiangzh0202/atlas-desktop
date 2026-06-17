@@ -242,73 +242,22 @@ def init_db():
 
 # ═══════════ 查询层（关系查询） ═══════════
 
-def search_parts(query: str = None, brand: str = None, limit: int = 15, offset: int = 0):
-    """全文搜索：利用别名映射实现语义对齐。支持品牌筛选和分页。返回 (results, total_count)"""
+def search_parts(query: str, limit: int = 20) -> list:
+    """全文搜索：利用别名映射实现语义对齐"""
     conn = get_db()
     try:
-        if query:
-            try:
-                if brand:
-                    rows = conn.execute(
-                        "SELECT p.* FROM parts p JOIN parts_fts f ON p.id=f.rowid WHERE parts_fts MATCH ? AND p.brand_channel=? ORDER BY rank LIMIT ? OFFSET ?",
-                        (query, brand, limit, offset)
-                    ).fetchall()
-                    count_row = conn.execute(
-                        "SELECT COUNT(*) FROM parts p JOIN parts_fts f ON p.id=f.rowid WHERE parts_fts MATCH ? AND p.brand_channel=?",
-                        (query, brand)
-                    ).fetchone()
-                else:
-                    rows = conn.execute(
-                        "SELECT p.* FROM parts p JOIN parts_fts f ON p.id=f.rowid WHERE parts_fts MATCH ? ORDER BY rank LIMIT ? OFFSET ?",
-                        (query, limit, offset)
-                    ).fetchall()
-                    count_row = conn.execute(
-                        "SELECT COUNT(*) FROM parts p JOIN parts_fts f ON p.id=f.rowid WHERE parts_fts MATCH ?",
-                        (query,)
-                    ).fetchone()
-            except:
-                pass  # FTS error, fall through to LIKE
-            # FTS may return empty for numeric OE numbers; fallback to LIKE
-            if not rows and query:
-                like = f"%{query}%"
-                if brand:
-                    rows = conn.execute(
-                        "SELECT * FROM parts WHERE (oe_number LIKE ? OR name_cn LIKE ? OR name_ru LIKE ? OR name_en LIKE ?) AND brand_channel=? LIMIT ? OFFSET ?",
-                        (like, like, like, like, brand, limit, offset)
-                    ).fetchall()
-                    count_row = conn.execute(
-                        "SELECT COUNT(*) FROM parts WHERE (oe_number LIKE ? OR name_cn LIKE ? OR name_ru LIKE ? OR name_en LIKE ?) AND brand_channel=?",
-                        (like, like, like, like, brand)
-                    ).fetchone()
-                else:
-                    rows = conn.execute(
-                        "SELECT * FROM parts WHERE oe_number LIKE ? OR name_cn LIKE ? OR name_ru LIKE ? OR name_en LIKE ? LIMIT ? OFFSET ?",
-                        (like, like, like, like, limit, offset)
-                    ).fetchall()
-                    count_row = conn.execute(
-                        "SELECT COUNT(*) FROM parts WHERE oe_number LIKE ? OR name_cn LIKE ? OR name_ru LIKE ? OR name_en LIKE ?",
-                        (like, like, like, like)
-                    ).fetchone()
-        else:
-            if brand:
-                rows = conn.execute("SELECT * FROM parts WHERE brand_channel=? LIMIT ? OFFSET ?", (brand, limit, offset)).fetchall()
-                count_row = conn.execute("SELECT COUNT(*) FROM parts WHERE brand_channel=?", (brand,)).fetchone()
-            else:
-                rows = conn.execute("SELECT * FROM parts LIMIT ? OFFSET ?", (limit, offset)).fetchall()
-                count_row = conn.execute("SELECT COUNT(*) FROM parts").fetchone()
-        total = count_row[0] if count_row else 0
-    finally:
-        conn.close()
-    return [dict(r) for r in rows], total
-
-def get_brands():
-    """获取所有品牌渠道"""
-    conn = get_db()
-    try:
-        rows = conn.execute("SELECT DISTINCT brand_channel FROM parts WHERE brand_channel != '' ORDER BY brand_channel").fetchall()
-        return [r[0] for r in rows]
-    finally:
-        conn.close()
+        rows = conn.execute(
+            "SELECT p.* FROM parts p JOIN parts_fts f ON p.id=f.rowid WHERE parts_fts MATCH ? ORDER BY rank LIMIT ?",
+            (query, limit)
+        ).fetchall()
+    except:
+        like = f"%{query}%"
+        rows = conn.execute(
+            "SELECT * FROM parts WHERE oe_number LIKE ? OR name_cn LIKE ? OR name_ru LIKE ? OR name_en LIKE ? LIMIT ?",
+            (like, like, like, like, limit)
+        ).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
 
 def get_part_by_oe(oe: str) -> Optional[dict]:
     conn = get_db()

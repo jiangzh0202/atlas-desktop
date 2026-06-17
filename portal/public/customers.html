@@ -1,1 +1,227 @@
-<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><title>客户管理 · 元策擎天</title><style>:root{--bg:#f2f2f4;--card:#fff;--green:#7ecf5e;--text:#1a1a2e;--muted:#888;--red:#e94560}*{margin:0;padding:0;box-sizing:border-box}body{font-family:"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--text);min-height:100vh}.topbar{background:var(--card);padding:12px 20px;display:flex;justify-content:space-between;box-shadow:0 1px 4px rgba(0,0,0,.06)}.topbar .logo{font-size:1.1rem;font-weight:700}.topbar .logo span{color:var(--green)}.topbar a{color:var(--muted);text-decoration:none;font-size:.85rem;margin-left:8px}.container{max-width:900px;margin:0 auto;padding:20px}.card{background:var(--card);border-radius:14px;padding:24px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,.04)}.card h2{font-size:1.05rem;margin-bottom:14px}.btn{display:inline-block;padding:10px 24px;border-radius:10px;font-size:.9rem;font-weight:600;cursor:pointer;border:none}.btn-p{background:var(--green);color:#fff}.btn-s{background:var(--bg);color:var(--text);border:1px solid #ddd}input{width:100%;padding:10px 14px;border:1px solid #ddd;border-radius:10px;font-size:.9rem;outline:none}input:focus{border-color:var(--green)}table{width:100%;border-collapse:collapse;font-size:.82rem}th{background:var(--bg);padding:8px 10px;text-align:left}td{padding:8px 10px;border-bottom:1px solid #f0f0f0}.empty{padding:40px;text-align:center;color:var(--muted)}</style></head><body><div class="topbar"><div class="logo"><a href="/" style="text-decoration:none;color:inherit"><span>元策</span>·擎天</a></div><div><a href="/">首页</a><a href="/quotation">报价</a><a href="/parts">配件</a><a href="/customers">客户</a><a href="/rules">规则</a><a href="/history">历史</a><a href="/stock">📦库存</a><a href="/agents">🤖智能体</a><a href="#" onclick="logout()">退出</a></div></div><div class="container"><div class="card"><h2>👥 客户管理</h2><div id="list"></div></div></div><script>if(!localStorage.getItem('atlas_token'))location='/login';function logout(){localStorage.removeItem('atlas_token');location='/login'}</script><script>fetch('/api/customers').then(r=>r.json()).then(d=>{const el=document.getElementById('list');if(!d.data||!d.data.length){el.innerHTML='<div class="empty">还没有客户数据，请先导入</div>';return}el.innerHTML='<table><tr><th>公司</th><th>国家</th><th>等级</th><th>年采购额</th></tr>'+d.data.map(c=>`<tr><td>${c.name||'-'}</td><td>${c.country||'-'}</td><td>${c.star_level||'-'}星</td><td>${c.annual_purchase||'-'}</td></tr>`).join('')+'</table>'})</script></body></html>
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>客户管理 · 元策擎天</title>
+<style>
+:root{--bg:#f2f2f4;--card:#fff;--green:#7ecf5e;--text:#1a1a2e;--muted:#888;--red:#e94560}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+.topbar{background:var(--card);padding:12px 20px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.topbar .logo{font-size:1.1rem;font-weight:700}.topbar .logo span{color:var(--green)}
+.topbar a{color:var(--muted);text-decoration:none;font-size:.85rem;margin-left:8px}
+.container{max-width:960px;margin:0 auto;padding:20px}
+.card{background:var(--card);border-radius:14px;padding:24px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.card h2{font-size:1.05rem;margin-bottom:14px}
+.btn{display:inline-block;padding:10px 24px;border-radius:10px;font-size:.9rem;font-weight:600;cursor:pointer;border:none;transition:all .15s}
+.btn-p{background:var(--green);color:#fff}.btn-p:hover{opacity:.9}
+.btn-s{background:var(--bg);color:var(--text);border:1px solid #ddd}.btn-s:hover{background:#e8e8ea}
+input,select{width:100%;padding:10px 14px;border:1px solid #ddd;border-radius:10px;font-size:.9rem;font-family:inherit;outline:none}
+input:focus,select:focus{border-color:var(--green)}
+table{width:100%;border-collapse:collapse;font-size:.82rem}
+th{background:var(--bg);padding:8px 10px;text-align:left;font-weight:600}
+td{padding:8px 10px;border-bottom:1px solid #f0f0f0}
+tr:hover td{background:#fafafa}
+.empty{padding:40px;text-align:center;color:var(--muted)}
+/* ─── Toolbar ─── */
+.toolbar{display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap}
+.toolbar input{flex:1;min-width:200px}
+.toolbar select{width:140px;flex:none}
+/* ─── Pagination ─── */
+.pagination{display:flex;justify-content:center;align-items:center;gap:6px;margin-top:16px;flex-wrap:wrap}
+.pagination button{padding:6px 14px;border-radius:8px;border:1px solid #ddd;background:var(--card);color:var(--text);font-size:.8rem;cursor:pointer;transition:all .15s}
+.pagination button:hover:not(:disabled){border-color:var(--green);color:var(--green)}
+.pagination button:disabled{opacity:.4;cursor:default}
+.pagination button.active{background:var(--green);color:#fff;border-color:var(--green)}
+.pagination .page-info{font-size:.8rem;color:var(--muted);padding:0 8px}
+/* ─── Star badge ─── */
+.star{display:inline-block;padding:2px 10px;border-radius:10px;font-size:.75rem;font-weight:600}
+.star-1,.star-2{background:#fde2e2;color:#a71d2a}
+.star-3,.star-4{background:#fef3cd;color:#8a6d14}
+.star-5,.star-6{background:#d4f5e0;color:#0d7a3e}
+.star-7{background:#c6f0ff;color:#0a5c7a}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo"><a href="/" style="text-decoration:none;color:inherit"><span>元策</span>·擎天</a></div>
+  <div><a href="/">首页</a><a href="/quotation">报价</a><a href="/parts">配件</a><a href="/customers">客户</a><a href="/rules">规则</a><a href="/history">历史</a><a href="/stock">📦库存</a><a href="/agents">🤖智能体</a><a href="/trade">🌍贸易</a><a href="#" onclick="logout()">退出</a></div>
+</div>
+
+<div class="container">
+  <div class="card">
+    <h2>👥 客户管理 <span id="countBadge" style="font-size:.75rem;color:var(--muted);font-weight:400"></span></h2>
+    <div class="toolbar">
+      <input type="text" id="searchInput" placeholder="🔍 搜索公司名或国家…" oninput="applyFilters()">
+      <select id="starFilter" onchange="applyFilters()">
+        <option value="">全部星级</option>
+        <option value="1">⭐ 1星</option>
+        <option value="2">⭐⭐ 2星</option>
+        <option value="3">⭐⭐⭐ 3星</option>
+        <option value="4">⭐⭐⭐⭐ 4星</option>
+        <option value="5">⭐⭐⭐⭐⭐ 5星</option>
+        <option value="6">⭐⭐⭐⭐⭐⭐ 6星</option>
+        <option value="7">⭐⭐⭐⭐⭐⭐⭐ 7星</option>
+      </select>
+    </div>
+    <div id="list"></div>
+    <div class="pagination" id="pagination"></div>
+  </div>
+</div>
+
+<script>
+if(!localStorage.getItem('atlas_token'))location='/login';
+function logout(){localStorage.removeItem('atlas_token');location='/login'}
+</script>
+
+<script>
+const PAGE_SIZE = 15;
+let allCustomers = [];
+let currentPage = 1;
+
+// ─── Fetch ───
+fetch('/api/customers')
+  .then(r => r.json())
+  .then(d => {
+    if (!d.data || !d.data.length) {
+      document.getElementById('list').innerHTML = '<div class="empty">还没有客户数据，请先导入</div>';
+      return;
+    }
+    allCustomers = d.data;
+    document.getElementById('countBadge').textContent = `共 ${d.count || allCustomers.length} 条`;
+    applyFilters();
+  })
+  .catch(() => {
+    document.getElementById('list').innerHTML = '<div class="empty">加载失败，请检查网络</div>';
+  });
+
+// ─── Filter ───
+function applyFilters() {
+  const query = document.getElementById('searchInput').value.trim().toLowerCase();
+  const star = document.getElementById('starFilter').value;
+
+  let filtered = allCustomers;
+
+  if (query) {
+    filtered = filtered.filter(c =>
+      (c.name || '').toLowerCase().includes(query) ||
+      (c.country || '').toLowerCase().includes(query)
+    );
+  }
+
+  if (star) {
+    filtered = filtered.filter(c => String(c.star_level) === star);
+  }
+
+  currentPage = 1;
+  renderPage(filtered);
+}
+
+// ─── Render page ───
+function renderPage(data) {
+  const totalPages = Math.ceil(data.length / PAGE_SIZE) || 1;
+  if (currentPage > totalPages) currentPage = totalPages;
+  const start = (currentPage - 1) * PAGE_SIZE;
+  const pageData = data.slice(start, start + PAGE_SIZE);
+
+  // Table
+  if (!data.length) {
+    document.getElementById('list').innerHTML = '<div class="empty">没有匹配的客户</div>';
+    document.getElementById('pagination').innerHTML = '';
+    return;
+  }
+
+  let html = '<table><thead><tr><th>公司</th><th>国家</th><th>地区</th><th>等级</th><th>年采购额</th></tr></thead><tbody>';
+  pageData.forEach(c => {
+    const starClass = 'star-' + (c.star_level || 1);
+    const purchase = c.annual_purchase
+      ? '¥' + Number(c.annual_purchase).toLocaleString('zh-CN', {minimumFractionDigits: 2})
+      : '-';
+    html += `<tr>
+      <td><strong>${esc(c.name)}</strong></td>
+      <td>${esc(c.country)}</td>
+      <td>${esc(c.region)}</td>
+      <td><span class="star ${starClass}">${c.star_level || '-'} 星</span></td>
+      <td>${purchase}</td>
+    </tr>`;
+  });
+  html += '</tbody></table>';
+  document.getElementById('list').innerHTML = html;
+
+  // Pagination
+  let pagHtml = '';
+  pagHtml += `<button ${currentPage === 1 ? 'disabled' : ''} onclick="goTo(${currentPage - 1}, ${data.length})">‹ 上一页</button>`;
+
+  // Page buttons
+  const maxButtons = 7;
+  let startPage, endPage;
+  if (totalPages <= maxButtons) {
+    startPage = 1;
+    endPage = totalPages;
+  } else {
+    const half = Math.floor(maxButtons / 2);
+    if (currentPage <= half + 1) {
+      startPage = 1;
+      endPage = maxButtons;
+    } else if (currentPage >= totalPages - half) {
+      startPage = totalPages - maxButtons + 1;
+      endPage = totalPages;
+    } else {
+      startPage = currentPage - half;
+      endPage = currentPage + half;
+    }
+  }
+
+  if (startPage > 1) {
+    pagHtml += `<button onclick="goToPage(1, ${data.length})">1</button>`;
+    if (startPage > 2) pagHtml += `<span class="page-info">…</span>`;
+  }
+
+  for (let i = startPage; i <= endPage; i++) {
+    pagHtml += `<button class="${i === currentPage ? 'active' : ''}" onclick="goToPage(${i}, ${data.length})">${i}</button>`;
+  }
+
+  if (endPage < totalPages) {
+    if (endPage < totalPages - 1) pagHtml += `<span class="page-info">…</span>`;
+    pagHtml += `<button onclick="goToPage(${totalPages}, ${data.length})">${totalPages}</button>`;
+  }
+
+  pagHtml += `<button ${currentPage === totalPages ? 'disabled' : ''} onclick="goTo(${currentPage + 1}, ${data.length})">下一页 ›</button>`;
+  pagHtml += `<span class="page-info">第 ${currentPage}/${totalPages} 页 · ${data.length} 条</span>`;
+  document.getElementById('pagination').innerHTML = pagHtml;
+}
+
+// ─── Navigation helpers ───
+function goTo(page, total) {
+  const totalPages = Math.ceil(total / PAGE_SIZE);
+  if (page < 1 || page > totalPages) return;
+  goToPage(page, total);
+}
+
+function goToPage(page, total) {
+  currentPage = page;
+  const query = document.getElementById('searchInput').value.trim().toLowerCase();
+  const star = document.getElementById('starFilter').value;
+  let filtered = allCustomers;
+  if (query) {
+    filtered = filtered.filter(c =>
+      (c.name || '').toLowerCase().includes(query) ||
+      (c.country || '').toLowerCase().includes(query)
+    );
+  }
+  if (star) {
+    filtered = filtered.filter(c => String(c.star_level) === star);
+  }
+  renderPage(filtered);
+}
+
+function esc(s) {
+  if (!s) return '-';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+
+</body>
+</html>

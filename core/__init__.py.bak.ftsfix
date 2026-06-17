@@ -267,9 +267,6 @@ def search_parts(query: str = None, brand: str = None, limit: int = 15, offset: 
                         (query,)
                     ).fetchone()
             except:
-                pass  # FTS error, fall through to LIKE
-            # FTS may return empty for numeric OE numbers; fallback to LIKE
-            if not rows and query:
                 like = f"%{query}%"
                 if brand:
                     rows = conn.execute(

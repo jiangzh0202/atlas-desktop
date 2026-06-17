@@ -25,8 +25,8 @@ def search_parts():
         return jsonify({"ok": False, "error": "缺少搜索词"})
     try:
         from core import search_parts as sp
-        results, total = sp(q, limit=20)
-        return jsonify({"ok": True, "data": results, "count": total})
+        results = sp(q, limit=20)
+        return jsonify({"ok": True, "data": results, "count": len(results)})
     except Exception as e:
         return jsonify({"ok": False, "error": str(e), "data": []})
 
@@ -247,8 +247,6 @@ def export_quote_excel(quote_id):
             ws.row_dimensions[row].height = 22
             row += 1
 
-        total_amount = round(total_amount, 2)  # 修正浮点累积误差
-
         # ─── 合计行 ───
         ws.merge_cells(start_row=row, start_column=1, end_row=row, end_column=5)
         total_label = ws.cell(row=row, column=1, value="合计")
@@ -454,11 +452,6 @@ def trigger_event():
 
             # 发布事件
             await local_bus.publish(event["event_type"], event["payload"])
-            try:
-                from ws_server import publish_ws
-                publish_ws(event["event_type"], event["payload"])
-            except Exception:
-                pass
 
             # 等待处理完成（最多3秒）
             await asyncio.sleep(1.5)
@@ -740,142 +733,9 @@ def process_inquiry():
         return jsonify({"ok": False, "error": str(e)})
 
 
-
-
-# ─── 价格变更接口 ───
-@app.route("/api/price/update", methods=["POST"])
-def update_price():
-    """POST /api/price/update — 更新配件价格并发布 price.changed 事件
-    请求: {"oe_number": "PART-0001", "new_price": 4500.00, "brand": "A2080"}
-    返回: {"ok": true, "data": {...}, "event_id": "..."}
-    """
-    try:
-        data = request.get_json(force=True)
-        oe_number = data.get("oe_number", "").strip()
-        new_price = data.get("new_price")
-        brand = data.get("brand", "").strip()
-
-        if not oe_number:
-            return jsonify({"ok": False, "error": "缺少 oe_number"})
-        if new_price is None:
-            return jsonify({"ok": False, "error": "缺少 new_price"})
-        try:
-            new_price = float(new_price)
-        except (TypeError, ValueError):
-            return jsonify({"ok": False, "error": "new_price 必须是数字"})
-
-        from core import get_db, get_part_by_oe
-        import asyncio
-        import time
-        import uuid
-
-        # 1) 更新 parts 表
-        db = get_db()
-        # 先查旧值
-        old = db.execute(
-            "SELECT oe_number, list_price, brand_channel, cost_with_tax FROM parts WHERE oe_number = ?",
-            (oe_number,)
-        ).fetchone()
-
-        if not old:
-            db.close()
-            return jsonify({"ok": False, "error": f"配件 {oe_number} 不存在"})
-
-        old_price = old["list_price"]
-        old_brand = old["brand_channel"]
-        cost_with_tax = old["cost_with_tax"] or 0.0
-
-        # 更新价格
-        if brand:
-            db.execute(
-                "UPDATE parts SET list_price = ?, brand_channel = ? WHERE oe_number = ?",
-                (new_price, brand, oe_number)
-            )
-        else:
-            db.execute(
-                "UPDATE parts SET list_price = ? WHERE oe_number = ?",
-                (new_price, oe_number)
-            )
-        db.commit()
-        db.close()
-
-        # 2) 发布 price.changed 事件
-        event = {
-            "id": uuid.uuid4().hex[:8],
-            "event_type": "price.changed",
-            "payload": {
-                "oe_number": oe_number,
-                "old_price": old_price,
-                "new_price": new_price,
-                "brand": brand or old_brand,
-                "cost_with_tax": cost_with_tax,
-            },
-            "timestamp": time.time()
-        }
-
-        # 在临时 event loop 中执行
-        from bus.eventbus import EventBus, PRICE_CHANGED
-
-        async def run_price_change():
-            EventBus.reset()
-            local_bus = EventBus()
-
-            # 导入并注册 price.changed handler
-            from bus.handlers import on_price_changed
-            local_bus.subscribe(PRICE_CHANGED, on_price_changed)
-
-            local_bus._running = True
-            bus_task = asyncio.create_task(local_bus.start())
-
-            await local_bus.publish(event["event_type"], event["payload"])
-            try:
-                from ws_server import publish_ws
-                publish_ws(event["event_type"], event["payload"])
-            except Exception:
-                pass
-            await asyncio.sleep(0.5)  # 等待异步处理
-
-            local_bus.stop()
-            bus_task.cancel()
-            try:
-                await bus_task
-            except asyncio.CancelledError:
-                pass
-
-        loop = asyncio.new_event_loop()
-        loop.run_until_complete(run_price_change())
-        loop.close()
-
-        return jsonify({
-            "ok": True,
-            "data": {
-                "oe_number": oe_number,
-                "old_price": old_price,
-                "new_price": new_price,
-                "brand": brand or old_brand,
-            },
-            "event_id": event["id"],
-            "message": "价格已更新，price.changed 事件已发布"
-        })
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
-        return jsonify({"ok": False, "error": str(e)})
-
-
 if __name__ == "__main__":
     import os
     os.environ.setdefault("DEEPSEEK_API_KEY", "sk-f4aef21293b5472d9f22f86ad289b573")
     port = int(os.environ.get("ATLAS_API_PORT", 3095))
-
-    # ─── 启动 WebSocket 事件推送服务 :3096 ───
-    try:
-        from ws_server import start_ws_in_thread
-        ws_port = int(os.environ.get("ATLAS_WS_PORT", 3096))
-        start_ws_in_thread(port=ws_port)
-        print(f"🔌 WebSocket 事件推送已启动 ws://0.0.0.0:{ws_port}")
-    except Exception as e:
-        print(f"[warn] WebSocket 启动失败（非致命）: {e}")
-
     print(f"🚀 元策·擎天 API 启动 :{port}")
     app.run(host="0.0.0.0", port=port, debug=False)

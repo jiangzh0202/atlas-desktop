@@ -17,6 +17,7 @@ body{font-family:"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg)
 .btn{display:inline-block;padding:10px 24px;border-radius:10px;font-size:.9rem;font-weight:600;cursor:pointer;border:none;text-decoration:none;text-align:center;transition:all .15s}
 .btn-p{background:var(--green);color:#fff}.btn-p:hover{opacity:.9}
 .btn-s{background:var(--bg);color:var(--text);border:1px solid #ddd}.btn-s:hover{background:#e8e8ea}
+.btn-a{background:var(--red);color:#fff}.btn-a:hover{opacity:.9}
 input,select{width:100%;padding:10px 14px;border:1px solid #ddd;border-radius:10px;font-size:.9rem;font-family:inherit;outline:none}
 input:focus{border-color:var(--green)}
 table{width:100%;border-collapse:collapse;font-size:.82rem}
@@ -34,37 +35,70 @@ tr.row-warn td{color:var(--red);font-weight:600}
 .summary-item .label{font-size:.75rem;color:var(--muted);margin-top:2px}
 .spin{display:inline-block;width:16px;height:16px;border:2px solid #ddd;border-top-color:var(--green);border-radius:50%;animation:spin .6s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
+/* ─── Toolbar: search + toggle in one row ─── */
+.toolbar{display:flex;gap:10px;margin-bottom:14px;align-items:center}
+.toolbar input{flex:1}
+.toggle-group{display:flex;border-radius:10px;overflow:hidden;border:1px solid #ddd;flex-shrink:0}
+.toggle-btn{padding:10px 18px;font-size:.82rem;font-weight:600;cursor:pointer;border:none;background:var(--card);color:var(--muted);transition:all .15s;font-family:inherit;white-space:nowrap}
+.toggle-btn.active{background:var(--green);color:#fff}
+.toggle-btn:first-child{border-right:1px solid #ddd}
+/* ─── Pagination ─── */
+.pagination{display:flex;justify-content:center;align-items:center;gap:6px;margin-top:16px}
+.pagination button{padding:8px 14px;border-radius:8px;border:1px solid #ddd;background:var(--card);color:var(--text);font-size:.8rem;font-weight:600;cursor:pointer;transition:all .15s;font-family:inherit}
+.pagination button:hover:not(:disabled){background:var(--bg)}
+.pagination button:disabled{opacity:.4;cursor:default}
+.pagination .page-info{font-size:.8rem;color:var(--muted);padding:0 8px}
+.pagination .page-num{display:inline-block;width:34px;height:34px;line-height:34px;text-align:center;border-radius:8px;font-size:.82rem;font-weight:600;cursor:pointer;border:1px solid #ddd;background:var(--card);color:var(--text);transition:all .15s}
+.pagination .page-num.active{background:var(--green);color:#fff;border-color:var(--green)}
+.pagination .page-num:hover:not(.active){background:var(--bg)}
 </style>
 </head>
 <body>
 <div class="topbar">
   <div class="logo"><a href="/"><span>元策</span>·擎天</a></div>
   <nav>
-    <a href="/">首页</a><a href="/quotation">报价</a><a href="/parts">配件</a><a href="/customers">客户</a><a href="/rules">规则</a><a href="/history">历史</a><a href="/stock">📦库存</a><a href="/agents">🤖智能体</a><a href="#" onclick="logout()">退出</a>
+    <a href="/">首页</a><a href="/quotation">报价</a><a href="/parts">配件</a><a href="/customers">客户</a><a href="/rules">规则</a><a href="/history">历史</a><a href="/stock">📦库存</a><a href="/agents">🤖智能体</a><a href="/trade">🌍贸易</a><a href="#" onclick="logout()">退出</a>
   </nav>
 </div>
 <div class="container">
   <div class="card">
     <h2>📦 库存看板 <span id="alertBadge" class="badge" style="display:none">0</span></h2>
     <div id="summary" class="summary"></div>
-    <div style="margin-bottom:14px"><input id="sq" placeholder="输入 OE号 或 品名 筛选项..." oninput="filterTable()"></div>
+
+    <!-- Toolbar: search + alert toggle -->
+    <div class="toolbar">
+      <input id="sq" placeholder="输入 OE号 或 品名 筛选项..." oninput="onFilterChange()">
+      <div class="toggle-group">
+        <button class="toggle-btn active" id="toggleAll" onclick="setAlertFilter(false)">📋 全部</button>
+        <button class="toggle-btn" id="toggleAlert" onclick="setAlertFilter(true)">⚠️ 仅看预警</button>
+      </div>
+    </div>
+
     <div id="tableWrap"><div class="empty"><span class="spin"></span> 正在加载库存数据...</div></div>
+    <div id="paginationWrap"></div>
   </div>
 </div>
 <script>
-var allData=[],alerts=0;
+// ─── State ───
+var allData=[], alerts=0, filteredData=[];
+var alertOnly=false, currentPage=1, pageSize=20;
 if(!localStorage.getItem('atlas_token'))location='/login';
 function logout(){localStorage.removeItem('atlas_token');location='/login'}
 
+// ─── Load ───
 async function loadStock(){
   try{
     var r=await fetch('/api/stock');
     var d=await r.json();
     if(d.ok){
       allData=d.data||[];
-      alerts=d.alerts||d.data.filter(function(x){return x.stock<=x.safety_line}).length;
+      alerts=d.alerts||0;
+      // Recalculate alerts from data if needed (belt-and-suspenders)
+      if(!alerts){
+        alerts=allData.filter(function(x){return x.quantity <= x.safety_line}).length;
+      }
       renderSummary();
-      renderTable(allData);
+      onFilterChange();
       var badge=document.getElementById('alertBadge');
       if(alerts>0){badge.style.display='inline-block';badge.textContent=alerts}else{badge.style.display='none'}
     }else{
@@ -75,9 +109,10 @@ async function loadStock(){
   }
 }
 
+// ─── Summary ───
 function renderSummary(){
   var total=allData.length;
-  var normal=allData.filter(function(x){return x.stock>x.safety_line}).length;
+  var normal=allData.filter(function(x){return x.quantity > x.safety_line}).length;
   var warn=alerts;
   document.getElementById('summary').innerHTML=
     '<div class="summary-item"><div class="num" style="color:var(--text)">'+total+'</div><div class="label">库存品类</div></div>'+
@@ -85,27 +120,110 @@ function renderSummary(){
     '<div class="summary-item"><div class="num" style="color:var(--red)">'+warn+'</div><div class="label">需要补货</div></div>';
 }
 
+// ─── Filtering ───
+function onFilterChange(){
+  currentPage=1;
+  applyFilters();
+}
+
+function setAlertFilter(v){
+  alertOnly=v;
+  document.getElementById('toggleAll').classList.toggle('active',!v);
+  document.getElementById('toggleAlert').classList.toggle('active',v);
+  currentPage=1;
+  applyFilters();
+}
+
+function applyFilters(){
+  var q=(document.getElementById('sq').value||'').toLowerCase().trim();
+
+  filteredData=allData.filter(function(p){
+    // Alert filter
+    if(alertOnly && p.quantity > p.safety_line) return false;
+    // Search filter — match part_oe or name_cn
+    if(q){
+      var oe=(p.part_oe||'').toLowerCase();
+      var name=(p.name_cn||'').toLowerCase();
+      return oe.indexOf(q)>=0 || name.indexOf(q)>=0;
+    }
+    return true;
+  });
+
+  renderTable(filteredData);
+  renderPagination(filteredData);
+}
+
+// ─── Table ───
 function renderTable(data){
-  if(!data.length){document.getElementById('tableWrap').innerHTML='<div class="empty">暂无库存数据</div>';return}
-  var rows=data.map(function(p){
-    var below=p.stock<=p.safety_line;
+  if(!data.length){
+    document.getElementById('tableWrap').innerHTML='<div class="empty">暂无匹配的库存数据</div>';
+    return;
+  }
+  var totalPages=Math.ceil(data.length/pageSize);
+  if(currentPage>totalPages) currentPage=totalPages;
+  var start=(currentPage-1)*pageSize;
+  var page=data.slice(start, start+pageSize);
+
+  var rows=page.map(function(p){
+    var qty=p.quantity||0;
+    var safety=p.safety_line||0;
+    var below=qty<=safety;
     var statusHtml=below?'<span class="status-dot status-warn"></span>需要补货':'<span class="status-dot status-ok"></span>库存充足';
     var rowClass=below?' class="row-warn"':'';
-    return '<tr'+rowClass+'><td>'+esc(p.oe_number||'-')+'</td><td>'+esc(p.name||p.name_cn||'-')+'</td><td>'+p.stock+'</td><td>'+p.safety_line+'</td><td>'+statusHtml+'</td></tr>';
+    var brand=p.brand_channel||'-';
+    return '<tr'+rowClass+'><td>'+esc(p.part_oe||'-')+'</td><td>'+esc(p.name_cn||'-')+'</td><td>'+qty+'</td><td>'+safety+'</td><td>'+esc(brand)+'</td><td>'+statusHtml+'</td></tr>';
   }).join('');
-  document.getElementById('tableWrap').innerHTML='<table><tr><th>OE号</th><th>品名</th><th>库存量</th><th>安全库存线</th><th>状态</th></tr>'+rows+'</table>';
+
+  document.getElementById('tableWrap').innerHTML='<table><tr><th>OE号</th><th>品名</th><th>库存量</th><th>安全库存线</th><th>品牌渠道</th><th>状态</th></tr>'+rows+'</table>';
 }
 
-function filterTable(){
-  var q=document.getElementById('sq').value.toLowerCase();
-  var filtered=allData.filter(function(p){
-    return (p.oe_number||'').toLowerCase().indexOf(q)>=0 || (p.name||p.name_cn||'').toLowerCase().indexOf(q)>=0;
-  });
-  renderTable(filtered);
+// ─── Pagination ───
+function renderPagination(data){
+  var wrap=document.getElementById('paginationWrap');
+  if(!data.length){ wrap.innerHTML=''; return; }
+
+  var totalPages=Math.ceil(data.length/pageSize);
+  if(totalPages<=1){ wrap.innerHTML=''; return; }
+  if(currentPage>totalPages) currentPage=totalPages;
+
+  var html='<div class="pagination">';
+  html+='<button onclick="goPage('+(currentPage-1)+')" '+(currentPage<=1?'disabled':'')+'>◀ 上一页</button>';
+
+  // Page number buttons
+  var startPage=Math.max(1, currentPage-2);
+  var endPage=Math.min(totalPages, currentPage+2);
+  if(startPage>1){
+    html+='<span class="page-num" onclick="goPage(1)">1</span>';
+    if(startPage>2) html+='<span style="color:var(--muted);padding:0 2px">…</span>';
+  }
+  for(var i=startPage;i<=endPage;i++){
+    html+='<span class="page-num'+(i===currentPage?' active':'')+'" onclick="goPage('+i+')">'+i+'</span>';
+  }
+  if(endPage<totalPages){
+    if(endPage<totalPages-1) html+='<span style="color:var(--muted);padding:0 2px">…</span>';
+    html+='<span class="page-num" onclick="goPage('+totalPages+')">'+totalPages+'</span>';
+  }
+
+  html+='<button onclick="goPage('+(currentPage+1)+')" '+(currentPage>=totalPages?'disabled':'')+'>下一页 ▶</button>';
+  html+='<span class="page-info">共 '+data.length+' 条 / '+totalPages+' 页</span>';
+  html+='</div>';
+  wrap.innerHTML=html;
 }
 
+function goPage(p){
+  var totalPages=Math.ceil(filteredData.length/pageSize);
+  if(p<1||p>totalPages) return;
+  currentPage=p;
+  renderTable(filteredData);
+  renderPagination(filteredData);
+  // Scroll to top of table
+  document.getElementById('tableWrap').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+// ─── Helpers ───
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
 
+// ─── Init ───
 loadStock();
 </script>
 </body></html>
