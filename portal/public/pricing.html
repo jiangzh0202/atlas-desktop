@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>套餐订阅 · 元策擎天</title>
+<style>
+:root{--bg:#f2f2f4;--card:#fff;--green:#7ecf5e;--green-soft:#e8f7e0;--text:#1a1a2e;--muted:#888;--red:#e94560;--amber:#f59e0b;--blue:#3b82f6;--line:rgba(0,0,0,0.06)}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+a{color:var(--green);text-decoration:none}
+.topbar{background:var(--card);padding:12px 24px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 1px 4px rgba(0,0,0,.06);position:sticky;top:0;z-index:100}
+.topbar .logo{font-size:1.2rem;font-weight:700}
+.topbar .logo span{color:var(--green)}
+.topbar nav{display:flex;gap:4px;flex-wrap:wrap}
+.topbar nav a{color:var(--muted);text-decoration:none;font-size:.82rem;padding:6px 12px;border-radius:8px;transition:all .15s}
+.topbar nav a:hover,.topbar nav a.active{background:var(--green-soft);color:var(--green)}
+.container{max-width:1040px;margin:0 auto;padding:20px 24px}
+/* Period toggle */
+.period-toggle{display:flex;justify-content:center;gap:0;margin:24px 0;background:var(--card);border-radius:12px;padding:4px;border:1px solid var(--line);width:fit-content;margin-left:auto;margin-right:auto}
+.period-toggle button{padding:10px 28px;border:none;border-radius:10px;font-size:.9rem;font-weight:600;cursor:pointer;background:transparent;color:var(--muted);transition:all .15s}
+.period-toggle button.active{background:var(--green);color:#fff}
+.period-toggle .save-badge{background:var(--red);color:#fff;font-size:.65rem;padding:2px 6px;border-radius:8px;margin-left:6px}
+/* Plan cards */
+.plan-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
+@media(max-width:900px){.plan-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:500px){.plan-grid{grid-template-columns:1fr}}
+.plan-card{background:var(--card);border-radius:16px;padding:24px;border:2px solid var(--line);text-align:center;transition:all .2s;position:relative}
+.plan-card:hover{border-color:var(--green);box-shadow:0 4px 20px rgba(0,0,0,.08)}
+.plan-card.active{border-color:var(--green);background:var(--green-soft)}
+.plan-card .rec-badge{position:absolute;top:-10px;left:50%;transform:translateX(-50%);background:var(--green);color:#fff;font-size:.7rem;font-weight:700;padding:4px 14px;border-radius:20px}
+.plan-card .plan-name{font-size:1.1rem;font-weight:700;margin-bottom:4px}
+.plan-card .plan-price{font-size:2rem;font-weight:700;margin:12px 0 4px}
+.plan-card .plan-price .unit{font-size:.8rem;color:var(--muted);font-weight:400}
+.plan-card .plan-period{font-size:.75rem;color:var(--muted);margin-bottom:12px}
+.plan-card .plan-quota{font-size:.85rem;color:var(--text);margin-bottom:16px;padding:8px;background:var(--bg);border-radius:8px}
+.plan-card .plan-quota strong{color:var(--green)}
+.plan-card .plan-features{text-align:left;font-size:.78rem;color:var(--muted);margin-bottom:20px}
+.plan-card .plan-features div{padding:4px 0}
+.plan-card .plan-features div::before{content:"✓ ";color:var(--green);font-weight:700}
+.plan-card .btn{width:100%;padding:12px;border-radius:10px;font-size:.9rem;font-weight:600;cursor:pointer;border:none;transition:all .15s}
+.plan-card .btn-p{background:var(--green);color:#fff}
+.plan-card .btn-p:hover{opacity:.9}
+.plan-card .btn-s{background:var(--bg);color:var(--text);border:1px solid #ddd}
+/* Usage meter */
+.usage-section{background:var(--card);border-radius:14px;padding:24px;margin-bottom:20px;border:1px solid var(--line)}
+.usage-section h2{font-size:1.05rem;margin-bottom:16px}
+.usage-meter{height:10px;background:var(--bg);border-radius:5px;overflow:hidden;margin:12px 0}
+.usage-meter .fill{height:100%;border-radius:5px;transition:width .3s}
+.usage-meter .fill.green{background:var(--green)}
+.usage-meter .fill.amber{background:var(--amber)}
+.usage-meter .fill.red{background:var(--red)}
+.usage-stats{display:flex;justify-content:space-between;font-size:.82rem;color:var(--muted);margin-bottom:8px}
+.usage-stats strong{color:var(--text)}
+/* Toast */
+.toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%);padding:12px 24px;border-radius:12px;font-size:.85rem;font-weight:600;z-index:300;display:none;box-shadow:0 4px 16px rgba(0,0,0,.12)}
+.toast-ok{background:#d4f5e0;color:#0d7a3e}
+.toast-err{background:#fee2e2;color:#991b1b}
+/* Buttons */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:10px 20px;border-radius:10px;font-size:.88rem;font-weight:600;cursor:pointer;border:none;transition:all .15s;text-decoration:none}
+.btn-p{background:var(--green);color:#fff}
+.btn-s{background:var(--bg);color:var(--text);border:1px solid #ddd}
+.spinner{display:inline-block;width:20px;height:20px;border:2px solid #ddd;border-top-color:var(--green);border-radius:50%;animation:spin .6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style></head>
+<body>
+<div class="topbar">
+  <div class="logo"><span>元策</span>·擎天</div>
+  <nav>
+    <a href="/">📊 首页</a>
+    <a href="/quotation">📋 报价</a>
+    <a href="/parts">🔧 配件</a>
+    <a href="/customers">👥 客户</a>
+    <a href="/rules">📐 规则</a>
+    <a href="/history">📜 历史</a>
+    <a href="/stock">📦 库存</a>
+    <a href="/agents">🤖 智能体</a>
+    <a href="/trade">🌍 贸易</a>
+    <a href="/pricing" class="active">💎 套餐</a>
+    <a href="#" onclick="logout()" style="color:var(--red)">退出</a>
+  </nav>
+</div>
+
+<div class="container">
+  <!-- Usage Meter -->
+  <div class="usage-section" id="usageSection">
+    <h2>📊 用量概览</h2>
+    <div class="usage-stats"><span>已使用</span><strong id="usageUsed">-</strong></div>
+    <div class="usage-meter"><div class="fill green" id="usageBar" style="width:0%"></div></div>
+    <div class="usage-stats" style="margin-top:4px">
+      <span>套餐: <strong id="usagePlan">免费试用</strong></span>
+      <span>到期: <strong id="usageExpires">-</strong></span>
+    </div>
+  </div>
+
+  <!-- Period Toggle -->
+  <div class="period-toggle">
+    <button class="active" onclick="togglePeriod('month')" id="btnMonth">月付</button>
+    <button onclick="togglePeriod('year')" id="btnYear">年付 <span class="save-badge">省25%</span></button>
+  </div>
+
+  <!-- Plan Cards -->
+  <div class="plan-grid" id="planGrid"><div style="text-align:center;padding:40px;grid-column:1/-1"><span class="spinner"></span>加载套餐...</div></div>
+
+  <!-- Order History -->
+  <div class="usage-section" style="margin-top:20px">
+    <h2>📋 订单记录</h2>
+    <div id="orderList"><div style="text-align:center;color:var(--muted);padding:20px">暂无订单</div></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+if(!localStorage.getItem('atlas_token'))location='/login';
+function logout(){localStorage.removeItem('atlas_token');location='/login'}
+
+let currentPeriod='month', plans=[], usage={};
+
+async function loadPlans(){
+  const r=await fetch('/api/plans'); const d=await r.json();
+  if(d.ok) plans=d.data;
+  renderPlans();
+}
+async function loadUsage(){
+  const r=await fetch('/api/usage'); const d=await r.json();
+  if(d.ok){
+    usage=d.data;
+    const pct=usage.quota_total>0?Math.min(100,Math.round(usage.quota_used/usage.quota_total*100)):0;
+    document.getElementById('usageUsed').textContent=usage.quota_used+' / '+usage.quota_total+' 次';
+    document.getElementById('usagePlan').textContent=planName(usage.plan);
+    document.getElementById('usageExpires').textContent=usage.expires||'免费试用';
+    const bar=document.getElementById('usageBar');
+    bar.style.width=pct+'%';
+    bar.className='fill '+(pct>80?'red':pct>50?'amber':'green');
+  }
+}
+async function loadOrders(){
+  const r=await fetch('/api/orders'); const d=await r.json();
+  const el=document.getElementById('orderList');
+  if(!d.data||!d.data.length){el.innerHTML='<div style="text-align:center;color:var(--muted);padding:20px">暂无订单</div>';return}
+  el.innerHTML='<table style="width:100%;border-collapse:collapse;font-size:.82rem"><tr><th>订单ID</th><th>套餐</th><th>周期</th><th>金额</th><th>状态</th><th>时间</th></tr>'+
+    d.data.map(o=>`<tr>
+      <td style="font-family:monospace;font-size:.75rem">${o.id||'-'}</td>
+      <td>${planName(o.plan_id)}</td>
+      <td>${o.period==='year'?'年付':'月付'}</td>
+      <td>¥${(o.amount||0).toLocaleString()}</td>
+      <td><span class="tag" style="background:${o.status==='paid'?'#d4f5e0':'#fef3c7'};color:${o.status==='paid'?'#0d7a3e':'#92400e'};padding:2px 8px;border-radius:8px;font-size:.7rem;font-weight:600">${o.status==='paid'?'已支付':'待支付'}</span></td>
+      <td>${(o.created_at||'').slice(0,10)}</td>
+    </tr>`).join('')+'</table>';
+}
+function planName(id){
+  const names={starter:'微光',standard:'标准',unlimited:'无界',enterprise:'企业',free:'免费试用',none:'未订阅'};
+  return names[id]||id||'未知';
+}
+
+function togglePeriod(p){
+  currentPeriod=p;
+  document.getElementById('btnMonth').className=p==='month'?'active':'';
+  document.getElementById('btnYear').className=p==='year'?'active':'';
+  renderPlans();
+}
+
+function renderPlans(){
+  const grid=document.getElementById('planGrid');
+  if(!plans.length){grid.innerHTML='<div style="text-align:center;padding:40px;grid-column:1/-1">加载失败</div>';return}
+  const rec={standard:true};
+  grid.innerHTML=plans.map(p=>{
+    const price=currentPeriod==='year'?p.yearly_price:p.monthly_price;
+    const monthly=currentPeriod==='year'?Math.round(p.yearly_price/12):p.monthly_price;
+    const isCurrent=usage.plan===p.id;
+    const btnCls=isCurrent?'btn-s':'btn-p';
+    const btnText=isCurrent?'当前套餐':(p.id==='enterprise'?'联系销售':'立即订阅');
+    const disabled=isCurrent||p.id==='enterprise';
+    return `<div class="plan-card${isCurrent?' active':''}">
+      ${rec[p.id]?'<div class="rec-badge">推荐</div>':''}
+      <div class="plan-name">${p.name}</div>
+      <div class="plan-price">¥${price.toLocaleString()}<span class="unit">/${currentPeriod==='year'?'年':'月'}</span></div>
+      <div class="plan-period">${currentPeriod==='year'?'折 ¥'+monthly.toLocaleString()+'/月':''}</div>
+      <div class="plan-quota">含 <strong>${p.quota>=999999?'不限':p.quota+'次'}</strong> 报价调用${p.overage_price>0?' · 超额 ¥'+p.overage_price+'/次':''}</div>
+      <div class="plan-features">${(p.features||[]).map(f=>`<div>${f}</div>`).join('')}</div>
+      <button class="btn ${btnCls}" onclick="subscribe('${p.id}')" ${disabled?'disabled':''}>${btnText}</button>
+    </div>`;
+  }).join('');
+}
+
+async function subscribe(planId){
+  if(!confirm('确认订阅 '+planName(planId)+'套餐？\n\n金额：¥'+(()=>{
+    const p=plans.find(x=>x.id===planId);
+    return ((currentPeriod==='year'?p.yearly_price:p.monthly_price)||0).toLocaleString();
+  })()+'\n\n(演示环境，点击确认即模拟支付)')) return;
+  
+  const r=await fetch('/api/orders',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({plan_id:planId,period:currentPeriod})});
+  const d=await r.json();
+  if(!d.ok){toast('创建订单失败: '+d.error,'err');return}
+  
+  // Simulate payment
+  const pr=await fetch('/api/orders/pay',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({order_id:d.data.order_id})});
+  const pd=await pr.json();
+  if(pd.ok){
+    toast('支付成功！套餐已激活','ok');
+    loadUsage(); loadOrders();
+  }else{
+    toast('支付失败: '+pd.error,'err');
+  }
+}
+
+function toast(msg,type){
+  const el=document.getElementById('toast');
+  el.className='toast toast-'+(type||'ok');
+  el.textContent=msg; el.style.display='block';
+  setTimeout(function(){el.style.display='none'},3000);
+}
+
+loadPlans(); loadUsage(); loadOrders();
+</script></body></html>
