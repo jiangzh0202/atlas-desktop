@@ -336,56 +336,33 @@ def list_customers():
 
 # ─── 规则面板 ───
 @app.route("/api/rules", methods=["GET", "POST"])
-def handle_rules():
-    import os, shutil, time
-    rules_path = os.path.join(os.path.dirname(__file__), "data", "rules.md")
-    backup_dir = os.path.join(os.path.dirname(__file__), "data", "rules_backups")
-    os.makedirs(backup_dir, exist_ok=True)
-    
+def manage_rules():
+    rules_path = "/srv/atlas/data/rules.md"
     if request.method == "GET":
-        raw = open(rules_path, encoding="utf-8").read() if os.path.exists(rules_path) else "# 报价规则"
-        return jsonify({"ok": True, "raw": raw, "size": len(raw)})
-    
-    data = request.get_json(force=True)
-    content = data.get("content", "")
-    
-    if os.path.exists(rules_path):
-        ts = time.strftime("%Y%m%d_%H%M%S")
-        shutil.copy2(rules_path, os.path.join(backup_dir, f"rules_{ts}.md"))
-    
-    with open(rules_path, "w", encoding="utf-8") as f:
-        f.write(content)
-    
-    backups = sorted([f for f in os.listdir(backup_dir) if f.endswith(".md")], reverse=True)[:10]
-    return jsonify({"ok": True, "message": "saved", "size": len(content), "backups": backups})
+        try:
+            content = open(rules_path).read()
+            from sentinel.rules_parser import parse_rules_md
+            parsed = parse_rules_md(rules_path)
+            return jsonify({"ok": True, "raw": content, "parsed": parsed})
+        except Exception as e:
+            return jsonify({"ok": False, "error": str(e)})
+    else:
+        try:
+            data = request.get_json(force=True)
+            content = data.get("content", "")
+            if content:
+                # 备份旧版本
+                import time, shutil
+                backup = f"{rules_path}.bak.{int(time.time())}"
+                if os.path.exists(rules_path):
+                    shutil.copy(rules_path, backup)
+                open(rules_path, "w", encoding="utf-8").write(content)
+                return jsonify({"ok": True, "message": "规则已保存"})
+            return jsonify({"ok": False, "error": "内容为空"})
+        except Exception as e:
+            return jsonify({"ok": False, "error": str(e)})
 
-@app.route("/api/rules/versions")
-def list_rule_versions():
-    import time
-    import os
-    d = os.path.join(os.path.dirname(__file__), "data", "rules_backups")
-    os.makedirs(d, exist_ok=True)
-    vers = []
-    for f in sorted(os.listdir(d), reverse=True):
-        if f.endswith(".md"):
-            p = os.path.join(d, f)
-            vers.append({"filename": f, "size": os.path.getsize(p), "modified": time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(os.path.getmtime(p)))})
-    return jsonify({"ok": True, "data": vers[:20], "count": len(vers)})
-
-@app.route("/api/rules/restore/<filename>")
-def restore_rule_version(filename):
-    import time
-    import os, shutil
-    d = os.path.join(os.path.dirname(__file__), "data", "rules_backups")
-    rp = os.path.join(os.path.dirname(__file__), "data", "rules.md")
-    bp = os.path.join(d, filename)
-    if not os.path.exists(bp):
-        return jsonify({"ok": False, "error": "version not found"})
-    if os.path.exists(rp):
-        shutil.copy2(rp, os.path.join(d, f"rules_before_restore_{time.strftime('%Y%m%d_%H%M%S')}.md"))
-    shutil.copy2(bp, rp)
-    raw = open(rp, encoding="utf-8").read()
-    return jsonify({"ok": True, "raw": raw, "message": f"Restored to {filename}"})
+# ─── 审计追踪 ───
 @app.route("/api/trace/<quote_id>")
 def get_trace(quote_id):
     from ledger.trace import audit

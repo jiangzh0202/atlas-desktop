@@ -100,21 +100,6 @@ class WarehouseAgent:
             conn.close()
             self.status = "idle"
 
-
-    def calculate_turnover(self, part_oe=None):
-        """周转率计算"""
-        from core import get_db
-        conn = get_db()
-        if part_oe:
-            s = conn.execute("SELECT part_oe,quantity,safety_line FROM stock WHERE part_oe=?",(part_oe,)).fetchone()
-            conn.close()
-            if not s: return {"error":"not in stock"}
-            rate = s["safety_line"]/max(s["quantity"],1) if s["quantity"]>0 else 999
-            return {"part_oe":part_oe,"current":s["quantity"],"safety":s["safety_line"],"rate":round(rate,2),"status":"fast" if rate>2 else "normal" if rate>1 else "slow"}
-        items = conn.execute("SELECT part_oe,quantity,safety_line FROM stock").fetchall()
-        conn.close()
-        return {"items":[{"part_oe":i["part_oe"],"current":i["quantity"],"safety":i["safety_line"],"rate":round(i["safety_line"]/max(i["quantity"],1),2) if i["quantity"]>0 else 999} for i in items],"count":len(items)}
-
     def get_last_alerts(self) -> list:
         return self._alert_cache
 

@@ -127,19 +127,6 @@ class TradeAgent:
         self.status = "idle"
         print(f"[TradeAgent] Started, listening for inquiries")
 
-
-    def track_logistics(self, tracking_no="", carrier=""):
-        """物流跟踪"""
-        return {"tracking_no":tracking_no or "PENDING","carrier":carrier or "DHL","status":"in_transit","eta":"7-15 days","note":"logistics API placeholder"}
-
-    def customs_knowledge(self, country, hs_code=""):
-        """清关知识"""
-        db = {"Russia":{"duty":"5-15%","vat":"20%","docs":["Invoice","Packing List","COO","EAC"],"notes":"对中国配件有关税优惠"},"Kazakhstan":{"duty":"0-10%","vat":"12%","docs":["Invoice","Packing List","COO"],"notes":"EAEU互认"},"default":{"duty":"5-20%","vat":"10-25%","docs":["Invoice","Packing List","BL","COO"],"notes":"建议确认HS编码"}}
-        info = db.get(country, db["default"])
-        info["country"] = country
-        info["hs_code"] = hs_code or "8409.99"
-        return info
-
     def get_last_result(self):
         """Return the last processing result (for API queries)."""
         return self.last_result

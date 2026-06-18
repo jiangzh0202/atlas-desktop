@@ -78,33 +78,6 @@ class PurchasingAgent:
         self.status = "idle"
         return suggestion
 
-
-    async def compare_suppliers(self, part_oe, suggest_qty=0):
-        """供应商比价"""
-        self.status = "comparing"
-        try:
-            from core import get_db
-            conn = get_db()
-            part = conn.execute("SELECT oe_number,name_cn,brand_channel,list_price FROM parts WHERE oe_number=?",(part_oe,)).fetchone()
-            suppliers = conn.execute("SELECT name,brand,cost_with_tax,min_order_qty,lead_time_days FROM suppliers WHERE brand LIKE ?",(f"%{part['brand_channel']}%" if part else "%",)).fetchall()
-            conn.close()
-            results = []
-            for s in suppliers:
-                results.append({"supplier":s["name"],"brand":s["brand"],"unit_price":s["cost_with_tax"] or 0,"moq":s["min_order_qty"] or 1,"lead_time":s["lead_time_days"] or 0,"total_cost":round((s["cost_with_tax"] or 0)*max(suggest_qty,s["min_order_qty"] or 1),2)})
-            results.sort(key=lambda x:x["unit_price"])
-            self.status = "idle"
-            return results
-        except Exception as e:
-            self.status = "idle"
-            return []
-
-    async def push_approval(self, suggestion):
-        """推送审批"""
-        self.status = "pushing"
-        msg = f"审批: {suggestion.get('name_cn','')} 采购{suggestion.get('suggest_qty',0)}件 "
-        self.status = "idle"
-        return {"pushed":True,"channel":"portal","message":msg,"urgency":suggestion.get("urgency","normal")}
-
     def get_suggestions(self) -> list:
         return self._suggestions
 
