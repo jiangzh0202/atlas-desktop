@@ -1,0 +1,57 @@
+:root {
+  --bg: #0a0a0a;
+  --panel: #141414;
+  --sidebar: #0f0f0f;
+  --active: #1a1a1a;
+  --line: rgba(255,255,255,.08);
+  --ink: #f0f0f0;
+  --muted: #888888;
+  --dim: #555555;
+  --green: #00ff88;
+  --green-bg: rgba(0,255,136,.10);
+  --blue: #60a5fa;
+  --blue-bg: rgba(96,165,250,.10);
+  --amber: #f59e0b;
+  --amber-bg: rgba(245,158,11,.10);
+  --red: #ef4444;
+  --purple: #a78bfa;
+  --radius: 8px;
+  --font: -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+}
+
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:var(--font);background:var(--bg);color:var(--ink);height:100vh;overflow:hidden}
+#root{display:flex;height:100vh}
+
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--dim);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--muted)}
+
+/* 选中文字 */
+::selection{background:rgba(0,255,136,0.25);color:var(--ink)}
+
+/* 输入框全局风格 */
+input,textarea,select{
+  background:var(--bg);border:1px solid var(--line);border-radius:6px;
+  color:var(--ink);padding:8px 12px;font-family:var(--font);font-size:.88rem;outline:none
+}
+input:focus,textarea:focus,select:focus{border-color:var(--green)}
+
+/* 按钮全局 */
+button{
+  font-family:var(--font);cursor:pointer;border:none;
+  border-radius:6px;font-size:.85rem;transition:all .15s
+}
+
+/* 绿色主按钮 */
+.btn-primary{
+  background:var(--green);color:var(--bg);font-weight:600;padding:10px 20px
+}
+.btn-primary:hover{opacity:.85}
+
+/* 描边按钮 */
+.btn-outline{
+  background:transparent;color:var(--ink);border:1px solid var(--line);padding:10px 20px
+}
+.btn-outline:hover{border-color:var(--muted);background:var(--active)}
