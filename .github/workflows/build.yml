@@ -64,13 +64,13 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
-          merge-multiple: true
-          path: release-artifacts
-      - name: Show artifacts
-        run: find release-artifacts -type f -ls
+          pattern: Atlas-*
+          path: artifacts
+      - name: List artifacts
+        run: find artifacts -type f -ls
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
-          files: release-artifacts/**/*
+          files: artifacts/**/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
