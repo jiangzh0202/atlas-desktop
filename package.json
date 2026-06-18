@@ -1,11 +1,11 @@
 {
   "name": "atlas",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.4.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build": "node build-script.js",
     "preview": "vite preview",
     "tauri": "tauri",
     "tauri:dev": "tauri dev",

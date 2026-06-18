@@ -1,18 +1,18 @@
 {
   "$schema": "https://raw.githubusercontent.com/nicehash/tauri/dev/crates/tauri-cli/schema.json",
   "productName": "Atlas",
-  "version": "1.0.0",
+  "version": "1.4.0",
   "identifier": "com.atlas.desktop",
   "build": {
     "frontendDist": "../dist",
     "devUrl": "http://localhost:1420",
     "beforeDevCommand": "npm run dev",
-    "beforeBuildCommand": "npm run build"
+    "beforeBuildCommand": "node build-script.js"
   },
   "app": {
     "windows": [
       {
-        "title": "Atlas Desktop - \u6c7d\u8f66\u914d\u4ef6 AI \u52a9\u624b",
+        "title": "Atlas Desktop - 汽车配件 AI 助手",
         "width": 1200,
         "height": 800,
         "minWidth": 900,
