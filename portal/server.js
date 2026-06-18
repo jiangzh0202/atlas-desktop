@@ -102,7 +102,33 @@ const server = http.createServer((req, res) => {
   const pathname = url.pathname;
 
   // API proxy
-  if (pathname.startsWith("/api/")) {
+    // Login (also at /api/login for frontend compatibility)
+  if (pathname === "/api/login" && req.method === "POST") {
+    let body = "";
+    req.on("data", (c) => (body += c));
+    req.on("end", () => {
+      try {
+        const creds = JSON.parse(body);
+        const user = creds.user || creds.email || "";
+        const pass = creds.pass || creds.password || "";
+        if (user === "admin" && pass === "admin123") {
+          const token = signJWT({ user, role: "admin", iat: Date.now() });
+          res.writeHead(200, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ ok: true, token }));
+        } else {
+          res.writeHead(401, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ ok: false, error: "用户名或密码错误" }));
+        }
+      } catch (e) {
+        res.writeHead(400);
+        res.end(JSON.stringify({ ok: false, error: "请求格式错误" }));
+      }
+    });
+    return;
+  }
+
+  // Proxy API calls to Flask
+if (pathname.startsWith("/api/")) {
     return handleAPI(req, res, pathname);
   }
 
@@ -112,7 +138,9 @@ const server = http.createServer((req, res) => {
     req.on("data", (c) => (body += c));
     req.on("end", () => {
       try {
-        const { user, pass } = JSON.parse(body);
+        const creds = JSON.parse(body);
+        const user = creds.user || creds.email || "";
+        const pass = creds.pass || creds.password || "";
         if (user === "admin" && pass === "admin123") {
           const token = signJWT({ user, role: "admin", iat: Date.now() });
           res.writeHead(200, { "Content-Type": "application/json" });
