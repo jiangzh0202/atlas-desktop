@@ -1,4 +1,4 @@
-name: Build Atlas Desktop
+name: Build Atlas
 on:
   push:
     branches: [main]

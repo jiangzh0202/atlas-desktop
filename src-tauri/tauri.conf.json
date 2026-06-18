@@ -1,6 +1,6 @@
 {
   "$schema": "https://raw.githubusercontent.com/nicehash/tauri/dev/crates/tauri-cli/schema.json",
-  "productName": "Atlas Desktop",
+  "productName": "Atlas",
   "version": "1.0.0",
   "identifier": "com.atlas.desktop",
   "build": {
