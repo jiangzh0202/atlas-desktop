@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>元策管理后台</title>
+<style>
+:root{--bg:#0f1117;--card:#1a1d27;--card2:#222633;--green:#10b981;--green-soft:rgba(16,185,129,.12);--text:#e2e8f0;--muted:#8892a6;--red:#ef4444;--amber:#f59e0b;--blue:#3b82f6;--purple:#a78bfa;--line:rgba(255,255,255,.06)}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"PingFang SC","Microsoft YaHei",-apple-system,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+/* Sidebar */
+.sidebar{position:fixed;left:0;top:0;bottom:0;width:220px;background:var(--card);border-right:1px solid var(--line);padding:20px 0;overflow-y:auto;z-index:50}
+.sidebar .logo{padding:0 20px 24px;font-size:1.3rem;font-weight:800;letter-spacing:-.5px}
+.sidebar .logo span{color:var(--green)}
+.sidebar nav a{display:flex;align-items:center;gap:10px;padding:10px 20px;color:var(--muted);text-decoration:none;font-size:.85rem;transition:all .15s;border-left:3px solid transparent}
+.sidebar nav a:hover,.sidebar nav a.active{color:var(--text);background:var(--card2);border-left-color:var(--green)}
+.main{margin-left:220px;padding:24px 32px}
+/* Stats grid */
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
+@media(max-width:1100px){.stats-grid{grid-template-columns:repeat(2,1fr)}}
+.stat-card{background:var(--card);border-radius:16px;padding:24px;border:1px solid var(--line);position:relative;overflow:hidden}
+.stat-card::before{content:"";position:absolute;top:0;left:0;right:0;height:3px}
+.stat-card.revenue::before{background:linear-gradient(90deg,var(--green),var(--blue))}
+.stat-card.orders::before{background:linear-gradient(90deg,var(--purple),var(--blue))}
+.stat-card.usage::before{background:linear-gradient(90deg,var(--amber),var(--red))}
+.stat-card.system::before{background:linear-gradient(90deg,var(--green),var(--purple))}
+.stat-card .label{font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px}
+.stat-card .value{font-size:2.2rem;font-weight:800;line-height:1}
+.stat-card .value.green{color:var(--green)}
+.stat-card .value.purple{color:var(--purple)}
+.stat-card .value.amber{color:var(--amber)}
+.stat-card .sub{font-size:.72rem;color:var(--muted);margin-top:6px}
+/* Cards */
+.card{background:var(--card);border-radius:16px;padding:24px;border:1px solid var(--line);margin-bottom:20px}
+.card h2{font-size:1rem;font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+/* Table */
+table{width:100%;border-collapse:collapse;font-size:.82rem}
+th{background:var(--card2);padding:12px 14px;text-align:left;font-weight:600;color:var(--muted);font-size:.75rem;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--line)}
+td{padding:12px 14px;border-bottom:1px solid var(--line)}
+tr:hover td{background:rgba(255,255,255,.02)}
+/* Tags */
+.tag{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:.7rem;font-weight:600}
+.tag-green{background:var(--green-soft);color:var(--green)}
+.tag-red{background:rgba(239,68,68,.12);color:var(--red)}
+.tag-amber{background:rgba(245,158,11,.12);color:var(--amber)}
+.tag-blue{background:rgba(59,130,246,.12);color:var(--blue)}
+/* Two column */
+.col2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+@media(max-width:900px){.col2{grid-template-columns:1fr}}
+/* Health dots */
+.health-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:6px}
+.health-dot.up{background:var(--green);box-shadow:0 0 8px rgba(16,185,129,.4)}
+.health-dot.down{background:var(--red);box-shadow:0 0 8px rgba(239,68,68,.4)}
+/* Progress */
+.progress-bar{height:6px;background:var(--card2);border-radius:3px;overflow:hidden;margin-top:8px}
+.progress-bar .fill{height:100%;border-radius:3px;transition:width .5s}
+.fill-green{background:var(--green)}
+.fill-amber{background:var(--amber)}
+.fill-red{background:var(--red)}
+.fill-blue{background:var(--blue)}
+/* Spinner */
+.spinner{display:inline-block;width:18px;height:18px;border:2px solid rgba(255,255,255,.1);border-top-color:var(--green);border-radius:50%;animation:spin .6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+/* Toast */
+.toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%);padding:12px 24px;border-radius:12px;font-size:.85rem;font-weight:600;z-index:300;display:none}
+.toast-ok{background:#064e3b;color:#6ee7b7}
+.toast-err{background:#7f1d1d;color:#fca5a5}
+</style></head>
+<body>
+
+<div class="sidebar">
+  <div class="logo"><span>元策</span>智能</div>
+  <nav>
+    <a href="#" class="active" onclick="showTab('overview',this)">📊 总览</a>
+    <a href="#" onclick="showTab('orders',this)">💰 订单</a>
+    <a href="#" onclick="showTab('system',this)">🖥 系统</a>
+    <a href="#" onclick="showTab('clients',this)">👥 客户</a>
+  </nav>
+</div>
+
+<div class="main">
+  <!-- Overview Tab -->
+  <div id="tab-overview">
+    <div class="stats-grid" id="statsGrid">
+      <div class="stat-card revenue"><div class="label">总营收</div><div class="value green" id="statRevenue">-</div><div class="sub" id="statOrders">0 笔订单</div></div>
+      <div class="stat-card orders"><div class="label">已付订单</div><div class="value purple" id="statPaid">-</div><div class="sub">付费率 -</div></div>
+      <div class="stat-card usage"><div class="label">AI调用</div><div class="value amber" id="statCalls">-</div><div class="sub">累计次数</div></div>
+      <div class="stat-card system"><div class="label">活跃配件</div><div class="value" style="color:#e2e8f0" id="statParts">-</div><div class="sub" id="statAlerts">- 条库存预警</div></div>
+    </div>
+
+    <div class="col2">
+      <div class="card"><h2>📦 套餐分布</h2><div id="planChart"></div></div>
+      <div class="card"><h2>🕐 最近订单</h2><div id="recentOrders"></div></div>
+    </div>
+  </div>
+
+  <!-- Orders Tab -->
+  <div id="tab-orders" style="display:none">
+    <div class="card"><h2>💰 全部订单</h2><div id="allOrders"></div></div>
+  </div>
+
+  <!-- System Tab -->
+  <div id="tab-system" style="display:none">
+    <div class="card"><h2>🖥 服务状态</h2><div id="serviceStatus"></div></div>
+    <div class="col2">
+      <div class="card"><h2>📊 系统资源</h2><div id="sysResources"></div></div>
+      <div class="card"><h2>📋 数据概览</h2><div id="dataOverview"></div></div>
+    </div>
+  </div>
+
+  <!-- Clients Tab -->
+  <div id="tab-clients" style="display:none">
+    <div class="card"><h2>👥 客户管理</h2><p style="color:var(--muted)">客户列表（接入恩同CRM后展示）</p></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+async function loadOverview(){
+  const r=await fetch('/api/admin/stats');
+  const d=await r.json();
+  if(!d.ok){console.error(d.error);return}
+  const s=d.data;
+  
+  document.getElementById('statRevenue').textContent='¥'+s.revenue.total_revenue.toLocaleString();
+  document.getElementById('statOrders').textContent=s.revenue.total_orders+' 笔订单';
+  document.getElementById('statPaid').textContent=s.revenue.paid_orders;
+  document.getElementById('statCalls').textContent=s.usage.total_calls.toLocaleString();
+  document.getElementById('statParts').textContent=s.system.parts;
+  document.getElementById('statAlerts').textContent=s.system.alerts;
+  
+  // Plan chart
+  const pc=document.getElementById('planChart');
+  if(s.plans.length){
+    const total=s.plans.reduce((a,x)=>a+x.count,0);
+    pc.innerHTML=s.plans.map(p=>{
+      const pct=total>0?Math.round(p.count/total*100):0;
+      const names={starter:'微光',standard:'标准',unlimited:'无界',enterprise:'企业'};
+      return `<div style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:.82rem">${names[p.plan]||p.plan}</span><span style="color:var(--muted);font-size:.78rem">${p.count} 订阅</span></div><div class="progress-bar"><div class="fill fill-blue" style="width:${pct}%"></div></div></div>`;
+    }).join('');
+  }else{pc.innerHTML='<div style="color:var(--muted);padding:20px;text-align:center">暂无订阅数据</div>';}
+
+  // Recent orders
+  const ro=document.getElementById('recentOrders');
+  try{
+    const or=await fetch('/api/orders');const od=await or.json();
+    if(od.data&&od.data.length){
+      ro.innerHTML='<table><tr><th>订单ID</th><th>套餐</th><th>金额</th><th>状态</th><th>时间</th></tr>'+od.data.slice(0,5).map(o=>`<tr><td style="font-family:monospace;font-size:.75rem">${o.id}</td><td>${planName(o.plan_id)}</td><td>¥${(o.amount||0).toLocaleString()}</td><td><span class="tag tag-${o.status==='paid'?'green':'amber'}">${o.status==='paid'?'已支付':'待支付'}</span></td><td>${(o.created_at||'').slice(0,10)}</td></tr>`).join('')+'</table>';
+    }else{ro.innerHTML='<div style="color:var(--muted);padding:20px;text-align:center">暂无订单</div>';}
+  }catch(e){ro.innerHTML='<div style="color:var(--muted);padding:20px;text-align:center">加载失败</div>';}
+}
+
+async function loadSystem(){
+  // Services
+  const svc=document.getElementById('serviceStatus');
+  try{
+    const r=await fetch('/api/admin/health');const d=await r.json();
+    if(d.ok){
+      svc.innerHTML=Object.entries(d.data.services).map(([k,v])=>`<div style="display:flex;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)"><span class="health-dot ${v?'up':'down'}"></span><span style="flex:1;font-size:.85rem">${k}</span><span class="tag tag-${v?'green':'red'}">${v?'运行中':'已停止'}</span></div>`).join('');
+      
+      const sr=document.getElementById('sysResources');
+      sr.innerHTML=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+        <div><div style="color:var(--muted);font-size:.75rem;margin-bottom:4px">CPU</div><div style="font-size:1.5rem;font-weight:700">${d.data.server.cpu_percent}%</div><div class="progress-bar"><div class="fill fill-green" style="width:${d.data.server.cpu_percent}%"></div></div></div>
+        <div><div style="color:var(--muted);font-size:.75rem;margin-bottom:4px">内存</div><div style="font-size:1.5rem;font-weight:700">${d.data.server.memory_percent}%</div><div class="progress-bar"><div class="fill fill-amber" style="width:${d.data.server.memory_percent}%"></div></div></div>
+        <div><div style="color:var(--muted);font-size:.75rem;margin-bottom:4px">磁盘</div><div style="font-size:1.5rem;font-weight:700">${d.data.server.disk_percent}%</div><div class="progress-bar"><div class="fill ${d.data.server.disk_percent>80?'fill-red':'fill-blue'}" style="width:${d.data.server.disk_percent}%"></div></div></div>
+        <div><div style="color:var(--muted);font-size:.75rem;margin-bottom:4px">运行时间</div><div style="font-size:.85rem;color:var(--green);margin-top:8px">${d.data.uptime}</div></div>
+      </div>`;
+    }
+  }catch(e){svc.innerHTML='<div style="color:var(--red)">健康检查失败</div>';}
+
+  // Data overview
+  try{
+    const r=await fetch('/api/admin/stats');const d=await r.json();
+    if(d.ok){
+      const s=d.data.system;
+      document.getElementById('dataOverview').innerHTML=`<table><tr><th>指标</th><th>数值</th></tr>
+        <tr><td>配件总数</td><td style="font-weight:700">${s.parts}</td></tr>
+        <tr><td>库存SKU</td><td style="font-weight:700">${s.stock}</td></tr>
+        <tr><td>库存预警</td><td style="color:var(--red);font-weight:700">${s.alerts}</td></tr>
+        <tr><td>报价单数</td><td style="font-weight:700">${s.quotations}</td></tr>
+        <tr><td>审计日志</td><td style="font-weight:700">${s.audit_logs}</td></tr></table>`;
+    }
+  }catch(e){}
+}
+
+async function loadAllOrders(){
+  const el=document.getElementById('allOrders');
+  try{
+    const r=await fetch('/api/orders');const d=await r.json();
+    if(d.data&&d.data.length){
+      el.innerHTML='<table><tr><th>订单ID</th><th>套餐</th><th>周期</th><th>金额</th><th>状态</th><th>创建时间</th><th>支付时间</th></tr>'+d.data.map(o=>`<tr><td style="font-family:monospace;font-size:.75rem">${o.id}</td><td>${planName(o.plan_id)}</td><td>${o.period==='year'?'年付':'月付'}</td><td style="font-weight:700">¥${(o.amount||0).toLocaleString()}</td><td><span class="tag tag-${o.status==='paid'?'green':'amber'}">${o.status==='paid'?'已支付':'待支付'}</span></td><td>${(o.created_at||'').slice(0,10)}</td><td>${(o.paid_at||'').slice(0,10)||'-'}</td></tr>`).join('')+'</table>';
+    }else{el.innerHTML='<div style="color:var(--muted);padding:20px;text-align:center">暂无订单</div>';}
+  }catch(e){el.innerHTML='<div style="color:var(--red)">加载失败</div>';}
+}
+
+function planName(id){const m={starter:'微光',standard:'标准',unlimited:'无界',enterprise:'企业'};return m[id]||id||'未知';}
+
+function showTab(name,el){
+  document.querySelectorAll('#tab-overview,#tab-orders,#tab-system,#tab-clients').forEach(t=>t.style.display='none');
+  document.getElementById('tab-'+name).style.display='block';
+  document.querySelectorAll('.sidebar nav a').forEach(a=>a.classList.remove('active'));
+  if(el)el.classList.add('active');
+  if(name==='overview')loadOverview();
+  if(name==='system')loadSystem();
+  if(name==='orders')loadAllOrders();
+}
+
+loadOverview();
+</script></body></html>

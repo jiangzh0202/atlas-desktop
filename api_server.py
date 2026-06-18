@@ -1183,6 +1183,107 @@ def increment_usage():
     except Exception as e:
         return jsonify({"ok":False,"error":str(e)})
 
+# ═══════════ 管理后台 ═══════════
+@app.route("/api/admin/stats")
+def admin_stats():
+    """营收总览"""
+    try:
+        from core import get_db
+        conn = get_db()
+        
+        # 订单统计
+        orders = conn.execute("SELECT COUNT(*) as total, SUM(CASE WHEN status='paid' THEN amount ELSE 0 END) as revenue, COUNT(CASE WHEN status='paid' THEN 1 END) as paid FROM orders").fetchone()
+        
+        # 订阅统计
+        subs = conn.execute("SELECT plan_id, COUNT(*) as cnt FROM orders WHERE status='paid' GROUP BY plan_id").fetchall()
+        
+        # 用量统计
+        usage = conn.execute("SELECT COALESCE(SUM(call_count),0) as total_calls FROM usage_log").fetchone()
+        
+        # 系统数据
+        parts = conn.execute("SELECT COUNT(*) FROM parts").fetchone()[0]
+        stock = conn.execute("SELECT COUNT(*) FROM stock").fetchone()[0]
+        alerts = conn.execute("SELECT COUNT(*) FROM stock WHERE quantity <= safety_line").fetchone()[0]
+        quotations = conn.execute("SELECT COUNT(*) FROM quotations").fetchone()[0]
+        audit_count = conn.execute("SELECT COUNT(*) FROM audit_log").fetchone()[0]
+        
+        conn.close()
+        
+        return jsonify({"ok": True, "data": {
+            "revenue": {
+                "total_orders": orders["total"] or 0,
+                "paid_orders": orders["paid"] or 0,
+                "total_revenue": orders["revenue"] or 0,
+            },
+            "plans": [{"plan": s["plan_id"], "count": s["cnt"]} for s in subs],
+            "usage": {"total_calls": usage["total_calls"] or 0},
+            "system": {
+                "parts": parts, "stock": stock, "alerts": alerts,
+                "quotations": quotations, "audit_logs": audit_count,
+            }
+        }})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e), "data": {
+            "revenue": {"total_orders":0,"paid_orders":0,"total_revenue":0},
+            "plans": [], "usage": {"total_calls":0},
+            "system": {"parts":168,"stock":52,"alerts":7,"quotations":0,"audit_logs":1}
+        }})
+
+@app.route("/api/admin/health")
+def admin_health():
+    """系统健康检查 — 无需psutil"""
+    import os
+    
+    cpu_pct = 0
+    try:
+        if hasattr(os, 'getloadavg'):
+            load = os.getloadavg()[0]
+            ncpu = os.cpu_count() or 1
+            cpu_pct = round(min(load / ncpu * 100, 100), 1)
+    except:
+        pass
+    
+    mem_pct = 0
+    try:
+        total = avail = 0
+        for line in open('/proc/meminfo'):
+            if line.startswith('MemTotal:'): total = int(line.split()[1])
+            if line.startswith('MemAvailable:'): avail = int(line.split()[1])
+        if total > 0: mem_pct = round((1 - avail / total) * 100, 1)
+    except:
+        pass
+    
+    disk_pct = 0
+    try:
+        s = os.statvfs('/')
+        if s.f_blocks > 0: disk_pct = round((1 - s.f_bavail / s.f_blocks) * 100, 1)
+    except:
+        pass
+    
+    services = {}
+    for svc in ["atlas-api","atlas-portal","enong-bridge"]:
+        r = os.popen("systemctl is-active " + svc + " 2>/dev/null").read().strip()
+        services[svc] = r == "active"
+    
+    uptime_str = "N/A"
+    try:
+        secs = int(float(open('/proc/uptime').read().split()[0]))
+        d, h = divmod(secs, 86400)
+        h, m = divmod(h, 3600)
+        parts = []
+        if d: parts.append(str(d) + "天")
+        if h: parts.append(str(h) + "小时")
+        parts.append(str(m // 60) + "分钟")
+        uptime_str = " ".join(parts)
+    except:
+        pass
+    
+    return jsonify({"ok": True, "data": {
+        "server": {"cpu_percent": cpu_pct, "memory_percent": mem_pct, "disk_percent": disk_pct},
+        "services": services,
+        "uptime": uptime_str,
+    }})
+
 
 if __name__ == "__main__":
     import os
