@@ -61,25 +61,21 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/v')
     permissions:
       contents: write
-      actions: read
     steps:
-      - name: Download artifacts via gh CLI
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GH_REPO: ${{ github.repository }}
-        run: |
-          set -e
-          mkdir -p artifacts/win artifacts/mac-arm artifacts/mac-intel
-          for pair in "Atlas-Windows-x64 artifacts/win" "Atlas-macOS-AppleSilicon artifacts/mac-arm" "Atlas-macOS-Intel artifacts/mac-intel"; do
-            name="${pair% *}"
-            dir="${pair#* }"
-            echo "::group::Downloading $name"
-            gh run download ${{ github.run_id }} -n "$name" -D "$dir" && echo "OK" || echo "::warning::Not found: $name"
-            echo "::endgroup::"
-          done
-          echo "::group::Artifact listing"
-          find artifacts -type f -ls || echo "(empty)"
-          echo "::endgroup::"
+      - uses: actions/download-artifact@v4
+        with:
+          name: Atlas-Windows-x64
+          path: artifacts/win
+      - uses: actions/download-artifact@v4
+        with:
+          name: Atlas-macOS-AppleSilicon
+          path: artifacts/mac-arm
+      - uses: actions/download-artifact@v4
+        with:
+          name: Atlas-macOS-Intel
+          path: artifacts/mac-intel
+      - name: List artifacts
+        run: find artifacts -type f -ls
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
