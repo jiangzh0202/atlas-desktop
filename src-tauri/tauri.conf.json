@@ -10,7 +10,6 @@
     "beforeBuildCommand": "npm run build"
   },
   "app": {
-    "title": "Atlas Desktop",
     "windows": [
       {
         "title": "Atlas Desktop - \u6c7d\u8f66\u914d\u4ef6 AI \u52a9\u624b",
