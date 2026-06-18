@@ -64,13 +64,24 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
-          pattern: Atlas-*
-          path: artifacts
+          name: Atlas-Windows-x64
+          path: artifacts/win
+      - uses: actions/download-artifact@v4
+        with:
+          name: Atlas-macOS-AppleSilicon
+          path: artifacts/mac-arm
+      - uses: actions/download-artifact@v4
+        with:
+          name: Atlas-macOS-Intel
+          path: artifacts/mac-intel
       - name: List artifacts
         run: find artifacts -type f -ls
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
-          files: artifacts/**/*
+          files: |
+            artifacts/win/**/*
+            artifacts/mac-arm/**/*
+            artifacts/mac-intel/**/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
