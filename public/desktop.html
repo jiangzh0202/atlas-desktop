@@ -848,16 +848,19 @@ function renderSettingsContent() {
     case 'general':
       el.innerHTML = `
         <h3>常规设置</h3>
-        <p style="font-size:.78rem;color:var(--muted);margin-bottom:14px">桌面客户端基础配置。语言跟随系统自动检测，代理请在「代理配置」中设置。</p>
         <div class="setting-row"><span>系统通知</span>
           <button class="btn-secondary" style="background:var(--green-bg);color:var(--green)">已开启</button></div>`;
       break;
     case 'storage':
       el.innerHTML = `
         <h3>数据存储路径</h3>
-        <input value="~/atlas-data" readonly style="color:var(--muted)">
-        <button class="btn-primary" style="align-self:flex-start;margin-top:12px" onclick="pickDataFolder()">选择文件夹</button>
-        <p style="font-size:.75rem;color:var(--dim)">知识库文件、历史报价、pricing.md 均存储在此目录</p>`;
+        <div style="display:flex;gap:8px;align-items:center">
+          <input id="dataDirInput" value="~/atlas-data" style="flex:1;padding:8px 12px;border:1px solid var(--line);border-radius:7px;background:var(--bg);color:var(--ink);font-size:.82rem;font-family:inherit">
+          <button class="btn-secondary" onclick="browseDataFolder()" style="white-space:nowrap;padding:8px 14px" id="browseDataBtn">📁 浏览</button>
+        </div>
+        <button class="btn-primary" onclick="saveDataFolder()" style="margin-top:10px;padding:6px 18px;font-size:.78rem">💾 保存路径</button>
+        <p style="font-size:.72rem;color:var(--dim);margin-top:6px">知识库文件、历史报价、pricing.md 均存储在此目录</p>`;
+      setTimeout(function(){ loadDataFolderSaved(); }, 50);
       break;
     case 'mcp':
       (() => {
@@ -966,14 +969,17 @@ function renderSettingsContent() {
     case 'model':
       el.innerHTML = `
         <h3>模型设置</h3>
-        <p style="font-size:.82rem;color:var(--muted);margin-bottom:12px">Atlas 云端自动选择最优模型，你只需要告诉数字员工你想要的效果</p>
+        <p style="font-size:.82rem;color:var(--muted);margin-bottom:12px">选择数字员工使用的 AI 模型模式，保存后立即生效</p>
         <div class="field"><div class="field-label">智能模式</div>
-          <select>
-            <option selected>⚡ 高速模式（推荐，响应最快）</option>
-            <option>🧠 深度推理（复杂询盘/多维度分析）</option>
-            <option>💰 节省模式（低频使用，性价比优先）</option>
+          <select id="modelModeSelect">
+            <option value="fast">⚡ 高速模式（推荐，响应最快）</option>
+            <option value="deep">🧠 深度推理（复杂询盘/多维度分析）</option>
+            <option value="save">💰 节省模式（低频使用，性价比优先）</option>
           </select></div>
-        <p style="font-size:.75rem;color:var(--dim);margin-top:12px">模型自动选取由 Atlas 云端管理，根据订阅套餐和任务复杂度实时调度。你不需要关心底层用什么模型。</p>`;
+        <button class="btn-primary" onclick="saveModelMode()" style="margin-top:10px;padding:6px 18px;font-size:.78rem">💾 保存</button>
+        <span id="modelModeMsg" style="margin-left:10px;font-size:.76rem"></span>
+        <p style="font-size:.72rem;color:var(--dim);margin-top:10px">模型选择影响数字员工的响应速度和思维深度。推荐使用高速模式。</p>`;
+      setTimeout(function(){ loadModelMode(); }, 50);
       break;
     case 'rules':
       (() => {
@@ -1099,26 +1105,42 @@ function renderSettingsContent() {
       break;
     case 'usage':
       (() => {
-        const q = S.quota || {};
-        const items = S.user ? [
-          {label:'报价用量',val:`${q.quoter_used||0}/${q.quoter_limit||1}`,u:'份'},
-          {label:'开发信用量',val:`${q.developer_used||0}/${q.developer_limit||1}`,u:'封'},
-          {label:'历史报价',val:'338',u:'条'},
-          {label:'生成报价',val:'47',u:'次'},
-        ] : [
-          {label:'报价用量',val:'—',u:'请登录'},
-          {label:'开发信用量',val:'—',u:'请登录'},
-          {label:'历史报价',val:'338',u:'条'},
-          {label:'生成报价',val:'47',u:'次'},
-        ];
-        let h = '<h3>用量统计</h3>';
+        var q = S.quota || {};
+        var items;
+        if (S.user) {
+          // Fetch fresh quota from server
+          if (S.token) {
+            fetch(API + '/api/me', { headers: { 'Authorization': 'Bearer ' + S.token } })
+              .then(function(r){ return r.json(); })
+              .then(function(d){ if (d.ok && d.quota) { S.quota = d.quota; renderUsageStats(d.quota); } });
+          }
+          items = [
+            {label:'报价用量',val:q.quoter_used+'/'+q.quoter_limit,u:'份'},
+            {label:'开发信用量',val:q.developer_used+'/'+q.developer_limit,u:'封'},
+            {label:'套餐到期',val:q.expires_at||'—',u:''},
+            {label:'订阅状态',val:q.plan||'试用',u:''},
+          ];
+        } else {
+          items = [
+            {label:'报价用量',val:'—',u:'请登录'},
+            {label:'开发信用量',val:'—',u:'请登录'},
+            {label:'套餐到期',val:'—',u:'请登录'},
+            {label:'订阅状态',val:'—',u:'请登录'},
+          ];
+        }
+        function renderUsageStats(quota) {
+          var el2 = document.getElementById('settingsContent');
+          if (!el2 || S.settingsSection !== 'usage') return;
+          renderSettingsContent();
+        }
+        var h = '<h3>用量统计</h3>';
         h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">';
-        items.forEach(m => {
-          h += `<div class="card"><div style="font-size:.72rem;color:var(--muted);margin-bottom:4px">${m.label}</div><div style="font-size:1.2rem;font-weight:700">${m.val} <span style="font-size:.75rem;color:var(--dim);font-weight:400">${m.u}</span></div></div>`;
+        items.forEach(function(m) {
+          h += '<div class="card"><div style="font-size:.72rem;color:var(--muted);margin-bottom:4px">'+m.label+'</div><div style="font-size:1.2rem;font-weight:700">'+m.val+' <span style="font-size:.75rem;color:var(--dim);font-weight:400">'+m.u+'</span></div></div>';
         });
         h += '</div>';
         if (!S.user) h += '<p style="font-size:.75rem;color:var(--dim);margin-top:12px">登录后显示实时用量数据</p>';
-        else h += '<p style="font-size:.75rem;color:var(--dim);margin-top:12px">详细用量请前往 atlas.traceclaw.cn 查看</p>';
+        else h += '<p style="font-size:.75rem;color:var(--dim);margin-top:12px">数据实时同步。变更套餐请前往 <a href="'+API+'/dashboard" target="_blank" style="color:var(--green)">控制台</a></p>';
         el.innerHTML = h;
       })();
       break;
@@ -1160,10 +1182,17 @@ function toggleChannelCfg(id) {
 }
 
 function showTutorial(id) {
-  // Open tutorial page in new tab, scrolled to the right channel
   const urls = { feishu: '/tutorial#feishu', wecom: '/tutorial#wecom', email: '/tutorial#email' };
-  const url = urls[id] || '/tutorial';
-  window.open(url, '_blank');
+  const path = urls[id] || '/tutorial';
+  var fullUrl = API + path;
+  // Tauri desktop: use shell plugin; web fallback: window.open
+  try {
+    if (window.__TAURI__ && window.__TAURI__.shell && window.__TAURI__.shell.open) {
+      window.__TAURI__.shell.open(fullUrl);
+      return;
+    }
+  } catch(e) {}
+  window.open(fullUrl, '_blank');
 }
 
 function copyFeishuPermissions() {
@@ -1325,6 +1354,7 @@ function onLoginSuccess(data) {
   document.getElementById('loginOverlay').classList.add('hidden');
   updateUIForLogin();
   loadKnowledgeBase();
+  loadChannelsFromServer();
 }
 
 async function restoreSession() {
@@ -1339,6 +1369,7 @@ async function restoreSession() {
       S.quota = data.quota;
       updateUIForLogin();
       loadKnowledgeBase();
+      loadChannelsFromServer();
     } else {
       logout();
     }
@@ -2276,19 +2307,91 @@ function executeCommand(action) {
 }
 
 // ═══ Data Folder Picker ═══
-function pickDataFolder() {
-  // In Tauri desktop app, this would use Tauri dialog API
-  // For web fallback, show a prompt
-  if (window.__TAURI__ && window.__TAURI__.dialog) {
-    window.__TAURI__.dialog.open({ directory: true, title: '选择数据存储目录' }).then(function(dir) {
+function browseDataFolder() {
+  // Tauri v2 dialog plugin
+  if (window.__TAURI__ && window.__TAURI__.core && window.__TAURI__.core.invoke) {
+    window.__TAURI__.core.invoke('plugin:dialog|open', { directory: true, title: '选择数据存储目录', multiple: false }).then(function(dir) {
       if (dir) {
-        localStorage.setItem('atlas-data-dir', dir);
-        alert('✅ 数据目录已设置为: ' + dir + '\n\n重启客户端生效');
+        var input = document.getElementById('dataDirInput');
+        if (input) input.value = dir;
+      }
+    }).catch(function() {
+      // Fallback: try alternative Tauri API
+      if (window.__TAURI_PLUGIN_DIALOG__ && window.__TAURI_PLUGIN_DIALOG__.open) {
+        window.__TAURI_PLUGIN_DIALOG__.open({ directory: true, title: '选择数据存储目录' }).then(function(dir) {
+          if (dir) { var input = document.getElementById('dataDirInput'); if (input) input.value = dir; }
+        });
       }
     });
+  } else if (window.__TAURI_PLUGIN_DIALOG__ && window.__TAURI_PLUGIN_DIALOG__.open) {
+    window.__TAURI_PLUGIN_DIALOG__.open({ directory: true, title: '选择数据存储目录' }).then(function(dir) {
+      if (dir) { var input = document.getElementById('dataDirInput'); if (input) input.value = dir; }
+    });
   } else {
-    alert('💡 数据存储目录\n\n默认路径: ~/atlas-data\n\n数据包含：知识库文件、历史报价、规则记忆\n\n桌面客户端支持自定义目录，请在 Atlas 桌面应用中设置。');
+    // Web fallback
+    var input = document.getElementById('dataDirInput');
+    var path = input ? input.value : '~/atlas-data';
+    alert('数据存储路径: ' + path + '\n\n桌面客户端支持浏览选择文件夹。');
   }
+}
+
+function saveDataFolder() {
+  var input = document.getElementById('dataDirInput');
+  var dir = input ? input.value.trim() : '~/atlas-data';
+  if (!dir) { alert('请输入有效的存储路径'); return; }
+  localStorage.setItem('atlas-data-dir', dir);
+  alert('✅ 数据目录已保存: ' + dir + '\n\n重启客户端生效');
+}
+
+function loadDataFolderSaved() {
+  var saved = localStorage.getItem('atlas-data-dir');
+  if (saved) {
+    var input = document.getElementById('dataDirInput');
+    if (input) input.value = saved;
+    var btn = document.getElementById('browseDataBtn');
+    if (btn && !window.__TAURI__ && !window.__TAURI_PLUGIN_DIALOG__) btn.style.display = 'none';
+  }
+}
+
+// ═══ Model Mode ═══
+function saveModelMode() {
+  var select = document.getElementById('modelModeSelect');
+  var msg = document.getElementById('modelModeMsg');
+  if (!select) return;
+  var mode = select.value;
+  localStorage.setItem('atlas-model-mode', mode);
+  if (msg) { msg.innerHTML = '<span style="color:var(--green)">✅ 已保存</span>'; setTimeout(function(){ msg.innerHTML = ''; }, 2000); }
+  // Sync to server
+  if (S.token) {
+    fetch(API + '/api/config/model', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + S.token },
+      body: JSON.stringify({ mode: mode })
+    }).catch(function(){});
+  }
+}
+
+function loadModelMode() {
+  var select = document.getElementById('modelModeSelect');
+  if (!select) return;
+  var saved = localStorage.getItem('atlas-model-mode') || 'fast';
+  for (var i = 0; i < select.options.length; i++) {
+    if (select.options[i].value === saved) { select.selectedIndex = i; break; }
+  }
+}
+
+// ═══ Channels Sync ═══
+async function loadChannelsFromServer() {
+  if (!S.token) return;
+  try {
+    var resp = await fetch(API + '/api/channels/load', {
+      headers: { 'Authorization': 'Bearer ' + S.token }
+    });
+    var data = await resp.json();
+    if (data.ok && data.channels) {
+      localStorage.setItem('atlas-channels', JSON.stringify(data.channels));
+    }
+  } catch(e) { /* keep local copy */ }
 }
 
 </script>

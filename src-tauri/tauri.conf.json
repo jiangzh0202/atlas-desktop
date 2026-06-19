@@ -1,18 +1,19 @@
 {
   "$schema": "https://raw.githubusercontent.com/nicehash/tauri/dev/crates/tauri-cli/schema.json",
-  "productName": "Atlas",
-"version": "1.5.2",
+  "productName": "QingTian Atlas",
+  "version": "1.5.4",
   "identifier": "com.atlas.desktop",
   "build": {
-    "frontendDist": "../dist",
-    "devUrl": "http://localhost:1420",
-    "beforeDevCommand": "npm run dev",
-    "beforeBuildCommand": "node build-script.cjs"
+    "frontendDist": "../html-dist",
+    "devUrl": "",
+    "beforeDevCommand": "",
+    "beforeBuildCommand": ""
   },
   "app": {
+    "title": "QingTian Atlas",
     "windows": [
       {
-        "title": "Atlas Desktop - 汽车配件 AI 助手",
+        "title": "QingTian Atlas - AI Quote Engine",
         "width": 1200,
         "height": 800,
         "minWidth": 900,
