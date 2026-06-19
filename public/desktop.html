@@ -194,6 +194,20 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);height:100vh;
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:var(--line);border-radius:3px}
 ::-webkit-scrollbar-thumb:hover{background:var(--dim)}
+
+    /* ── Command Palette ── */
+    .cmd-overlay { position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.55); z-index:9999; display:flex; align-items:flex-start; justify-content:center; padding-top:18vh; }
+    .cmd-palette { background:var(--panel); border:1px solid var(--line); border-radius:12px; width:460px; max-width:92vw; overflow:hidden; box-shadow:0 12px 40px rgba(0,0,0,0.4); }
+    .cmd-input-wrap { padding:12px 16px; border-bottom:1px solid var(--line); display:flex; align-items:center; gap:10px; }
+    .cmd-input-wrap input { flex:1; background:transparent; border:none; outline:none; color:var(--ink); font-size:.92rem; font-family:inherit; }
+    .cmd-input-wrap .cmd-hint { font-size:.68rem; color:var(--dim); white-space:nowrap; }
+    .cmd-list { max-height:320px; overflow-y:auto; padding:6px; }
+    .cmd-item { display:flex; align-items:center; gap:10px; padding:9px 12px; border-radius:7px; cursor:pointer; font-size:.82rem; color:var(--ink); transition:background .1s; }
+    .cmd-item:hover, .cmd-item.sel { background:var(--active); }
+    .cmd-item .cmd-icon { font-size:1.1rem; width:24px; text-align:center; flex-shrink:0; }
+    .cmd-item .cmd-label { flex:1; }
+    .cmd-item .cmd-shortcut { font-size:.68rem; color:var(--dim); background:var(--active); padding:2px 7px; border-radius:4px; }
+    .cmd-empty { padding:30px; text-align:center; color:var(--muted); font-size:.8rem; }
 </style>
 </head>
 <body data-theme="dark">
@@ -225,11 +239,11 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);height:100vh;
       <div class="agent-card" id="agent-prospect">
         <div class="agent-icon" onclick="useAgent('prospect')">🎯</div>
         <div class="agent-info" onclick="useAgent('prospect')">
-          <div class="agent-name">客户开发员</div>
+          <div class="agent-name">客户开发</div>
           <div class="agent-desc">搜客户→画像→开发信</div>
         </div>
         <span class="agent-status" style="background:var(--green-bg);color:var(--green)">已租赁</span>
-        <span class="train-btn" title="训练客户开发员" onclick="trainAgentCard('developer')">🧠</span>
+        <span class="train-btn" title="训练客户开发" onclick="trainAgentCard('developer')">🧠</span>
       </div>
       <div class="agent-card" id="agent-quote">
         <div class="agent-icon" onclick="useAgent('quote')">💎</div>
@@ -305,7 +319,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);height:100vh;
         <button onclick="useAgent('prospect')" style="display:flex;align-items:center;gap:12px;padding:14px;background:var(--active);border-radius:10px;cursor:pointer;border:1px solid transparent;color:var(--ink);font-family:inherit;transition:all .15s"
           onmouseenter="this.style.borderColor='var(--line)'" onmouseleave="this.style.borderColor='transparent'">
           <div style="font-size:1.5rem;width:40px;height:40px;display:flex;align-items:center;justify-content:center;background:var(--green-bg);border-radius:10px">🎯</div>
-          <div style="text-align:left"><div style="font-size:.85rem;font-weight:600">客户开发员</div><div style="font-size:.72rem;color:var(--muted)">找新客户 + 写开发信</div></div>
+          <div style="text-align:left"><div style="font-size:.85rem;font-weight:600">客户开发</div><div style="font-size:.72rem;color:var(--muted)">找新客户 + 写开发信</div></div>
         </button>
       </div>
     </div>
@@ -344,7 +358,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);height:100vh;
     <div class="chat-panel" id="view-prospect" style="display:none">
       <div class="chat-messages" id="prospectMessages">
         <div class="chat-msg agent">
-          <div class="label">🎯 客户开发员 Agent</div>
+          <div class="label">🎯 客户开发 Agent</div>
           我能帮你三步完成客户开发：<br>① 输入行业+国家+关键词 → 多渠道搜索客户<br>② 自动背调拼图（工商/采购/社媒/风控评估）<br>③ 基于背调生成个性化开发信<br><br>试试输入 👇
         </div>
       </div>
@@ -459,7 +473,6 @@ const SETTINGS_SECTIONS = [
   { id:'model', icon:'🤖', label:'模型', cat:'ai' },
   { id:'proxy', icon:'🛜', label:'代理配置', cat:'ai' },
   { id:'rules', icon:'📜', label:'报价员规则', cat:'employees' },
-  { id:'dev-rules', icon:'🧠', label:'客户开发员规则', cat:'employees' },
   { id:'smtp', icon:'✉️', label:'邮件配置', cat:'employees' },
   { id:'index', icon:'📇', label:'索引库', cat:'employees' },
   { id:'channels', icon:'📡', label:'通道设置', cat:'connect' },
@@ -724,11 +737,11 @@ function testSmtpConn() {
 }
 
 
-// ═══ 规则记忆面板（通用：报价员 & 客户开发员）═══
+// ═══ 规则记忆面板（通用：报价员 & 客户开发）═══
 function renderRulesSettings(el, agent) {
   const AGENT_INFO = {
     quoter:   { icon:'📜', name:'报价员', desc:'审查标准、品牌矩阵、折扣表、七星等级规则', hint:'用 Markdown 编写规则。报价员会自动读取此文档作为审查依据。' },
-    developer:{ icon:'🧠', name:'客户开发员', desc:'搜索策略、客户画像维度、开发信模板、跟进频率', hint:'定义找客户的标准：哪些行业优先、如何判断匹配度、开发信的语气和结构。' },
+    developer:{ icon:'🧠', name:'客户开发', desc:'搜索策略、客户画像维度、开发信模板、跟进频率', hint:'定义找客户的标准：哪些行业优先、如何判断匹配度、开发信的语气和结构。' },
   };
   const info = AGENT_INFO[agent] || AGENT_INFO.developer;
 
@@ -762,7 +775,7 @@ async function loadRules(agent) {
 
   editor.value = '⏳ 加载中...';
   try {
-    const resp = await fetch(API + '/api/rules?agent=' + agent);
+    const resp = await fetch(API + '/api/rules?agent=' + agent, { headers: { 'Authorization': 'Bearer ' + (S.token || '') } });
     const data = await resp.json();
     if (data.ok) {
       editor.value = data.raw || '';
@@ -835,12 +848,7 @@ function renderSettingsContent() {
     case 'general':
       el.innerHTML = `
         <h3>常规设置</h3>
-        <div class="field"><div class="field-label">语言</div>
-          <select><option>简体中文</option><option>English</option></select></div>
-        <div class="field"><div class="field-label">缩放 (100%)</div>
-          <input type="range" min="80" max="150" value="100" style="accent-color:var(--green);width:100%"></div>
-        <div class="field"><div class="field-label">HTTP 代理</div>
-          <input placeholder="不使用代理（直连）"></div>
+        <p style="font-size:.78rem;color:var(--muted);margin-bottom:14px">桌面客户端基础配置。语言跟随系统自动检测，代理请在「代理配置」中设置。</p>
         <div class="setting-row"><span>系统通知</span>
           <button class="btn-secondary" style="background:var(--green-bg);color:var(--green)">已开启</button></div>`;
       break;
@@ -848,7 +856,7 @@ function renderSettingsContent() {
       el.innerHTML = `
         <h3>数据存储路径</h3>
         <input value="~/atlas-data" readonly style="color:var(--muted)">
-        <button class="btn-primary" style="align-self:flex-start;margin-top:12px">选择文件夹</button>
+        <button class="btn-primary" style="align-self:flex-start;margin-top:12px" onclick="pickDataFolder()">选择文件夹</button>
         <p style="font-size:.75rem;color:var(--dim)">知识库文件、历史报价、pricing.md 均存储在此目录</p>`;
       break;
     case 'mcp':
@@ -893,13 +901,13 @@ function renderSettingsContent() {
           overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.65);z-index:9999;display:flex;align-items:center;justify-content:center';
           overlay.onclick = function(e) { if (e.target === overlay) overlay.remove(); };
           const m = document.createElement('div');
-          m.style.cssText = 'background:var(--card);border:1px solid var(--border);border-radius:14px;padding:24px;width:420px;max-width:92vw;color:var(--text);font-size:.85rem;font-family:inherit';
+          m.style.cssText = 'background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:24px;width:420px;max-width:92vw;color:var(--ink);font-size:.85rem;font-family:inherit';
           m.innerHTML = '<h3 style="margin:0 0 4px;font-size:1.05rem">' + srv.icon + ' ' + srv.name + '</h3>' +
             '<p style="margin:0 0 16px;font-size:.76rem;color:var(--muted);line-height:1.5">' + srv.desc + '</p>' +
             '<div style="margin-bottom:12px"><label style="font-size:.76rem;color:var(--muted);display:block;margin-bottom:3px">MCP 服务器地址</label>' +
-            '<input id="mcp-url-inp" placeholder="https://your-server.com" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:7px;background:var(--bg);color:var(--text);font-size:.82rem"></div>' +
+            '<input id="mcp-url-inp" placeholder="https://your-server.com" style="width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:7px;background:var(--bg);color:var(--ink);font-size:.82rem"></div>' +
             '<div style="margin-bottom:14px"><label style="font-size:.76rem;color:var(--muted);display:block;margin-bottom:3px">API 密钥（可选）</label>' +
-            '<input id="mcp-key-inp" placeholder="sk-..." type="password" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:7px;background:var(--bg);color:var(--text);font-size:.82rem"></div>' +
+            '<input id="mcp-key-inp" placeholder="sk-..." type="password" style="width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:7px;background:var(--bg);color:var(--ink);font-size:.82rem"></div>' +
             '<div style="margin-bottom:14px;padding:8px 12px;background:var(--green-bg);border-radius:7px;font-size:.73rem;color:var(--muted)">' + srv.tools + '</div>' +
             '<div style="display:flex;gap:8px">' +
             '<button id="mcp-test-btn" style="flex:1;padding:9px;border-radius:7px;font-size:.8rem;cursor:pointer;border:1px solid var(--green);background:transparent;color:var(--green);font-weight:600" onclick="testMcpConn(\'' + srv.id + '\')">🔍 测试连接</button>' +
@@ -919,7 +927,7 @@ function renderSettingsContent() {
           if (btn) { btn.textContent = '⏳ 测试中...'; btn.disabled = true; }
           try {
             var token = localStorage.getItem('atlas-token');
-            var resp = await fetch('/api/mcp/test', { method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+(token||'')}, body:JSON.stringify({url:url,api_key:key}) });
+            var resp = await fetch(API + '/api/mcp/test', { method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+(token||'')}, body:JSON.stringify({url:url,api_key:key}) });
             var j = await resp.json();
             if (j.ok) { if (el) el.innerHTML = '<span style="color:var(--green)">✅ 连接成功！' + j.count + ' 个工具</span>'; }
             else { if (el) el.innerHTML = '<span style="color:#ff4d4f">❌ ' + (j.error||'连接失败') + '</span>'; }
@@ -933,7 +941,7 @@ function renderSettingsContent() {
           if (!url) { alert('请填写 MCP 服务器地址'); return; }
           var token = localStorage.getItem('atlas-token');
           try {
-            var resp = await fetch('/api/mcp/connect', { method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+(token||'')}, body:JSON.stringify({server_id:sid,name:name,url:url,api_key:key||''}) });
+            var resp = await fetch(API + '/api/mcp/connect', { method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+(token||'')}, body:JSON.stringify({server_id:sid,name:name,url:url,api_key:key||''}) });
             var j = await resp.json();
             if (j.ok) { var ov = document.getElementById('mcp-modal'); if (ov) ov.remove(); alert('✅ 已接入'); showSettings('mcp'); }
             else { alert('❌ ' + (j.error||'保存失败')); }
@@ -970,7 +978,7 @@ function renderSettingsContent() {
     case 'rules':
       (() => {
         const agents = [
-          {id:'developer', icon:'🎯', name:'客户开发员'},
+          {id:'developer', icon:'🎯', name:'客户开发'},
           {id:'quoter', icon:'💎', name:'报价员'},
           {id:'buyer', icon:'🛒', name:'采购员'},
           {id:'image', icon:'🔍', name:'图片识零件员'},
@@ -998,7 +1006,7 @@ function renderSettingsContent() {
         <p style="font-size:.82rem;color:var(--muted)">租赁更多数字员工，扩展你的 AI 团队</p>
         ${[
           {icon:'💎',name:'报价员',price:'已租赁',desc:'从历史数据学习定价规律'},
-          {icon:'🎯',name:'客户开发员',price:'已租赁',desc:'搜客户→画像→开发信'},
+          {icon:'🎯',name:'客户开发',price:'已租赁',desc:'搜客户→画像→开发信'},
           {icon:'🛒',name:'采购员',price:'',desc:'供应商比价+智能下单'},
           {icon:'🔍',name:'图片识零件员',price:'',desc:'拍照识OE号，自动匹配'},
           {icon:'📦',name:'库存管理员',price:'',desc:'需求预测+呆滞预警'},
@@ -1377,7 +1385,7 @@ function toggleUserPopup() {
     <div class="up-email">${S.user.email}</div>
     <div class="up-quota">
       🤖 报价员 · 免费试用 (${S.quota?.quoter_used||0}/${S.quota?.quoter_limit||1})<br>
-      🔍 客户开发员 · 免费试用 (${S.quota?.developer_used||0}/${S.quota?.developer_limit||1})
+      🔍 客户开发 · 免费试用 (${S.quota?.developer_used||0}/${S.quota?.developer_limit||1})
     </div>
     <div class="up-row">
       <button class="btn-secondary" onclick="window.open('${API}/dashboard?token='+encodeURIComponent(S.token||''),'_blank')">控制台</button>
@@ -1514,7 +1522,7 @@ function useAgent(type) {
     document.getElementById('sidebarTitle').textContent = '数字员工';
     setTimeout(() => document.getElementById('quoteInput')?.focus(), 200);
   } else if (type === 'prospect') {
-    openTab('prospect', '🎯 客户开发员');
+    openTab('prospect', '🎯 客户开发');
     S.activeView = 'agents';
     document.querySelectorAll('.ab-item[data-view]').forEach(e => e.classList.remove('active'));
     document.querySelector('.ab-item[data-view="agents"]').classList.add('active');
@@ -1604,7 +1612,7 @@ async function handleKBFiles(fileList) {
   if (!S.token) { alert('请先登录后再上传文件'); return; }
   const files = Array.from(fileList);
   const agent = S.selectedRulesAgent || 'quoter';
-  const agentNames = {developer:'客户开发员',quoter:'报价员',buyer:'采购员',image:'图片识零件员',stock:'库存管理员',customs:'清关助理'};
+  const agentNames = {developer:'客户开发',quoter:'报价员',buyer:'采购员',image:'图片识零件员',stock:'库存管理员',customs:'清关助理'};
   const agentName = agentNames[agent] || agent;
   
   let uploaded = 0;
@@ -1689,7 +1697,7 @@ async function loadKnowledgeBase() {
     
     // Group files by agent
     const groups = {};
-    const agentNames = {quoter:'报价员', developer:'客户开发员', buyer:'采购员', image:'图片识零件员', stock:'库存管理员', customs:'清关助理'};
+    const agentNames = {quoter:'报价员', developer:'客户开发', buyer:'采购员', image:'图片识零件员', stock:'库存管理员', customs:'清关助理'};
     files.forEach(f => {
       const agent = f.agent || 'quoter';
       if (!groups[agent]) groups[agent] = [];
@@ -1734,7 +1742,7 @@ async function handleTrain(fileList) {
   formData.append('file', file);
   
   const trainAgent = S.selectedRulesAgent || 'quoter';
-  const trainAgentNames = {developer:'客户开发员',quoter:'报价员',buyer:'采购员',image:'图片识零件员',stock:'库存管理员',customs:'清关助理'};
+  const trainAgentNames = {developer:'客户开发',quoter:'报价员',buyer:'采购员',image:'图片识零件员',stock:'库存管理员',customs:'清关助理'};
   const trainAgentName = trainAgentNames[trainAgent] || trainAgent;
   alert(`🧠 开始训练「${trainAgentName}」\n上传: ${file.name} (${(file.size/1024).toFixed(0)}KB)\nAI 正在审视数据，提取规则...`);
   
@@ -1825,7 +1833,7 @@ async function sendProspect() {
   const loadingMsg = document.createElement('div');
   loadingMsg.className = 'chat-msg agent';
   loadingMsg.id = 'prospectLoading';
-  loadingMsg.innerHTML = '<div class="label">🎯 客户开发员</div>⏳ 正在执行：搜客 → 背调 → 开发信...<br><span style="font-size:.72rem;color:var(--muted)">约需 30-60 秒</span>';
+  loadingMsg.innerHTML = '<div class="label">🎯 客户开发</div>⏳ 正在执行：搜客 → 背调 → 开发信...<br><span style="font-size:.72rem;color:var(--muted)">约需 30-60 秒</span>';
   messages.appendChild(loadingMsg);
   messages.scrollTop = messages.scrollHeight;
   input.value = '';
@@ -1843,10 +1851,10 @@ async function sendProspect() {
     resultMsg.className = 'chat-msg agent';
 
     if (!data.ok) {
-      resultMsg.innerHTML = '<div class="label">🎯 客户开发员</div>❌ ' + (data.error || '管道执行失败');
+      resultMsg.innerHTML = '<div class="label">🎯 客户开发</div>❌ ' + (data.error || '管道执行失败');
     } else {
       const s = data.summary || {};
-      let h = '<div class="label">🎯 客户开发员</div>';
+      let h = '<div class="label">🎯 客户开发</div>';
       h += '<b>✅ 管道完成！</b> 线索 ' + (s.total_leads||0) + ' 家 | 背调 ' + (s.bgcheck_count||0) + ' 份 | 匹配分析 ' + (s.match_count||0) + ' 份 | 开发信 ' + (s.email_count||0) + ' 封';
       if (s.avg_match_score) h += '<br>📊 平均匹配度: <b style="color:var(--green)">' + s.avg_match_score + '%</b>';
       if (s.recommended_action) h += '<br>💡 ' + s.recommended_action;
@@ -1905,7 +1913,7 @@ async function sendProspect() {
     document.getElementById('prospectLoading')?.remove();
     const errMsg = document.createElement('div');
     errMsg.className = 'chat-msg agent';
-    errMsg.innerHTML = '<div class="label">🎯 客户开发员</div>❌ 网络错误: ' + e.message;
+    errMsg.innerHTML = '<div class="label">🎯 客户开发</div>❌ 网络错误: ' + e.message;
     messages.appendChild(errMsg);
     messages.scrollTop = messages.scrollHeight;
   }
@@ -1936,7 +1944,7 @@ sendProspect = async function() {
   const loadingMsg = document.createElement('div');
   loadingMsg.className = 'chat-msg agent';
   loadingMsg.id = 'prospectLoading';
-  loadingMsg.innerHTML = '<div class="label">🎯 客户开发员</div>⏳ 正在执行：搜客 → 背调 → 匹配分析 → 开发信...<br><span style="font-size:.72rem;color:var(--muted)">约需 30-60 秒</span>';
+  loadingMsg.innerHTML = '<div class="label">🎯 客户开发</div>⏳ 正在执行：搜客 → 背调 → 匹配分析 → 开发信...<br><span style="font-size:.72rem;color:var(--muted)">约需 30-60 秒</span>';
   messages.appendChild(loadingMsg);
   messages.scrollTop = messages.scrollHeight;
   input.value = '';
@@ -1955,10 +1963,10 @@ sendProspect = async function() {
     resultMsg.className = 'chat-msg agent';
     
     if (!data.ok) {
-      resultMsg.innerHTML = '<div class="label">🎯 客户开发员</div>❌ ' + (data.error || '管道执行失败');
+      resultMsg.innerHTML = '<div class="label">🎯 客户开发</div>❌ ' + (data.error || '管道执行失败');
     } else {
       const s = data.summary || {};
-      let h = '<div class="label">🎯 客户开发员</div>';
+      let h = '<div class="label">🎯 客户开发</div>';
       h += '<b>✅ 管道完成！</b> 线索 ' + (s.total_leads||0) + ' 家 | 背调 ' + (s.bgcheck_count||0) + ' 份 | 匹配分析 ' + (s.match_count||0) + ' 份 | 开发信 ' + (s.email_count||0) + ' 封';
       if (s.avg_match_score) h += '<br>📊 平均匹配度: <b style="color:var(--green)">' + s.avg_match_score + '%</b>';
       if (s.recommended_action) h += '<br>💡 ' + s.recommended_action;
@@ -2013,7 +2021,7 @@ sendProspect = async function() {
     document.getElementById('prospectLoading')?.remove();
     const errMsg = document.createElement('div');
     errMsg.className = 'chat-msg agent';
-    errMsg.innerHTML = '<div class="label">🎯 客户开发员</div>❌ 网络错误: ' + e.message;
+    errMsg.innerHTML = '<div class="label">🎯 客户开发</div>❌ 网络错误: ' + e.message;
     messages.appendChild(errMsg);
     messages.scrollTop = messages.scrollHeight;
   }
@@ -2080,7 +2088,7 @@ function openEmailConfig() {
     overlay = document.createElement('div');
     overlay.id = 'emailConfigOverlay';
     overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center';
-    overlay.innerHTML = '<div style="background:var(--card);border-radius:12px;padding:24px;width:380px;max-width:90vw"><div style="font-weight:600;margin-bottom:16px">⚙️ 配置发信邮箱 (SMTP)</div><div style="margin-bottom:10px"><label style="font-size:.76rem;color:var(--muted)">SMTP服务器</label><input id="cfgHost" style="width:100%;padding:8px;border-radius:6px;border:1px solid var(--line);background:var(--bg);font-size:.82rem" placeholder="smtp.gmail.com"></div><div style="margin-bottom:10px"><label style="font-size:.76rem;color:var(--muted)">端口</label><input id="cfgPort" style="width:100%;padding:8px;border-radius:6px;border:1px solid var(--line);background:var(--bg);font-size:.82rem" value="587"></div><div style="margin-bottom:10px"><label style="font-size:.76rem;color:var(--muted)">邮箱账号</label><input id="cfgUser" style="width:100%;padding:8px;border-radius:6px;border:1px solid var(--line);background:var(--bg);font-size:.82rem" placeholder="your@company.com"></div><div style="margin-bottom:10px"><label style="font-size:.76rem;color:var(--muted)">密码/授权码</label><input id="cfgPass" type="password" style="width:100%;padding:8px;border-radius:6px;border:1px solid var(--line);background:var(--bg);font-size:.82rem"></div><div style="margin-bottom:10px"><label style="font-size:.76rem;color:var(--muted)">发件人名称</label><input id="cfgName" style="width:100%;padding:8px;border-radius:6px;border:1px solid var(--line);background:var(--bg);font-size:.82rem" placeholder="Atlas Auto Parts"></div><div style="display:flex;gap:8px;margin-top:16px"><button id="btnSaveSMTP" style="flex:1;padding:10px;border-radius:8px;border:none;background:var(--green);color:#fff;font-size:.82rem;cursor:pointer">💾 保存配置</button><button onclick="document.getElementById(\'emailConfigOverlay\').remove()" style="padding:10px 16px;border-radius:8px;border:1px solid var(--line);background:transparent;font-size:.82rem;cursor:pointer">取消</button></div></div>';
+    overlay.innerHTML = '<div style="background:var(--panel);border-radius:12px;padding:24px;width:380px;max-width:90vw"><div style="font-weight:600;margin-bottom:16px">⚙️ 配置发信邮箱 (SMTP)</div><div style="margin-bottom:10px"><label style="font-size:.76rem;color:var(--muted)">SMTP服务器</label><input id="cfgHost" style="width:100%;padding:8px;border-radius:6px;border:1px solid var(--line);background:var(--bg);font-size:.82rem" placeholder="smtp.gmail.com"></div><div style="margin-bottom:10px"><label style="font-size:.76rem;color:var(--muted)">端口</label><input id="cfgPort" style="width:100%;padding:8px;border-radius:6px;border:1px solid var(--line);background:var(--bg);font-size:.82rem" value="587"></div><div style="margin-bottom:10px"><label style="font-size:.76rem;color:var(--muted)">邮箱账号</label><input id="cfgUser" style="width:100%;padding:8px;border-radius:6px;border:1px solid var(--line);background:var(--bg);font-size:.82rem" placeholder="your@company.com"></div><div style="margin-bottom:10px"><label style="font-size:.76rem;color:var(--muted)">密码/授权码</label><input id="cfgPass" type="password" style="width:100%;padding:8px;border-radius:6px;border:1px solid var(--line);background:var(--bg);font-size:.82rem"></div><div style="margin-bottom:10px"><label style="font-size:.76rem;color:var(--muted)">发件人名称</label><input id="cfgName" style="width:100%;padding:8px;border-radius:6px;border:1px solid var(--line);background:var(--bg);font-size:.82rem" placeholder="Atlas Auto Parts"></div><div style="display:flex;gap:8px;margin-top:16px"><button id="btnSaveSMTP" style="flex:1;padding:10px;border-radius:8px;border:none;background:var(--green);color:#fff;font-size:.82rem;cursor:pointer">💾 保存配置</button><button onclick="document.getElementById(\'emailConfigOverlay\').remove()" style="padding:10px 16px;border-radius:8px;border:1px solid var(--line);background:transparent;font-size:.82rem;cursor:pointer">取消</button></div></div>';
     document.body.appendChild(overlay);
     
     // Load existing config
@@ -2147,7 +2155,7 @@ document.addEventListener('keydown', (e) => {
     document.getElementById('loginOverlay').classList.add('hidden');
     document.getElementById('userPopup').classList.add('hidden');
   }
-  if ((e.ctrlKey || e.metaKey) && e.key === 'k') { e.preventDefault(); /* command palette placeholder */ }
+  if ((e.ctrlKey || e.metaKey) && e.key === 'k') { e.preventDefault(); openCommandPalette(); }
   if ((e.ctrlKey || e.metaKey) && e.key === '1') { e.preventDefault(); useAgent('quote'); }
   if ((e.ctrlKey || e.metaKey) && e.key === '2') { e.preventDefault(); useAgent('prospect'); }
 });
@@ -2164,6 +2172,125 @@ document.addEventListener('click', (e) => {
 
 // ═══ Init ═══
 restoreSession();
+
+// ═══ Command Palette ═══
+const CMD_ITEMS = [
+  { icon:'💎', label:'报价员', action:'quote', key:'Ctrl+1' },
+  { icon:'🎯', label:'客户开发', action:'prospect', key:'Ctrl+2' },
+  { icon:'⚙️', label:'设置', action:'settings', key:'' },
+  { icon:'📊', label:'知识库', action:'knowledge', key:'' },
+  { icon:'👤', label:'登录 / 账号', action:'login', key:'' },
+  { icon:'🛒', label:'租赁面板', action:'market', key:'' },
+];
+
+function openCommandPalette() {
+  const existing = document.getElementById('cmdOverlay');
+  if (existing) { existing.remove(); return; }
+
+  const overlay = document.createElement('div');
+  overlay.id = 'cmdOverlay';
+  overlay.className = 'cmd-overlay';
+  overlay.onclick = function(e) { if (e.target === overlay) overlay.remove(); };
+
+  overlay.innerHTML = `<div class="cmd-palette">
+    <div class="cmd-input-wrap">
+      <span style="font-size:1rem">🔍</span>
+      <input id="cmdInput" placeholder="输入命令搜索..." autofocus>
+      <span class="cmd-hint">Esc 关闭</span>
+    </div>
+    <div class="cmd-list" id="cmdList"></div>
+  </div>`;
+
+  document.body.appendChild(overlay);
+
+  const input = document.getElementById('cmdInput');
+  const list = document.getElementById('cmdList');
+
+  function renderList(filter) {
+    const q = (filter || '').toLowerCase();
+    const items = CMD_ITEMS.filter(i => !q || i.label.toLowerCase().includes(q) || (i.action||'').toLowerCase().includes(q));
+    if (items.length === 0) {
+      list.innerHTML = '<div class="cmd-empty">未找到匹配命令</div>';
+      return;
+    }
+    list.innerHTML = items.map((it, i) =>
+      `<div class="cmd-item${i===0?' sel':''}" data-action="${it.action}" data-idx="${i}">
+        <span class="cmd-icon">${it.icon}</span>
+        <span class="cmd-label">${it.label}</span>
+        ${it.key ? '<span class="cmd-shortcut">'+it.key+'</span>' : ''}
+      </div>`
+    ).join('');
+  }
+
+  renderList('');
+
+  input.addEventListener('input', () => renderList(input.value));
+  input.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') { overlay.remove(); return; }
+    if (e.key === 'Enter') {
+      const sel = list.querySelector('.cmd-item.sel');
+      if (sel) executeCommand(sel.dataset.action);
+      overlay.remove();
+      return;
+    }
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      const items = list.querySelectorAll('.cmd-item');
+      if (!items.length) return;
+      const cur = list.querySelector('.cmd-item.sel');
+      const curIdx = cur ? parseInt(cur.dataset.idx) : -1;
+      const next = e.key === 'ArrowDown' ? (curIdx + 1) % items.length : (curIdx - 1 + items.length) % items.length;
+      items.forEach(it => it.classList.remove('sel'));
+      items[next].classList.add('sel');
+      items[next].scrollIntoView({block:'nearest'});
+    }
+  });
+
+  // Click handler on list items
+  list.addEventListener('click', function(e) {
+    const item = e.target.closest('.cmd-item');
+    if (!item) return;
+    executeCommand(item.dataset.action);
+    overlay.remove();
+  });
+
+  setTimeout(() => input.focus(), 100);
+}
+
+function executeCommand(action) {
+  switch(action) {
+    case 'quote': useAgent('quote'); break;
+    case 'prospect': useAgent('prospect'); break;
+    case 'settings': document.getElementById('settingsBtn').click(); break;
+    case 'knowledge':
+      document.querySelectorAll('.ab-item[data-view]').forEach(e => e.classList.remove('active'));
+      const kbBtn = document.querySelector('.ab-item[data-view="knowledge"]');
+      if (kbBtn) kbBtn.click();
+      break;
+    case 'login': handleUserClick(); break;
+    case 'market':
+      S.settingsSection = 'market';
+      openSettings();
+      break;
+  }
+}
+
+// ═══ Data Folder Picker ═══
+function pickDataFolder() {
+  // In Tauri desktop app, this would use Tauri dialog API
+  // For web fallback, show a prompt
+  if (window.__TAURI__ && window.__TAURI__.dialog) {
+    window.__TAURI__.dialog.open({ directory: true, title: '选择数据存储目录' }).then(function(dir) {
+      if (dir) {
+        localStorage.setItem('atlas-data-dir', dir);
+        alert('✅ 数据目录已设置为: ' + dir + '\n\n重启客户端生效');
+      }
+    });
+  } else {
+    alert('💡 数据存储目录\n\n默认路径: ~/atlas-data\n\n数据包含：知识库文件、历史报价、规则记忆\n\n桌面客户端支持自定义目录，请在 Atlas 桌面应用中设置。');
+  }
+}
+
 </script>
 </body>
 </html>
