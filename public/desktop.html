@@ -1070,7 +1070,7 @@ function renderSettingsContent() {
                 <div><div style="font-size:.85rem;font-weight:600">${ch.name}</div>
                 <div style="font-size:.72rem;color:${connected?'var(--green)':'var(--muted)'}">${connected?'已配置':'未连接'}</div></div>
               </div>
-              <button onclick="event.stopPropagation();showTutorial('${ch.id}')" style="padding:3px 10px;border-radius:6px;font-size:.68rem;cursor:pointer;border:1px solid var(--line);background:var(--active);color:var(--muted);margin-right:6px;transition:all .15s" onmouseenter="this.style.borderColor='var(--green)';this.style.color='var(--green)'" onmouseleave="this.style.borderColor='var(--line)';this.style.color='var(--muted)'">📖 查看教程 →</button>
+              
               <span onclick="toggleChannelCfg('${ch.id}')" style="font-size:.7rem;color:var(--dim);cursor:pointer" id="ch-arrow-${ch.id}">▶</span>
             </div>
             <div id="ch-cfg-${ch.id}" style="display:none;padding:0 12px 12px">`;
@@ -1082,6 +1082,7 @@ function renderSettingsContent() {
           h += `<div style="display:flex;gap:8px;margin-top:4px">
             <button class="btn-primary" onclick="saveChannel('${ch.id}')">💾 保存</button>
             <button class="btn-secondary" onclick="testChannel('${ch.id}')">🔗 测试连接</button>
+            <button class="btn-secondary" onclick="showTutorial('${ch.id}')" style="font-size:.68rem">📖 部署教程</button>
           </div>
           </div></div></div>
           <div style="margin-top:6px;padding:12px;background:var(--green-bg);border-radius:8px;display:none" id="tut-${ch.id}"></div>`;
@@ -2308,30 +2309,32 @@ function executeCommand(action) {
 
 // ═══ Data Folder Picker ═══
 function browseDataFolder() {
-  // Tauri v2 dialog plugin
-  if (window.__TAURI__ && window.__TAURI__.core && window.__TAURI__.core.invoke) {
-    window.__TAURI__.core.invoke('plugin:dialog|open', { directory: true, title: '选择数据存储目录', multiple: false }).then(function(dir) {
+  // Tauri v2: use __TAURI_INTERNALS__ (always injected) or core.invoke
+  var invoke = (window.__TAURI__ && window.__TAURI__.core && window.__TAURI__.core.invoke) || (window.__TAURI_INTERNALS__ && window.__TAURI_INTERNALS__.invoke);
+  if (invoke) {
+    invoke('plugin:dialog|open', { directory: true, title: '选择数据存储目录', multiple: false }).then(function(dir) {
       if (dir) {
         var input = document.getElementById('dataDirInput');
-        if (input) input.value = dir;
+        if (input) input.value = typeof dir === 'string' ? dir : (dir.path || '');
       }
-    }).catch(function() {
-      // Fallback: try alternative Tauri API
+    }).catch(function(e) {
+      // Try plugin global as fallback
       if (window.__TAURI_PLUGIN_DIALOG__ && window.__TAURI_PLUGIN_DIALOG__.open) {
-        window.__TAURI_PLUGIN_DIALOG__.open({ directory: true, title: '选择数据存储目录' }).then(function(dir) {
-          if (dir) { var input = document.getElementById('dataDirInput'); if (input) input.value = dir; }
+        window.__TAURI_PLUGIN_DIALOG__.open({ directory: true, title: '选择数据存储目录' }).then(function(d) {
+          if (d) { var inp = document.getElementById('dataDirInput'); if (inp) inp.value = typeof d === 'string' ? d : (d.path || ''); }
         });
       }
     });
-  } else if (window.__TAURI_PLUGIN_DIALOG__ && window.__TAURI_PLUGIN_DIALOG__.open) {
-    window.__TAURI_PLUGIN_DIALOG__.open({ directory: true, title: '选择数据存储目录' }).then(function(dir) {
-      if (dir) { var input = document.getElementById('dataDirInput'); if (input) input.value = dir; }
-    });
-  } else {
-    // Web fallback
-    var input = document.getElementById('dataDirInput');
-    var path = input ? input.value : '~/atlas-data';
-    alert('数据存储路径: ' + path + '\n\n桌面客户端支持浏览选择文件夹。');
+    return;
+  }
+  // Web fallback: manual input
+  var input = document.getElementById('dataDirInput');
+  if (!input) return;
+  var cur = input.value.trim() || '~/atlas-data';
+  var path = prompt('请输入数据存储路径（仅对本浏览器生效）：', cur);
+  if (path && path.trim()) {
+    input.value = path.trim();
+    saveDataFolder();
   }
 }
 
