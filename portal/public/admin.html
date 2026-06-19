@@ -1,208 +1,387 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>元策管理后台</title>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>擎天 Atlas · 管理后台</title>
 <style>
-:root{--bg:#0f1117;--card:#1a1d27;--card2:#222633;--green:#10b981;--green-soft:rgba(16,185,129,.12);--text:#e2e8f0;--muted:#8892a6;--red:#ef4444;--amber:#f59e0b;--blue:#3b82f6;--purple:#a78bfa;--line:rgba(255,255,255,.06)}
-*{margin:0;padding:0;box-sizing:border-box}
-body{font-family:"PingFang SC","Microsoft YaHei",-apple-system,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
-/* Sidebar */
-.sidebar{position:fixed;left:0;top:0;bottom:0;width:220px;background:var(--card);border-right:1px solid var(--line);padding:20px 0;overflow-y:auto;z-index:50}
-.sidebar .logo{padding:0 20px 24px;font-size:1.3rem;font-weight:800;letter-spacing:-.5px}
-.sidebar .logo span{color:var(--green)}
-.sidebar nav a{display:flex;align-items:center;gap:10px;padding:10px 20px;color:var(--muted);text-decoration:none;font-size:.85rem;transition:all .15s;border-left:3px solid transparent}
-.sidebar nav a:hover,.sidebar nav a.active{color:var(--text);background:var(--card2);border-left-color:var(--green)}
-.main{margin-left:220px;padding:24px 32px}
-/* Stats grid */
-.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
-@media(max-width:1100px){.stats-grid{grid-template-columns:repeat(2,1fr)}}
-.stat-card{background:var(--card);border-radius:16px;padding:24px;border:1px solid var(--line);position:relative;overflow:hidden}
-.stat-card::before{content:"";position:absolute;top:0;left:0;right:0;height:3px}
-.stat-card.revenue::before{background:linear-gradient(90deg,var(--green),var(--blue))}
-.stat-card.orders::before{background:linear-gradient(90deg,var(--purple),var(--blue))}
-.stat-card.usage::before{background:linear-gradient(90deg,var(--amber),var(--red))}
-.stat-card.system::before{background:linear-gradient(90deg,var(--green),var(--purple))}
-.stat-card .label{font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px}
-.stat-card .value{font-size:2.2rem;font-weight:800;line-height:1}
-.stat-card .value.green{color:var(--green)}
-.stat-card .value.purple{color:var(--purple)}
-.stat-card .value.amber{color:var(--amber)}
-.stat-card .sub{font-size:.72rem;color:var(--muted);margin-top:6px}
-/* Cards */
-.card{background:var(--card);border-radius:16px;padding:24px;border:1px solid var(--line);margin-bottom:20px}
-.card h2{font-size:1rem;font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:8px}
-/* Table */
-table{width:100%;border-collapse:collapse;font-size:.82rem}
-th{background:var(--card2);padding:12px 14px;text-align:left;font-weight:600;color:var(--muted);font-size:.75rem;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--line)}
-td{padding:12px 14px;border-bottom:1px solid var(--line)}
-tr:hover td{background:rgba(255,255,255,.02)}
-/* Tags */
-.tag{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:.7rem;font-weight:600}
-.tag-green{background:var(--green-soft);color:var(--green)}
-.tag-red{background:rgba(239,68,68,.12);color:var(--red)}
-.tag-amber{background:rgba(245,158,11,.12);color:var(--amber)}
-.tag-blue{background:rgba(59,130,246,.12);color:var(--blue)}
-/* Two column */
-.col2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
-@media(max-width:900px){.col2{grid-template-columns:1fr}}
-/* Health dots */
-.health-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:6px}
-.health-dot.up{background:var(--green);box-shadow:0 0 8px rgba(16,185,129,.4)}
-.health-dot.down{background:var(--red);box-shadow:0 0 8px rgba(239,68,68,.4)}
-/* Progress */
-.progress-bar{height:6px;background:var(--card2);border-radius:3px;overflow:hidden;margin-top:8px}
-.progress-bar .fill{height:100%;border-radius:3px;transition:width .5s}
-.fill-green{background:var(--green)}
-.fill-amber{background:var(--amber)}
-.fill-red{background:var(--red)}
-.fill-blue{background:var(--blue)}
-/* Spinner */
-.spinner{display:inline-block;width:18px;height:18px;border:2px solid rgba(255,255,255,.1);border-top-color:var(--green);border-radius:50%;animation:spin .6s linear infinite}
-@keyframes spin{to{transform:rotate(360deg)}}
-/* Toast */
-.toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%);padding:12px 24px;border-radius:12px;font-size:.85rem;font-weight:600;z-index:300;display:none}
-.toast-ok{background:#064e3b;color:#6ee7b7}
-.toast-err{background:#7f1d1d;color:#fca5a5}
-</style></head>
+:root{--green:#7ecf5e;--green-dark:#5cb83a;--green-bg:#e8f7e2;--bg:#f2f2f4;--card:#fff;--border:#e5e5e7;--text:#1c1c1e;--muted:#6e6e73;--dim:#aeaeb2;--radius:12px;--font:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font);background:var(--bg);color:var(--text);line-height:1.6;min-height:100vh}
+.login-wrap{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:1rem}
+.login-card{background:var(--card);padding:2.5rem 2rem;border-radius:20px;width:100%;max-width:380px;text-align:center;box-shadow:0 4px 20px rgba(0,0,0,.06)}
+.login-card h1{font-size:1.5rem;margin-bottom:.25rem}
+.login-card h1 span{color:var(--green)}
+.login-card .sub{color:var(--muted);font-size:.85rem;margin-bottom:1.5rem}
+.login-card input{width:100%;padding:.7rem 1rem;border:1.5px solid var(--border);border-radius:var(--radius);font-size:.95rem;text-align:center;outline:none;margin-bottom:.75rem}
+.login-card input:focus{border-color:var(--green)}
+.login-card button{width:100%;padding:.7rem;font-size:.95rem;font-weight:600;border:none;border-radius:var(--radius);cursor:pointer;background:var(--green);color:#fff}
+.login-card .err{color:#e74c3c;font-size:.8rem;margin-top:.5rem;display:none}
+.dash{display:none;max-width:1300px;margin:0 auto;padding:1.5rem 1.5rem 3rem}
+.dash-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;flex-wrap:wrap;gap:.75rem}
+.dash-header h1{font-size:1.3rem;display:flex;align-items:center;gap:.5rem}
+.dash-header h1 span{color:var(--green)}
+.dash-header nav{display:flex;gap:.5rem;align-items:center}
+.dash-header nav button{color:var(--muted);font-size:.8rem;background:none;border:1px solid var(--border);padding:.35rem .8rem;border-radius:100px;cursor:pointer}
+.dash-header nav button:hover{background:var(--bg)}
+.tabs{display:flex;gap:0;margin-bottom:1.5rem;background:var(--card);border-radius:var(--radius);border:1px solid var(--border);overflow:hidden;flex-wrap:wrap}
+.tab-btn{flex:1;min-width:100px;padding:.7rem;font-size:.85rem;font-weight:600;border:none;background:transparent;cursor:pointer;color:var(--muted);transition:all .2s;white-space:nowrap}
+.tab-btn.active{background:var(--green);color:#fff}
+.tab-content{display:none}.tab-content.active{display:block}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:.75rem;margin-bottom:1.5rem}
+.stat-card{background:var(--card);padding:1rem;border-radius:var(--radius);border:1px solid var(--border);text-align:center}
+.stat-card .num{font-size:1.6rem;font-weight:800;color:var(--green)}
+.stat-card .label{font-size:.75rem;color:var(--muted);margin-top:.15rem}
+.table-wrap{background:var(--card);border-radius:12px;border:1px solid var(--border);overflow:hidden;margin-bottom:1rem}
+table{width:100%;border-collapse:collapse}
+th{text-align:left;padding:.65rem 1rem;font-size:.7rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--dim);background:var(--bg);border-bottom:1px solid var(--border)}
+td{padding:.6rem 1rem;font-size:.82rem;border-bottom:1px solid var(--border)}
+tr:last-child td{border-bottom:none}
+.badge{display:inline-block;font-size:.65rem;font-weight:600;padding:.1rem .5rem;border-radius:100px}
+.badge-active{background:var(--green-bg);color:var(--green-dark)}
+.badge-free{background:#f0f0f0;color:var(--dim)}
+.badge-paused{background:#fff3e0;color:#e65100}
+.btn-sm{padding:.3rem .7rem;font-size:.7rem;font-weight:600;border-radius:6px;cursor:pointer;border:1px solid;background:transparent}
+.btn-sm.green{border-color:var(--green);color:var(--green)}
+.btn-sm.red{border-color:#e74c3c;color:#e74c3c}
+.btn-sm:hover.green{background:var(--green-bg)}
+.btn-sm:hover.red{background:#fde8e8}
+.btn-primary{padding:.6rem 1.2rem;font-size:.82rem;font-weight:600;border:none;border-radius:8px;cursor:pointer;background:var(--green);color:#fff}
+.btn-secondary{padding:.6rem 1.2rem;font-size:.82rem;font-weight:600;border:1px solid var(--border);border-radius:8px;cursor:pointer;background:var(--card);color:var(--text)}
+.form-group{margin-bottom:.75rem}
+.form-group label{font-size:.72rem;color:var(--muted);display:block;margin-bottom:.25rem;font-weight:600}
+.form-group input,.form-group select{width:100%;padding:.55rem .75rem;border:1.5px solid var(--border);border-radius:8px;font-size:.82rem;outline:none}
+.form-group input:focus,.form-group select:focus{border-color:var(--green)}
+.row{display:flex;gap:.75rem;flex-wrap:wrap}
+.row>*{flex:1;min-width:120px}
+.modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.4);z-index:100;display:flex;align-items:center;justify-content:center}
+.modal-card{background:var(--card);padding:1.5rem;border-radius:16px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;box-shadow:0 8px 30px rgba(0,0,0,.12)}
+.modal-card h3{margin-bottom:1rem}
+.empty{text-align:center;padding:3rem;color:var(--dim)}
+.toast{position:fixed;bottom:20px;right:20px;padding:.7rem 1.2rem;border-radius:8px;font-size:.85rem;font-weight:600;z-index:200;animation:slideUp .3s}
+.toast.ok{background:var(--green);color:#fff}
+.toast.err{background:#e74c3c;color:#fff}
+@keyframes slideUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+</style>
+</head>
 <body>
-
-<div class="sidebar">
-  <div class="logo"><span>元策</span>智能</div>
-  <nav>
-    <a href="#" class="active" onclick="showTab('overview',this)">📊 总览</a>
-    <a href="#" onclick="showTab('orders',this)">💰 订单</a>
-    <a href="#" onclick="showTab('system',this)">🖥 系统</a>
-    <a href="#" onclick="showTab('clients',this)">👥 客户</a>
-  </nav>
-</div>
-
-<div class="main">
-  <!-- Overview Tab -->
-  <div id="tab-overview">
-    <div class="stats-grid" id="statsGrid">
-      <div class="stat-card revenue"><div class="label">总营收</div><div class="value green" id="statRevenue">-</div><div class="sub" id="statOrders">0 笔订单</div></div>
-      <div class="stat-card orders"><div class="label">已付订单</div><div class="value purple" id="statPaid">-</div><div class="sub">付费率 -</div></div>
-      <div class="stat-card usage"><div class="label">AI调用</div><div class="value amber" id="statCalls">-</div><div class="sub">累计次数</div></div>
-      <div class="stat-card system"><div class="label">活跃配件</div><div class="value" style="color:#e2e8f0" id="statParts">-</div><div class="sub" id="statAlerts">- 条库存预警</div></div>
-    </div>
-
-    <div class="col2">
-      <div class="card"><h2>📦 套餐分布</h2><div id="planChart"></div></div>
-      <div class="card"><h2>🕐 最近订单</h2><div id="recentOrders"></div></div>
-    </div>
-  </div>
-
-  <!-- Orders Tab -->
-  <div id="tab-orders" style="display:none">
-    <div class="card"><h2>💰 全部订单</h2><div id="allOrders"></div></div>
-  </div>
-
-  <!-- System Tab -->
-  <div id="tab-system" style="display:none">
-    <div class="card"><h2>🖥 服务状态</h2><div id="serviceStatus"></div></div>
-    <div class="col2">
-      <div class="card"><h2>📊 系统资源</h2><div id="sysResources"></div></div>
-      <div class="card"><h2>📋 数据概览</h2><div id="dataOverview"></div></div>
-    </div>
-  </div>
-
-  <!-- Clients Tab -->
-  <div id="tab-clients" style="display:none">
-    <div class="card"><h2>👥 客户管理</h2><p style="color:var(--muted)">客户列表（接入恩同CRM后展示）</p></div>
+<div class="login-wrap" id="loginWrap">
+  <div class="login-card">
+    <h1><span>擎天</span> Atlas</h1>
+    <div class="sub">管理后台</div>
+    <input type="email" id="loginEmail" placeholder="管理员邮箱" value="admin@atlas.local" onkeydown="if(event.key==='Enter')login()">
+    <input type="password" id="loginPwd" placeholder="管理密码" onkeydown="if(event.key==='Enter')login()">
+    <button onclick="login()">进入后台</button>
+    <div class="err" id="loginErr"></div>
   </div>
 </div>
 
-<div class="toast" id="toast"></div>
+<div class="dash" id="dash">
+  <div class="dash-header">
+    <h1><span>擎天</span> Atlas · 管理后台</h1>
+    <nav>
+      <button onclick="location.reload()">🔄 刷新</button>
+      <button onclick="logout()">🚪 退出</button>
+    </nav>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('customers')">👥 客户管理</button>
+    <button class="tab-btn" onclick="switchTab('agents')">🏪 代理管理</button>
+    <button class="tab-btn" onclick="switchTab('models')">🤖 模型配置</button>
+    <button class="tab-btn" onclick="switchTab('plans')">📦 套餐配置</button>
+  </div>
+
+  <!-- ═══ 客户管理 ═══ -->
+  <div class="tab-content active" id="tabCustomers">
+    <div class="stats" id="customerStats"></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>客户</th><th>公司</th><th>报价员</th><th>开发员</th><th>通道</th><th>注册时间</th><th>操作</th></tr></thead>
+        <tbody id="customerTable"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ═══ 代理管理 ═══ -->
+  <div class="tab-content" id="tabAgents">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+      <div class="stats" id="agentStats" style="margin-bottom:0;flex:1"></div>
+      <button class="btn-primary" onclick="showAgentModal()" style="flex-shrink:0">➕ 添加代理</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>代理</th><th>城市</th><th>等级</th><th>折扣</th><th>客户数</th><th>销售额</th><th>状态</th><th>操作</th></tr></thead>
+        <tbody id="agentTable"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ═══ 模型配置 ═══ -->
+  <div class="tab-content" id="tabModels">
+    <div id="modelConfigs"></div>
+  </div>
+
+  <!-- ═══ 套餐配置 ═══ -->
+  <div class="tab-content" id="tabPlans">
+    <div id="planConfigs"></div>
+  </div>
+</div>
 
 <script>
-async function loadOverview(){
-  const r=await fetch('/api/admin/stats');
-  const d=await r.json();
-  if(!d.ok){console.error(d.error);return}
-  const s=d.data;
-  
-  document.getElementById('statRevenue').textContent='¥'+s.revenue.total_revenue.toLocaleString();
-  document.getElementById('statOrders').textContent=s.revenue.total_orders+' 笔订单';
-  document.getElementById('statPaid').textContent=s.revenue.paid_orders;
-  document.getElementById('statCalls').textContent=s.usage.total_calls.toLocaleString();
-  document.getElementById('statParts').textContent=s.system.parts;
-  document.getElementById('statAlerts').textContent=s.system.alerts;
-  
-  // Plan chart
-  const pc=document.getElementById('planChart');
-  if(s.plans.length){
-    const total=s.plans.reduce((a,x)=>a+x.count,0);
-    pc.innerHTML=s.plans.map(p=>{
-      const pct=total>0?Math.round(p.count/total*100):0;
-      const names={starter:'微光',standard:'标准',unlimited:'无界',enterprise:'企业'};
-      return `<div style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:.82rem">${names[p.plan]||p.plan}</span><span style="color:var(--muted);font-size:.78rem">${p.count} 订阅</span></div><div class="progress-bar"><div class="fill fill-blue" style="width:${pct}%"></div></div></div>`;
-    }).join('');
-  }else{pc.innerHTML='<div style="color:var(--muted);padding:20px;text-align:center">暂无订阅数据</div>';}
+const API = location.origin;
+let TOKEN = localStorage.getItem('admin-token') || '';
+let currentTab = 'customers';
 
-  // Recent orders
-  const ro=document.getElementById('recentOrders');
+// ═══ Auth ═══
+async function login(){
+  const email = document.getElementById('loginEmail').value.trim();
+  const pwd = document.getElementById('loginPwd').value.trim();
+  if(!email||!pwd) return;
   try{
-    const or=await fetch('/api/orders');const od=await or.json();
-    if(od.data&&od.data.length){
-      ro.innerHTML='<table><tr><th>订单ID</th><th>套餐</th><th>金额</th><th>状态</th><th>时间</th></tr>'+od.data.slice(0,5).map(o=>`<tr><td style="font-family:monospace;font-size:.75rem">${o.id}</td><td>${planName(o.plan_id)}</td><td>¥${(o.amount||0).toLocaleString()}</td><td><span class="tag tag-${o.status==='paid'?'green':'amber'}">${o.status==='paid'?'已支付':'待支付'}</span></td><td>${(o.created_at||'').slice(0,10)}</td></tr>`).join('')+'</table>';
-    }else{ro.innerHTML='<div style="color:var(--muted);padding:20px;text-align:center">暂无订单</div>';}
-  }catch(e){ro.innerHTML='<div style="color:var(--muted);padding:20px;text-align:center">加载失败</div>';}
+    const r = await fetch(API+'/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password:pwd})});
+    const d = await r.json();
+    if(d.ok){ TOKEN=d.token; localStorage.setItem('admin-token',TOKEN); showDash(); }
+    else{ document.getElementById('loginErr').textContent=d.error||'登录失败'; document.getElementById('loginErr').style.display='block'; }
+  }catch(e){ document.getElementById('loginErr').textContent='网络错误'; document.getElementById('loginErr').style.display='block'; }
+}
+function logout(){ TOKEN=''; localStorage.removeItem('admin-token'); location.reload(); }
+function showDash(){ document.getElementById('loginWrap').style.display='none'; document.getElementById('dash').style.display='block'; loadTab(currentTab); }
+if(TOKEN) showDash();
+
+// ═══ Tabs ═══
+function switchTab(tab){
+  currentTab=tab;
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById('tab'+{customers:'Customers',agents:'Agents',models:'Models',plans:'Plans'}[tab]).classList.add('active');
+  loadTab(tab);
+}
+function loadTab(tab){
+  if(tab==='customers') loadCustomers();
+  else if(tab==='agents') loadAgents();
+  else if(tab==='models') loadModels();
+  else if(tab==='plans') loadPlans();
 }
 
-async function loadSystem(){
-  // Services
-  const svc=document.getElementById('serviceStatus');
+// ═══ 客户管理 ═══
+async function loadCustomers(){
   try{
-    const r=await fetch('/api/admin/health');const d=await r.json();
-    if(d.ok){
-      svc.innerHTML=Object.entries(d.data.services).map(([k,v])=>`<div style="display:flex;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)"><span class="health-dot ${v?'up':'down'}"></span><span style="flex:1;font-size:.85rem">${k}</span><span class="tag tag-${v?'green':'red'}">${v?'运行中':'已停止'}</span></div>`).join('');
-      
-      const sr=document.getElementById('sysResources');
-      sr.innerHTML=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
-        <div><div style="color:var(--muted);font-size:.75rem;margin-bottom:4px">CPU</div><div style="font-size:1.5rem;font-weight:700">${d.data.server.cpu_percent}%</div><div class="progress-bar"><div class="fill fill-green" style="width:${d.data.server.cpu_percent}%"></div></div></div>
-        <div><div style="color:var(--muted);font-size:.75rem;margin-bottom:4px">内存</div><div style="font-size:1.5rem;font-weight:700">${d.data.server.memory_percent}%</div><div class="progress-bar"><div class="fill fill-amber" style="width:${d.data.server.memory_percent}%"></div></div></div>
-        <div><div style="color:var(--muted);font-size:.75rem;margin-bottom:4px">磁盘</div><div style="font-size:1.5rem;font-weight:700">${d.data.server.disk_percent}%</div><div class="progress-bar"><div class="fill ${d.data.server.disk_percent>80?'fill-red':'fill-blue'}" style="width:${d.data.server.disk_percent}%"></div></div></div>
-        <div><div style="color:var(--muted);font-size:.75rem;margin-bottom:4px">运行时间</div><div style="font-size:.85rem;color:var(--green);margin-top:8px">${d.data.uptime}</div></div>
+    const r = await fetch(API+'/api/admin/users',{headers:{'Authorization':'Bearer '+TOKEN}});
+    const d = await r.json();
+    if(!d.ok) return toast('加载失败: '+(d.error||'无权限'),'err');
+    const users = d.users||[];
+    document.getElementById('customerStats').innerHTML =
+      `<div class="stat-card"><div class="num">${users.length}</div><div class="label">总客户</div></div>
+       <div class="stat-card"><div class="num">${users.filter(u=>(u.plan_quoter||'free')!=='free'||(u.plan_developer||'free')!=='free').length}</div><div class="label">付费客户</div></div>
+       <div class="stat-card"><div class="num">${users.filter(u=>u.plan_quoter==='free'&&u.plan_developer==='free').length}</div><div class="label">免费客户</div></div>`;
+
+    let rows = '';
+    users.forEach(u=>{
+      const qPlan = u.plan_quoter||'free', dPlan = u.plan_developer||'free';
+      const chCount = (u.channels||[]).length;
+      rows += `<tr>
+        <td><b>${u.email}</b></td>
+        <td>${u.company||'-'}</td>
+        <td><span class="badge ${qPlan==='free'?'badge-free':'badge-active'}">${qPlan}</span></td>
+        <td><span class="badge ${dPlan==='free'?'badge-free':'badge-active'}">${dPlan}</span></td>
+        <td>${chCount} 通道</td>
+        <td style="font-size:.72rem;color:var(--dim)">${(u.created_at||'').slice(0,10)}</td>
+        <td>
+          <button class="btn-sm green" onclick="showPlanModal('${u.id}','${u.email}','${qPlan}','${dPlan}')">改套餐</button>
+        </td></tr>`;
+    });
+    document.getElementById('customerTable').innerHTML = rows || '<tr><td colspan="7" class="empty">暂无客户</td></tr>';
+  }catch(e){ toast('加载客户失败: '+e.message,'err'); }
+}
+
+function showPlanModal(uid, email, qPlan, dPlan){
+  const overlay = document.createElement('div'); overlay.className='modal-overlay';
+  overlay.innerHTML = `<div class="modal-card">
+    <h3>修改套餐 — ${email}</h3>
+    <div class="form-group"><label>报价员套餐</label><select id="planQuoter"><option value="free" ${qPlan==='free'?'selected':''}>免费试用</option><option value="basic" ${qPlan==='basic'?'selected':''}>入门 ¥998/月</option><option value="standard" ${qPlan==='standard'?'selected':''}>标准 ¥2980/月</option><option value="pro" ${qPlan==='pro'?'selected':''}>专业 ¥5980/月</option></select></div>
+    <div class="form-group"><label>客户开发员套餐</label><select id="planDeveloper"><option value="free" ${dPlan==='free'?'selected':''}>免费试用</option><option value="basic" ${dPlan==='basic'?'selected':''}>入门 ¥998/月</option><option value="standard" ${dPlan==='standard'?'selected':''}>标准 ¥2980/月</option><option value="pro" ${dPlan==='pro'?'selected':''}>专业 ¥5980/月</option></select></div>
+    <div style="display:flex;gap:8px;margin-top:1rem">
+      <button class="btn-primary" id="btnSavePlan" style="flex:1">保存</button>
+      <button class="btn-secondary" onclick="this.closest('.modal-overlay').remove()">取消</button>
+    </div></div>`;
+  document.body.appendChild(overlay);
+  overlay.onclick=function(e){if(e.target===overlay)overlay.remove();};
+  document.getElementById('btnSavePlan').onclick = async ()=>{
+    const q = document.getElementById('planQuoter').value;
+    const d = document.getElementById('planDeveloper').value;
+    try{
+      let ok=true;
+      if(q!==qPlan){ const r=await fetch(API+'/api/admin/user/'+uid+'/plan',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+TOKEN},body:JSON.stringify({plan_type:'quoter',plan_key:q})}); if(!(await r.json()).ok) ok=false; }
+      if(d!==dPlan){ const r=await fetch(API+'/api/admin/user/'+uid+'/plan',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+TOKEN},body:JSON.stringify({plan_type:'developer',plan_key:d})}); if(!(await r.json()).ok) ok=false; }
+      toast(ok?'套餐已更新':'部分更新失败',ok?'ok':'err');
+      overlay.remove();
+      loadCustomers();
+    }catch(e){ toast('网络错误','err'); }
+  };
+}
+
+// ═══ 代理管理 ═══
+async function loadAgents(){
+  try{
+    const r = await fetch(API+'/api/admin/agents',{headers:{'Authorization':'Bearer '+TOKEN}});
+    const d = await r.json();
+    const agents = d.agents||[];
+    document.getElementById('agentStats').innerHTML =
+      `<div class="stat-card"><div class="num">${agents.length}</div><div class="label">代理总数</div></div>
+       <div class="stat-card"><div class="num">${agents.filter(a=>a.status==='active').length}</div><div class="label">活跃</div></div>
+       <div class="stat-card"><div class="num">¥${agents.reduce((s,a)=>s+(a.total_sales||0),0).toLocaleString()}</div><div class="label">总销售额</div></div>`;
+    let rows = '';
+    agents.forEach(a=>{
+      rows += `<tr>
+        <td><b>${a.name}</b><br><span style="font-size:.68rem;color:var(--dim)">${a.phone||''} ${a.wechat||''}</span></td>
+        <td>${a.city||'-'}</td>
+        <td><span class="badge badge-active">${a.level==='city'?'城市总代':a.level==='regional'?'区域代理':'推广大使'}</span></td>
+        <td>${Math.round((a.discount||0.85)*100)}折</td>
+        <td>${(a.customers||[]).length}</td>
+        <td>¥${(a.total_sales||0).toLocaleString()}</td>
+        <td><span class="badge ${a.status==='active'?'badge-active':'badge-paused'}">${a.status==='active'?'正常':'暂停'}</span></td>
+        <td>
+          <button class="btn-sm green" onclick="showAgentModal('${a.id}')">编辑</button>
+          <button class="btn-sm red" onclick="deleteAgent('${a.id}')">删除</button>
+        </td></tr>`;
+    });
+    document.getElementById('agentTable').innerHTML = rows || '<tr><td colspan="8" class="empty">暂无代理</td></tr>';
+  }catch(e){ toast('加载代理失败','err'); }
+}
+
+function showAgentModal(id){
+  const isEdit = !!id;
+  let agent = {};
+  if(isEdit){
+    fetch(API+'/api/admin/agents',{headers:{'Authorization':'Bearer '+TOKEN}}).then(r=>r.json()).then(d=>{
+      agent = (d.agents||[]).find(a=>a.id===id)||{};
+      buildModal(agent);
+    });
+  }else{ buildModal(agent); }
+
+  function buildModal(a){
+    const overlay = document.createElement('div'); overlay.className='modal-overlay';
+    overlay.innerHTML = `<div class="modal-card">
+      <h3>${isEdit?'编辑':'添加'}代理</h3>
+      <div class="row">
+        <div class="form-group"><label>姓名</label><input id="agtName" value="${a.name||''}"></div>
+        <div class="form-group"><label>城市</label><input id="agtCity" value="${a.city||''}"></div>
+      </div>
+      <div class="row">
+        <div class="form-group"><label>电话</label><input id="agtPhone" value="${a.phone||''}"></div>
+        <div class="form-group"><label>微信</label><input id="agtWechat" value="${a.wechat||''}"></div>
+      </div>
+      <div class="row">
+        <div class="form-group"><label>等级</label><select id="agtLevel"><option value="city" ${a.level==='city'?'selected':''}>城市总代</option><option value="regional" ${a.level==='regional'?'selected':''}>区域代理</option><option value="ambassador" ${(a.level||'ambassador')==='ambassador'?'selected':''}>推广大使</option></select></div>
+        <div class="form-group"><label>折扣 (0-1)</label><input id="agtDiscount" type="number" step="0.05" min="0" max="1" value="${a.discount||0.85}"></div>
+      </div>
+      ${isEdit?`<div class="form-group"><label>状态</label><select id="agtStatus"><option value="active" ${a.status==='active'?'selected':''}>正常</option><option value="paused" ${a.status==='paused'?'selected':''}>暂停</option></select></div>`:''}
+      <div style="display:flex;gap:8px;margin-top:1rem">
+        <button class="btn-primary" id="btnSaveAgent" style="flex:1">${isEdit?'保存修改':'添加代理'}</button>
+        <button class="btn-secondary" onclick="this.closest('.modal-overlay').remove()">取消</button>
+      </div></div>`;
+    document.body.appendChild(overlay);
+    overlay.onclick=function(e){if(e.target===overlay)overlay.remove();};
+    document.getElementById('btnSaveAgent').onclick = async ()=>{
+      const data = {
+        name: document.getElementById('agtName').value,
+        city: document.getElementById('agtCity').value,
+        phone: document.getElementById('agtPhone').value,
+        wechat: document.getElementById('agtWechat').value,
+        level: document.getElementById('agtLevel').value,
+        discount: parseFloat(document.getElementById('agtDiscount').value)||0.85,
+      };
+      if(isEdit) data.status = document.getElementById('agtStatus').value;
+      try{
+        const url = isEdit ? API+'/api/admin/agent/'+id : API+'/api/admin/agents';
+        const r = await fetch(url,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+TOKEN},body:JSON.stringify(data)});
+        const d = await r.json();
+        toast(d.ok?'保存成功':'保存失败','ok');
+        overlay.remove();
+        loadAgents();
+      }catch(e){ toast('网络错误','err'); }
+    };
+  }
+}
+
+async function deleteAgent(id){
+  if(!confirm('确定删除该代理？')) return;
+  try{
+    await fetch(API+'/api/admin/agent/'+id,{method:'DELETE',headers:{'Authorization':'Bearer '+TOKEN}});
+    toast('已删除','ok');
+    loadAgents();
+  }catch(e){ toast('删除失败','err'); }
+}
+
+// ═══ 模型配置 ═══
+async function loadModels(){
+  try{
+    const r = await fetch(API+'/api/admin/models',{headers:{'Authorization':'Bearer '+TOKEN}});
+    const d = await r.json();
+    const config = d.config||{};
+    const tiers = [
+      {key:'free',name:'🆓 免费试用',desc:'注册即用'},
+      {key:'basic',name:'🥉 入门',desc:'¥998/月'},
+      {key:'standard',name:'🥈 标准',desc:'¥2,980/月'},
+      {key:'pro',name:'🥇 专业',desc:'¥5,980/月'},
+    ];
+    let h = '';
+    tiers.forEach(t=>{
+      const c = config[t.key]||{};
+      h += `<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1rem;margin-bottom:.75rem">
+        <div style="font-weight:700;margin-bottom:.5rem">${t.name} <span style="font-weight:400;color:var(--muted);font-size:.8rem">${t.desc}</span></div>
+        <div class="row">
+          <div class="form-group"><label>模型</label><select id="model_${t.key}"><option value="deepseek-chat" ${c.model==='deepseek-chat'?'selected':''}>DeepSeek V3 (deepseek-chat)</option><option value="deepseek-v4-pro" ${c.model==='deepseek-v4-pro'?'selected':''}>DeepSeek V4 Pro</option></select></div>
+          <div class="form-group"><label>Temperature</label><input id="temp_${t.key}" type="number" step="0.1" min="0" max="2" value="${c.temperature||0.7}"></div>
+          <div class="form-group"><label>Max Tokens</label><input id="tokens_${t.key}" type="number" step="100" min="500" max="8000" value="${c.max_tokens||1500}"></div>
+        </div>
+        <button class="btn-sm green" style="margin-top:.5rem" onclick="saveModelConfig('${t.key}')">💾 保存 ${t.name}</button>
       </div>`;
-    }
-  }catch(e){svc.innerHTML='<div style="color:var(--red)">健康检查失败</div>';}
+    });
+    document.getElementById('modelConfigs').innerHTML = h;
+  }catch(e){ toast('加载模型配置失败','err'); }
+}
 
-  // Data overview
+async function saveModelConfig(tier){
+  const cfg = {
+    model: document.getElementById('model_'+tier).value,
+    temperature: parseFloat(document.getElementById('temp_'+tier).value)||0.7,
+    max_tokens: parseInt(document.getElementById('tokens_'+tier).value)||1500,
+  };
   try{
-    const r=await fetch('/api/admin/stats');const d=await r.json();
-    if(d.ok){
-      const s=d.data.system;
-      document.getElementById('dataOverview').innerHTML=`<table><tr><th>指标</th><th>数值</th></tr>
-        <tr><td>配件总数</td><td style="font-weight:700">${s.parts}</td></tr>
-        <tr><td>库存SKU</td><td style="font-weight:700">${s.stock}</td></tr>
-        <tr><td>库存预警</td><td style="color:var(--red);font-weight:700">${s.alerts}</td></tr>
-        <tr><td>报价单数</td><td style="font-weight:700">${s.quotations}</td></tr>
-        <tr><td>审计日志</td><td style="font-weight:700">${s.audit_logs}</td></tr></table>`;
-    }
-  }catch(e){}
+    const r = await fetch(API+'/api/admin/models',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+TOKEN},body:JSON.stringify({tier,...cfg})});
+    const d = await r.json();
+    toast(d.ok?'模型配置已保存':'保存失败',d.ok?'ok':'err');
+  }catch(e){ toast('网络错误','err'); }
 }
 
-async function loadAllOrders(){
-  const el=document.getElementById('allOrders');
-  try{
-    const r=await fetch('/api/orders');const d=await r.json();
-    if(d.data&&d.data.length){
-      el.innerHTML='<table><tr><th>订单ID</th><th>套餐</th><th>周期</th><th>金额</th><th>状态</th><th>创建时间</th><th>支付时间</th></tr>'+d.data.map(o=>`<tr><td style="font-family:monospace;font-size:.75rem">${o.id}</td><td>${planName(o.plan_id)}</td><td>${o.period==='year'?'年付':'月付'}</td><td style="font-weight:700">¥${(o.amount||0).toLocaleString()}</td><td><span class="tag tag-${o.status==='paid'?'green':'amber'}">${o.status==='paid'?'已支付':'待支付'}</span></td><td>${(o.created_at||'').slice(0,10)}</td><td>${(o.paid_at||'').slice(0,10)||'-'}</td></tr>`).join('')+'</table>';
-    }else{el.innerHTML='<div style="color:var(--muted);padding:20px;text-align:center">暂无订单</div>';}
-  }catch(e){el.innerHTML='<div style="color:var(--red)">加载失败</div>';}
+// ═══ 套餐配置 ═══
+function loadPlans(){
+  const PLANS = {
+    quoter:{free:{name:'免费试用',price:0,quota:1},basic:{name:'入门',price:998,quota:50},standard:{name:'标准',price:2980,quota:200},pro:{name:'专业',price:5980,quota:500}},
+    developer:{free:{name:'免费试用',price:0,quota:1},basic:{name:'入门',price:998,quota:100},standard:{name:'标准',price:2980,quota:200},pro:{name:'专业',price:5980,quota:500}}
+  };
+  let h = '<h3 style="margin-bottom:1rem">📦 当前套餐配置</h3>';
+  ['quoter','developer'].forEach(type=>{
+    const name = type==='quoter'?'报价员':'客户开发员';
+    h += `<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1rem;margin-bottom:1rem">
+      <div style="font-weight:700;margin-bottom:.5rem">${name==='报价员'?'📜':'🎯'} ${name}</div>
+      <table><thead><tr><th>套餐</th><th>价格/月</th><th>配额</th><th>通道</th><th>年付价格</th></tr></thead><tbody>`;
+    Object.entries(PLANS[type]).forEach(([k,v])=>{
+      const ch = {free:0,basic:1,standard:2,pro:3}[k]||0;
+      h += `<tr><td><b>${v.name}</b></td><td>¥${v.price.toLocaleString()}</td><td>${v.quota}次</td><td>${ch}通道</td><td>¥${Math.round(v.price*10.2).toLocaleString()}</td></tr>`;
+    });
+    h += `</tbody></table></div>`;
+  });
+  h += '<p style="font-size:.78rem;color:var(--muted)">套餐价格和配额定义在 <code>store.js → PLANS</code>，修改后需重启服务生效。</p>';
+  document.getElementById('planConfigs').innerHTML = h;
 }
 
-function planName(id){const m={starter:'微光',standard:'标准',unlimited:'无界',enterprise:'企业'};return m[id]||id||'未知';}
-
-function showTab(name,el){
-  document.querySelectorAll('#tab-overview,#tab-orders,#tab-system,#tab-clients').forEach(t=>t.style.display='none');
-  document.getElementById('tab-'+name).style.display='block';
-  document.querySelectorAll('.sidebar nav a').forEach(a=>a.classList.remove('active'));
-  if(el)el.classList.add('active');
-  if(name==='overview')loadOverview();
-  if(name==='system')loadSystem();
-  if(name==='orders')loadAllOrders();
-}
-
-loadOverview();
-</script></body></html>
+// ═══ 工具 ═══
+function toast(msg,type){ const t=document.createElement('div');t.className='toast '+type;t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),3000); }
+</script>
+</body>
+</html>
