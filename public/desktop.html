@@ -6,8 +6,9 @@
 <title>Atlas 擎天 — 汽车配件 AI 助手</title>
 <style>
 /* ═══════════════════════════════════════════
-   Atlas 擎天 V2 — ZCode 风格
-   暗色主题 · 汽车行业定制
+   Atlas 擎天 V3 — Web 预览版
+   对齐客户端 v1.3.0 标准
+   暗/亮双主题 · 真实登录 · 完整设置
    ═══════════════════════════════════════════ */
 :root {
   --bg: #0a0a0a;
@@ -20,361 +21,1426 @@
   --dim: #555;
   --green: #00ff88;
   --green-bg: rgba(0,255,136,0.08);
-  --blue: #aaa;
-  --blue-bg: rgba(255,255,255,.08);
-  --amber: #aaa;
-  --amber-bg: rgba(255,255,255,.08);
-  --red: #aaa;
-  --purple: #aaa;
   --radius: 8px;
   --font: -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
 }
+[data-theme="light"] {
+  --bg: #f2f2f4;
+  --panel: #ffffff;
+  --sidebar: #f5f5f5;
+  --active: #e8e8ea;
+  --line: #d0d0d5;
+  --ink: #1a1a1e;
+  --muted: #666;
+  --dim: #999;
+  --green: #00cc66;
+  --green-bg: rgba(0,204,102,0.1);
+}
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:var(--font);background:var(--bg);color:var(--ink);height:100vh;overflow:hidden;display:flex;user-select:none}
-/* ═══ Activity Bar（最左侧图标条）═══ */
-.activity-bar{width:48px;background:var(--sidebar);display:flex;flex-direction:column;align-items:center;padding:8px 0;gap:2px;border-right:1px solid var(--line);flex-shrink:0}
+body{font-family:var(--font);background:var(--bg);color:var(--ink);height:100vh;overflow:hidden;display:flex;user-select:none;transition:background .3s,color .3s}
+
+/* ═══ Activity Bar ═══ */
+.activity-bar{width:48px;background:var(--sidebar);display:flex;flex-direction:column;align-items:center;padding:8px 0;gap:2px;border-right:1px solid var(--line);flex-shrink:0;transition:background .3s}
 .ab-item{width:40px;height:40px;display:flex;align-items:center;justify-content:center;border-radius:var(--radius);cursor:pointer;font-size:1.2rem;color:var(--muted);transition:all .15s;position:relative}
 .ab-item:hover{color:var(--ink);background:var(--active)}
 .ab-item.active{color:var(--ink);background:var(--active)}
-.ab-item.active::before{content:'';position:absolute;left:-8px;top:8px;bottom:8px;width:2px;background:var(--ink);border-radius:1px}
+.ab-item.active::before{content:'';position:absolute;left:-8px;top:8px;bottom:8px;width:2px;background:var(--green);border-radius:1px}
 .ab-spacer{flex:1}
-/* ═══ Sidebar（左侧面板）═══ */
-.sidebar{width:260px;background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column;flex-shrink:0;overflow:hidden}
+
+/* ═══ Sidebar ═══ */
+.sidebar{width:260px;background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column;flex-shrink:0;overflow:hidden;transition:background .3s}
 .sidebar-header{padding:12px 14px;font-size:.7rem;font-weight:600;text-transform:uppercase;color:var(--dim);letter-spacing:.5px;display:flex;align-items:center;justify-content:space-between}
-.sidebar-header .actions{font-size:.9rem;cursor:pointer;padding:2px 6px;border-radius:4px}
+.sidebar-header .actions{font-size:.9rem;cursor:pointer;padding:2px 6px;border-radius:4px;transition:background .15s}
 .sidebar-header .actions:hover{background:var(--active)}
 .sidebar-body{flex:1;overflow-y:auto;padding:4px 0}
-/* ═══ 文件树 / Agent 列表 ═══ */
-.tree-item,.agent-item{padding:6px 14px;display:flex;align-items:center;gap:8px;cursor:pointer;font-size:.8rem;color:var(--muted);transition:all .1s;border-left:2px solid transparent}
-.tree-item:hover,.agent-item:hover{background:var(--active);color:var(--ink)}
-.tree-item.active,.agent-item.active{background:var(--active);color:var(--ink);border-left-color:var(--ink)}
-.tree-item .icon,.agent-item .icon{font-size:.9rem;width:16px;text-align:center}
-.tree-item .badge,.agent-item .badge{font-size:.65rem;padding:1px 6px;border-radius:10px;margin-left:auto}
-.badge-done{background:var(--active);color:var(--ink)}
-.badge-lock{background:var(--line);color:var(--dim)}
+.tree-item{padding:6px 14px;display:flex;align-items:center;gap:8px;cursor:pointer;font-size:.8rem;color:var(--muted);transition:all .1s;border-left:2px solid transparent}
+.tree-item:hover{background:var(--active);color:var(--ink)}
+.agent-card{display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--active);border-radius:10px;cursor:pointer;transition:all .15s;border:1px solid transparent;margin:4px 10px;min-height:52px}
+.agent-card:hover{border-color:var(--line);background:color-mix(in srgb,var(--active) 70%,var(--panel))}
+.agent-card .agent-icon{font-size:1.3rem;width:36px;height:36px;display:flex;align-items:center;justify-content:center;background:var(--green-bg);border-radius:9px;flex-shrink:0;transition:all .2s}
+.agent-card:hover .agent-icon{transform:scale(1.05)}
+.agent-card .agent-info{flex:1;min-width:0;overflow:hidden}
+.agent-card .agent-name{font-size:.82rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3}
+.agent-card .agent-desc{font-size:.7rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3;margin-top:1px}
+.agent-card .agent-status{font-size:.62rem;padding:2px 7px;border-radius:8px;white-space:nowrap;flex-shrink:0;font-weight:500}
+.agent-card.locked{cursor:not-allowed;opacity:.55;filter:grayscale(.3)}
+.agent-card.locked:hover{background:var(--active);border-color:transparent}
+.agent-card.locked .agent-icon{background:var(--line)}
+.agent-card.locked .agent-icon:hover{transform:none}
+.train-btn{font-size:1rem;width:30px;height:30px;display:flex;align-items:center;justify-content:center;border-radius:7px;cursor:pointer;transition:all .15s;flex-shrink:0;color:var(--muted)}
+.train-btn:hover{background:var(--green-bg);color:var(--green);transform:scale(1.1)}
+.train-btn.locked{cursor:not-allowed;opacity:.35;color:var(--dim)}
+.train-btn.locked:hover{background:transparent;transform:none;color:var(--dim)}
+.agent-card.active{background:var(--green-bg);border-color:rgba(0,255,136,.15)}
+
 /* ═══ Main Panel ═══ */
 .main{flex:1;display:flex;flex-direction:column;overflow:hidden}
-/* Tabs */
-.tabs{display:flex;background:var(--panel);border-bottom:1px solid var(--line);padding:0 8px;min-height:36px;align-items:flex-end;gap:2px}
-.tab{padding:7px 14px;font-size:.78rem;color:var(--muted);cursor:pointer;border-radius:6px 6px 0 0;display:flex;align-items:center;gap:6px;transition:all .1s;white-space:nowrap}
+.tabs{display:flex;background:var(--panel);border-bottom:1px solid var(--line);padding:0 8px;min-height:36px;align-items:flex-end;gap:2px;transition:background .3s}
+.tab{padding:7px 14px;font-size:.78rem;color:var(--muted);cursor:pointer;border-radius:6px 6px 0 0;display:flex;align-items:center;gap:6px;transition:all .1s;white-space:nowrap;border:1px solid transparent;border-bottom:none}
 .tab:hover{color:var(--ink);background:var(--active)}
-.tab.active{color:var(--ink);background:var(--bg);border:1px solid var(--line);border-bottom-color:var(--panel)}
+.tab.active{color:var(--ink);background:var(--bg);border-color:var(--line);border-bottom-color:var(--bg)}
 .tab .close{font-size:.7rem;padding:2px;border-radius:3px;opacity:0;transition:opacity .1s}
 .tab:hover .close{opacity:.7}
 .tab .close:hover{opacity:1;background:var(--line)}
-/* Workspace */
 .workspace{flex:1;display:flex;flex-direction:column;overflow:hidden}
 .welcome{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:40px;text-align:center}
 .welcome .logo{font-size:3rem;margin-bottom:8px}
 .welcome h1{font-size:1.4rem;font-weight:700}
-.welcome h1 span{color:var(--ink)}
+.welcome h1 span{color:var(--green)}
 .welcome p{color:var(--muted);font-size:.85rem;max-width:400px;line-height:1.6}
 .welcome .shortcut{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;background:var(--active);border-radius:6px;font-size:.78rem;color:var(--muted);margin-top:8px}
 .welcome .shortcut kbd{font-family:monospace;font-size:.75rem;padding:1px 6px;background:var(--bg);border-radius:4px;border:1px solid var(--line);color:var(--ink)}
-/* Chat panel */
+
+/* ═══ Chat Panel ═══ */
 .chat-panel{flex:1;display:flex;flex-direction:column;overflow:hidden;background:var(--bg)}
 .chat-messages{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px}
 .chat-msg{max-width:80%;padding:10px 14px;border-radius:12px;font-size:.85rem;line-height:1.6;animation:fadeIn .2s ease}
 .chat-msg.agent{background:var(--active);align-self:flex-start;border-bottom-left-radius:4px}
-.chat-msg.user{background:var(--active);border:1px solid rgba(255,255,255,.2);align-self:flex-end;border-bottom-right-radius:4px}
-.chat-msg.agent .label{font-size:.7rem;color:var(--ink);font-weight:600;margin-bottom:4px}
+.chat-msg.user{background:var(--active);border:1px solid rgba(128,128,128,.3);align-self:flex-end;border-bottom-right-radius:4px}
+.chat-msg.agent .label{font-size:.7rem;color:var(--green);font-weight:600;margin-bottom:4px}
 .chat-msg .result-card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:12px;margin-top:8px;font-size:.8rem}
 .chat-msg .result-card table{width:100%;border-collapse:collapse;font-size:.78rem}
 .chat-msg .result-card th{text-align:left;padding:4px 8px;color:var(--dim);font-weight:500;border-bottom:1px solid var(--line)}
 .chat-msg .result-card td{padding:4px 8px;font-variant-numeric:tabular-nums}
 .chat-msg .result-card .total{font-weight:700;color:var(--ink);font-size:.9rem}
 .chat-input-bar{padding:12px 16px;border-top:1px solid var(--line);display:flex;gap:8px;align-items:center}
-.chat-input-bar textarea{flex:1;background:var(--active);border:1px solid var(--line);border-radius:var(--radius);padding:10px 14px;color:var(--ink);font-family:inherit;font-size:.85rem;resize:none;outline:none;min-height:40px;max-height:120px}
-.chat-input-bar textarea:focus{border-color:var(--ink)}
-.chat-input-bar .send-btn{width:36px;height:36px;border-radius:50%;background:var(--ink);color:var(--panel);border:none;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0}
+.chat-input-bar textarea{flex:1;background:var(--active);border:1px solid var(--line);border-radius:var(--radius);padding:10px 14px;color:var(--ink);font-family:inherit;font-size:.85rem;resize:none;outline:none;min-height:40px;max-height:120px;transition:border-color .15s}
+.chat-input-bar textarea:focus{border-color:var(--green)}
+.chat-input-bar .send-btn{width:36px;height:36px;border-radius:50%;background:var(--green);color:var(--bg);border:none;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0;font-weight:700}
 .chat-input-bar .send-btn:hover{transform:scale(1.05)}
 .chat-input-bar .send-btn:disabled{opacity:.3;cursor:not-allowed}
-/* ═══ Command Palette ═══ */
-.overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:100;display:flex;align-items:flex-start;justify-content:center;padding-top:15vh}
-.overlay.hidden{display:none}
-.user-panel{position:fixed;bottom:60px;left:56px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:20px;width:240px;z-index:200;box-shadow:0 8px 32px rgba(0,0,0,0.5)}
-.palette{width:560px;max-height:400px;background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:0 16px 48px rgba(0,0,0,.5);display:flex;flex-direction:column;overflow:hidden}
-.palette input{background:transparent;border:none;border-bottom:1px solid var(--line);padding:14px 16px;color:var(--ink);font-size:.9rem;outline:none;font-family:inherit}
-.palette input::placeholder{color:var(--dim)}
-.palette .results{flex:1;overflow-y:auto;padding:4px}
-.palette .result-item{padding:8px 14px;display:flex;align-items:center;gap:10px;cursor:pointer;border-radius:6px;font-size:.82rem;transition:all .1s}
-.palette .result-item:hover,.palette .result-item.selected{background:var(--active)}
-.palette .result-item .icon{font-size:1rem;width:22px;text-align:center}
-.palette .result-item .desc{font-size:.72rem;color:var(--muted)}
-.palette .result-item .shortcut-k{font-size:.7rem;color:var(--dim);margin-left:auto}
+/* ─── File Upload ─── */
+.chat-attach-btn{width:36px;height:36px;border-radius:50%;background:var(--active);border:1px solid var(--line);color:var(--muted);font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0}
+.chat-attach-btn:hover{color:var(--ink);border-color:var(--muted);background:var(--panel)}
+.file-chips{display:flex;gap:6px;padding:4px 16px 0;flex-wrap:wrap}
+.file-chip{display:inline-flex;align-items:center;gap:4px;padding:3px 8px 3px 6px;background:var(--active);border:1px solid var(--line);border-radius:6px;font-size:.7rem;color:var(--ink);animation:fadeIn .15s ease}
+.file-chip .chip-icon{font-size:.8rem}
+.file-chip .chip-remove{cursor:pointer;opacity:.5;font-size:.75rem;line-height:1;padding:0 2px}
+.file-chip .chip-remove:hover{opacity:1;color:#ff4444}
+.file-chip.chip-excel{background:rgba(0,255,136,0.06);border-color:rgba(0,255,136,0.15)}
+.file-chip.chip-image{background:rgba(139,180,248,0.08);border-color:rgba(139,180,248,0.2)}
+.file-chip.chip-pdf{background:rgba(253,214,99,0.08);border-color:rgba(253,214,99,0.2)}
+.upload-zone{display:flex;align-items:center;justify-content:center;padding:8px;margin:4px 16px 0;border:1px dashed var(--line);border-radius:8px;color:var(--muted);font-size:.75rem;cursor:pointer;transition:all .15s;min-height:40px}
+.upload-zone:hover{border-color:var(--green);color:var(--green);background:var(--green-bg)}
+.upload-zone.drag-over{border-color:var(--green);color:var(--green);background:var(--green-bg)}
+
 /* ═══ Status Bar ═══ */
-.status-bar{height:24px;background:var(--sidebar);border-top:1px solid var(--line);display:flex;align-items:center;padding:0 12px;font-size:.7rem;color:var(--dim);gap:14px;flex-shrink:0}
+.status-bar{height:24px;background:var(--sidebar);border-top:1px solid var(--line);display:flex;align-items:center;padding:0 12px;font-size:.7rem;color:var(--dim);gap:14px;flex-shrink:0;transition:background .3s}
+.status-bar .dot{width:7px;height:7px;border-radius:50%;background:var(--green);display:inline-block}
 .status-bar .right{margin-left:auto}
-.status-bar .dot{width:7px;height:7px;border-radius:50%;background:var(--ink)}
+
+/* ═══ Overlay & Modal ═══ */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:100;display:flex;align-items:center;justify-content:center}
+.overlay.hidden{display:none}
+.user-popup.hidden{display:none}
+.modal{background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:0 16px 48px rgba(0,0,0,.5);overflow:hidden;transition:background .3s;user-select:text}
+.modal input,.modal select{background:var(--active);border:1px solid var(--line);border-radius:6px;padding:8px 12px;color:var(--ink);font-size:.85rem;outline:none;font-family:inherit;width:100%;transition:border-color .15s}
+.modal input:focus,.modal select:focus{border-color:var(--green)}
+.modal .btn-primary{background:var(--green);color:var(--bg);border:none;border-radius:6px;padding:8px 16px;font-size:.85rem;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s}
+.modal .btn-primary:hover{opacity:.9}
+.modal .btn-secondary{background:var(--active);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:8px 16px;font-size:.82rem;cursor:pointer;font-family:inherit;transition:all .15s}
+.modal .btn-secondary:hover{background:var(--green-bg);border-color:var(--green)}
+.modal .btn-danger{color:#ff4444;border-color:rgba(255,68,68,.2)}
+
+/* ═══ Settings Modal ═══ */
+/* Settings layout helpers */
+.settings-row{display:flex;gap:12px;margin-bottom:4px}
+.settings-col{flex:1;min-width:0}
+.settings-card{background:var(--active);padding:12px 14px;border-radius:8px;margin-bottom:12px}
+.settings-card table td{white-space:nowrap}
+.settings-modal{width:760px;height:540px;display:flex}
+.settings-sidebar{width:160px;background:var(--sidebar);border-right:1px solid var(--line);padding:8px 0;overflow-y:auto;flex-shrink:0}
+.settings-sidebar .section-title{padding:10px 14px;font-size:.75rem;font-weight:600;color:var(--dim);text-transform:uppercase;letter-spacing:.5px}
+.settings-nav-item{padding:8px 14px;display:flex;align-items:center;gap:8px;cursor:pointer;font-size:.82rem;color:var(--muted);border-left:2px solid transparent;transition:all .1s}
+.settings-nav-item:hover{background:var(--active);color:var(--ink)}
+.settings-nav-item.active{background:var(--active);color:var(--ink);border-left-color:var(--green)}
+.settings-nav-item .nav-icon{font-size:.9rem}
+.settings-content{flex:1;padding:24px;overflow-y:auto;display:flex;flex-direction:column;gap:16px;user-select:text}
+.settings-content h3{font-size:.95rem;font-weight:600}
+.settings-content .field{margin-bottom:8px}
+.settings-content .field-label{font-size:.78rem;color:var(--muted);margin-bottom:6px}
+.settings-content .card{background:var(--active);padding:14px;border-radius:8px}
+.setting-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;font-size:.82rem}
+.setting-row .val{font-size:.75rem;color:var(--green)}
+
+/* ═══ Login Modal ═══ */
+.login-modal{width:380px;padding:24px}
+.login-modal h2{font-size:1.1rem;margin-bottom:4px;text-align:center}
+.login-modal .subtitle{font-size:.78rem;color:var(--muted);text-align:center;margin-bottom:20px}
+.login-modal .field{margin-bottom:14px}
+.login-modal .error{color:#ff4444;font-size:.78rem;text-align:center;margin-top:8px;min-height:20px}
+.login-modal .switch-link{text-align:center;font-size:.78rem;color:var(--muted);margin-top:12px}
+.login-modal .switch-link a{color:var(--green);cursor:pointer;text-decoration:underline}
+
+/* ═══ User Panel Popup ═══ */
+.user-popup{position:fixed;bottom:60px;left:56px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px;width:250px;z-index:200;box-shadow:0 8px 32px rgba(0,0,0,.4)}
+.user-popup .up-name{font-size:.85rem;font-weight:600;margin-bottom:2px}
+.user-popup .up-email{font-size:.72rem;color:var(--muted);margin-bottom:12px}
+.user-popup .up-quota{background:var(--bg);border-radius:8px;padding:10px;margin-bottom:10px;font-size:.72rem;color:var(--dim);line-height:1.6}
+.user-popup .up-row{display:flex;gap:6px}
+.user-popup .up-row button{flex:1;padding:6px 0;border-radius:6px;font-size:.72rem;cursor:pointer;font-family:inherit}
+
+/* ═══ Accent color dots ═══ */
+.accent-dot{width:28px;height:28px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:all .15s}
+.accent-dot:hover{transform:scale(1.15)}
+.accent-dot.active{border-color:var(--ink)}
+
 /* ═══ Animations ═══ */
 @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
-/* ═══ Agent 卡片 ═══ */
-.agent-card{display:flex;align-items:center;gap:12px;padding:14px;background:var(--active);border-radius:10px;cursor:pointer;transition:all .15s;border:1px solid transparent;margin:6px 10px}
-.agent-card:hover{border-color:var(--line);background:var(--panel)}
-.agent-card .agent-icon{font-size:1.5rem;width:40px;height:40px;display:flex;align-items:center;justify-content:center;background:var(--active);border-radius:10px}
-.agent-card .agent-info{flex:1}
-.agent-card .agent-name{font-size:.85rem;font-weight:600}
-.agent-card .agent-desc{font-size:.72rem;color:var(--muted)}
-.agent-card .agent-status{font-size:.65rem;padding:2px 8px;border-radius:10px}
-.locked .agent-icon{background:var(--line);opacity:.5}
-.locked .agent-name{color:var(--muted)}
-/* ═══ Resize handle ═══ */
-.resize-handle{width:3px;cursor:col-resize;flex-shrink:0;transition:background .15s}
-.resize-handle:hover{background:var(--ink)}
-/* ═══ Markdown in chat ═══ */
-.chat-msg strong{color:var(--ink)}
-.chat-msg code{background:var(--bg);padding:1px 5px;border-radius:4px;font-size:.78rem}
-.chat-msg pre{background:var(--bg);padding:10px;border-radius:6px;font-size:.75rem;overflow-x:auto;margin:6px 0}
+@keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+
+/* ═══ Scrollbar ═══ */
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--line);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--dim)}
 </style>
 </head>
-<body>
+<body data-theme="dark">
 
 <!-- ═══ Activity Bar ═══ -->
 <div class="activity-bar" id="activityBar">
   <div class="ab-item active" data-view="knowledge" title="知识库">📁</div>
-  <div class="ab-item" data-view="agents" title="智能体">🤖</div>
+  <div class="ab-item" data-view="agents" title="数字员工">🤖</div>
   <div class="ab-spacer"></div>
-  <div class="ab-item" id="userBtn" title="登录" onclick="toggleUserPanel()">👤</div>
-  <div class="ab-item" data-view="settings" title="设置">⚙️</div>
+  <div class="ab-item" id="userBtn" title="用户" onclick="handleUserClick()" style="margin-bottom:4px">👤</div>
+  <div style="text-align:center;padding:10px 0 6px;font-size:.68rem;color:var(--dim);letter-spacing:.3px;opacity:.6">Atlas v1.5.0</div>
+  <div class="ab-item" id="settingsBtn" title="设置">⚙️</div>
 </div>
 
 <!-- ═══ Sidebar ═══ -->
 <div class="sidebar" id="sidebar">
   <div class="sidebar-header">
     <span id="sidebarTitle">知识库</span>
-    <span class="actions" title="导入文件" onclick="addKnowledge()">＋</span>
+    <a href="/tutorial" title="教程" style="font-size:.82rem;color:var(--green);text-decoration:none">📖</a>
+    <a href="/" title="返回官网" style="font-size:.82rem;color:var(--muted);text-decoration:none;margin-right:4px">🏠</a>
+    <span class="actions" title="上传参考文件到知识库" onclick="document.getElementById('kbFileInput').click()">📤</span>
+    <span class="actions" title="训练AI — 从知识库文件提取规则" onclick="document.getElementById('trainFileInput').click()" style="margin-left:4px">🧠</span>
   </div>
   <div class="sidebar-body" id="sidebarBody">
-    <!-- 知识库树 -->
     <div id="knowledgeTree">
-      <div class="tree-item active" onclick="openFile('历史报价_2024.xlsx')">
-        <span class="icon">📊</span> 历史报价_2024.xlsx
-      </div>
-      <div class="tree-item" onclick="openFile('历史报价_2025Q1.xlsx')">
-        <span class="icon">📊</span> 历史报价_2025Q1.xlsx
-      </div>
-      <div class="tree-item" onclick="openFile('客户清单.csv')">
-        <span class="icon">👥</span> 客户清单.csv
-      </div>
-      <div class="tree-item" onclick="openFile('供应商价格表.xlsx')">
-        <span class="icon">💰</span> 供应商价格表.xlsx
-      </div>
-      <div class="tree-item" onclick="openFile('报价模板.xlsx')">
-        <span class="icon">📋</span> 报价模板.xlsx
-      </div>
+      <div style="padding:20px;text-align:center;color:var(--muted);font-size:.8rem" id="kbEmpty">📂 登录后显示知识库文件</div>
     </div>
-
-    <!-- 租赁（初始隐藏） -->
     <div id="agentList" style="display:none">
-      <div class="agent-card" onclick="useAgent('quote')">
-        <div class="agent-icon">💎</div>
-        <div class="agent-info">
-          <div class="agent-name">报价员</div>
-          <div class="agent-desc">从历史数据学习定价规律，3秒出价</div>
-        </div>
-        <span class="agent-status badge-done">已租赁</span>
-      </div>
-      <div class="agent-card" onclick="useAgent('prospect')">
-        <div class="agent-icon">🎯</div>
-        <div class="agent-info">
+      <div class="agent-card" id="agent-prospect">
+        <div class="agent-icon" onclick="useAgent('prospect')">🎯</div>
+        <div class="agent-info" onclick="useAgent('prospect')">
           <div class="agent-name">客户开发员</div>
           <div class="agent-desc">搜客户→画像→开发信</div>
         </div>
-        <span class="agent-status badge-done">已租赁</span>
+        <span class="agent-status" style="background:var(--green-bg);color:var(--green)">已租赁</span>
+        <span class="train-btn" title="训练客户开发员" onclick="trainAgentCard('developer')">🧠</span>
       </div>
-      <div class="agent-card locked" onclick="showLocked()">
-        <div class="agent-icon">🔍</div>
-        <div class="agent-info">
+      <div class="agent-card" id="agent-quote">
+        <div class="agent-icon" onclick="useAgent('quote')">💎</div>
+        <div class="agent-info" onclick="useAgent('quote')">
+          <div class="agent-name">报价员</div>
+          <div class="agent-desc">从历史数据学习，3秒出价</div>
+        </div>
+        <span class="agent-status" style="background:var(--green-bg);color:var(--green)">已租赁</span>
+        <span class="train-btn" title="训练报价员" onclick="trainAgentCard('quoter')">🧠</span>
+      </div>
+      <div class="agent-card locked">
+        <div class="agent-icon" onclick="showLocked()">🛒</div>
+        <div class="agent-info" onclick="showLocked()">
+          <div class="agent-name">采购员</div>
+          <div class="agent-desc">供应商比价+智能下单</div>
+        </div>
+        <span class="agent-status" style="background:var(--line);color:var(--dim)">未租赁</span>
+        <span class="train-btn locked" title="租赁后解锁训练">🔒</span>
+      </div>
+      <div class="agent-card locked">
+        <div class="agent-icon" onclick="showLocked()">🔍</div>
+        <div class="agent-info" onclick="showLocked()">
           <div class="agent-name">图片识零件员</div>
           <div class="agent-desc">拍照识OE号，匹配库存</div>
         </div>
-        <span class="agent-status badge-lock">未租赁</span>
+        <span class="agent-status" style="background:var(--line);color:var(--dim)">未租赁</span>
+        <span class="train-btn locked" title="租赁后解锁训练">🔒</span>
       </div>
-      <div class="agent-card locked" onclick="showLocked()">
-        <div class="agent-icon">📦</div>
-        <div class="agent-info">
+      <div class="agent-card locked">
+        <div class="agent-icon" onclick="showLocked()">📦</div>
+        <div class="agent-info" onclick="showLocked()">
           <div class="agent-name">库存管理员</div>
-          <div class="agent-desc">预测库存需求 + 呆滞预警 + 自动补货</div>
+          <div class="agent-desc">预测需求+呆滞预警</div>
         </div>
-        <span class="agent-status badge-lock">未租赁</span>
+        <span class="agent-status" style="background:var(--line);color:var(--dim)">未租赁</span>
+        <span class="train-btn locked" title="租赁后解锁训练">🔒</span>
+      </div>
+      <div class="agent-card locked">
+        <div class="agent-icon" onclick="showLocked()">🛃</div>
+        <div class="agent-info" onclick="showLocked()">
+          <div class="agent-name">清关助理</div>
+          <div class="agent-desc">HS编码+报关单自动生成</div>
+        </div>
+        <span class="agent-status" style="background:var(--line);color:var(--dim)">未租赁</span>
+        <span class="train-btn locked" title="租赁后解锁训练">🔒</span>
       </div>
     </div>
   </div>
 </div>
 
 <!-- ═══ Resize Handle ═══ -->
-<div class="resize-handle" id="resizeHandle"></div>
+<div id="resizeHandle" style="width:3px;cursor:col-resize;flex-shrink:0;transition:background .15s"
+  onmousedown="startResize(event)" onmouseenter="this.style.background='var(--green)'" onmouseleave="this.style.background='transparent'"></div>
 
-<!-- ═══ Main ═══ -->
+<!-- ═══ Main Panel ═══ -->
 <div class="main" id="mainPanel">
-  <!-- Tabs -->
   <div class="tabs" id="tabsBar">
-    <div class="tab active" data-file="welcome">
-      🏠 欢迎
-    </div>
+    <div class="tab active" data-file="welcome">🏠 欢迎</div>
   </div>
-
-  <!-- Workspace -->
   <div class="workspace" id="workspace">
-    <!-- Welcome / Home -->
+    <!-- Welcome -->
     <div class="welcome" id="view-welcome">
       <div class="logo">🏭</div>
-      <h1>Atlas <span style="color:var(--green)">擎天</span></h1>
+      <h1>Atlas <span>Desktop</span></h1>
       <p>汽车配件 AI 助手 · 从历史数据中学习你的定价逻辑</p>
-      <div class="shortcut">
-        <kbd>Ctrl</kbd> + <kbd>K</kbd> 打开命令面板
-      </div>
+      <div class="shortcut"><kbd>Ctrl</kbd> + <kbd>K</kbd> 打开命令面板</div>
       <div style="display:flex;gap:10px;margin-top:10px">
-        <button class="agent-card" style="border:none;cursor:pointer;background:var(--active)" onclick="useAgent('quote')">
-          <div class="agent-icon">💎</div>
-          <div class="agent-info" style="text-align:left">
-            <div class="agent-name">报价员</div>
-            <div class="agent-desc">拖入询盘，3秒出报价</div>
-          </div>
+        <button onclick="useAgent('quote')" style="display:flex;align-items:center;gap:12px;padding:14px;background:var(--active);border-radius:10px;cursor:pointer;border:1px solid transparent;color:var(--ink);font-family:inherit;transition:all .15s"
+          onmouseenter="this.style.borderColor='var(--line)'" onmouseleave="this.style.borderColor='transparent'">
+          <div style="font-size:1.5rem;width:40px;height:40px;display:flex;align-items:center;justify-content:center;background:var(--green-bg);border-radius:10px">💎</div>
+          <div style="text-align:left"><div style="font-size:.85rem;font-weight:600">报价员</div><div style="font-size:.72rem;color:var(--muted)">拖入询盘，AI 3秒出价</div></div>
         </button>
-        <button class="agent-card" style="border:none;cursor:pointer;background:var(--active)" onclick="useAgent('prospect')">
-          <div class="agent-icon">🎯</div>
-          <div class="agent-info" style="text-align:left">
-            <div class="agent-name">开发客户</div>
-            <div class="agent-desc">找新客户 + 写开发信</div>
-          </div>
+        <button onclick="useAgent('prospect')" style="display:flex;align-items:center;gap:12px;padding:14px;background:var(--active);border-radius:10px;cursor:pointer;border:1px solid transparent;color:var(--ink);font-family:inherit;transition:all .15s"
+          onmouseenter="this.style.borderColor='var(--line)'" onmouseleave="this.style.borderColor='transparent'">
+          <div style="font-size:1.5rem;width:40px;height:40px;display:flex;align-items:center;justify-content:center;background:var(--green-bg);border-radius:10px">🎯</div>
+          <div style="text-align:left"><div style="font-size:.85rem;font-weight:600">客户开发员</div><div style="font-size:.72rem;color:var(--muted)">找新客户 + 写开发信</div></div>
         </button>
       </div>
     </div>
 
-    <!-- Quote Agent 对话 -->
+    <!-- Quote Agent -->
     <div class="chat-panel" id="view-quote" style="display:none">
       <div class="chat-messages" id="quoteMessages">
         <div class="chat-msg agent">
           <div class="label">💎 报价员 Agent</div>
-          你好！我是报价智能体。<br>
-          我从你的 <strong>2 份历史报价单（338 条记录）</strong> 中学习了你的定价规律。<br><br>
-          <strong>📊 我发现的规律：</strong><br>
+          你好！我从 <strong>2 份历史报价单（338 条记录）</strong> 中学习了你的定价规律。<br><br>
+          <strong>📊 发现的规律：</strong><br>
           • 福田康明斯喷油器 均价 ¥3,200，波动 ±8%<br>
           • 七星客户加价系数 1.15-1.25<br>
           • 中东地区运费加成 ¥200-400/件<br>
           • 50件以上批量折扣 5-8%<br><br>
-          直接粘贴询盘或输入配件名，我帮你报价 👇
+          直接粘贴询盘 👇
         </div>
       </div>
+      <div class="file-chips" id="quoteFileChips"></div>
+      <div class="upload-zone" id="quoteUploadZone" onclick="document.getElementById('quoteFileInput').click()" 
+        ondragover="event.preventDefault();this.classList.add('drag-over')" 
+        ondragleave="this.classList.remove('drag-over')"
+        ondrop="handleDrop(event,'quote')">
+        📁 拖拽 Excel / CSV / PDF / 图片到这里，或点击上传
+      </div>
       <div class="chat-input-bar">
-        <textarea id="quoteInput" placeholder="输入询盘，如：福田康明斯喷油器 50件 发迪拜..." rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendQuote()}"></textarea>
+        <button class="chat-attach-btn" onclick="document.getElementById('quoteFileInput').click()" title="上传文件">📎</button>
+        <textarea id="quoteInput" placeholder="输入询盘，如：福田康明斯喷油器 50件 发迪拜..." rows="1"
+          onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendQuote()}"></textarea>
+        <input type="file" id="quoteFileInput" multiple accept=".xlsx,.xls,.csv,.pdf,.jpg,.jpeg,.png,.webp,.txt,.md" onchange="handleFiles(this.files,'quote')" style="display:none">
         <button class="send-btn" onclick="sendQuote()">↑</button>
       </div>
     </div>
 
-    <!-- Prospect Agent 对话 -->
+    <!-- Prospect Agent -->
     <div class="chat-panel" id="view-prospect" style="display:none">
       <div class="chat-messages" id="prospectMessages">
         <div class="chat-msg agent">
           <div class="label">🎯 客户开发员 Agent</div>
-          我可以帮你：<br>
-          • 输入关键词 → 搜索潜在客户<br>
-          • 分析客户画像 → 匹配你的产品线<br>
-          • 自动写开发信 → 一键发送<br><br>
-          试试输入产品关键词 👇
+          我能帮你三步完成客户开发：<br>① 输入行业+国家+关键词 → 多渠道搜索客户<br>② 自动背调拼图（工商/采购/社媒/风控评估）<br>③ 基于背调生成个性化开发信<br><br>试试输入 👇
         </div>
       </div>
+      <div class="file-chips" id="prospectFileChips"></div>
+      <div class="upload-zone" id="prospectUploadZone" onclick="document.getElementById('prospectFileInput').click()" 
+        ondragover="event.preventDefault();this.classList.add('drag-over')" 
+        ondragleave="this.classList.remove('drag-over')"
+        ondrop="handleDrop(event,'prospect')">
+        📁 拖拽客户清单 / 产品目录 / 图片到这里，或点击上传
+      </div>
       <div class="chat-input-bar">
-        <textarea id="prospectInput" placeholder="输入关键词，如：diesel engine parts Dubai..." rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendProspect()}"></textarea>
+        <button class="chat-attach-btn" onclick="document.getElementById('prospectFileInput').click()" title="上传文件">📎</button>
+        <textarea id="prospectInput" placeholder="行业 国家 关键词，如：auto parts UAE diesel engine..." rows="1"
+          onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendProspect()}"></textarea>
+        <input type="file" id="prospectFileInput" multiple accept=".xlsx,.xls,.csv,.pdf,.jpg,.jpeg,.png,.webp,.txt,.md" onchange="handleFiles(this.files,'prospect')" style="display:none">
         <button class="send-btn" onclick="sendProspect()">↑</button>
       </div>
-    </div>
-
-    <!-- File View 占位 -->
+    
+    <!-- File View -->
     <div class="welcome" id="view-file" style="display:none">
       <div class="logo">📊</div>
       <p id="fileNameDisplay" style="color:var(--muted)">选择一个文件查看</p>
-    </div>
-
-    <!-- Settings -->
-    <div class="welcome" id="view-settings" style="display:none">
-      <div class="logo">⚙️</div>
-      <h1>设置</h1>
-      <div style="text-align:left;max-width:400px;width:100%">
-        <div style="margin-bottom:16px">
-          <div style="font-size:.8rem;color:var(--muted);margin-bottom:4px">订阅状态</div>
-          <div style="background:var(--active);padding:14px;border-radius:var(--radius)">
-            <span class="badge-done" style="font-size:.8rem;padding:4px 12px">标准版 · 已激活</span>
-            <div style="font-size:.78rem;color:var(--muted);margin-top:8px">智能体: 报价员 + 客户开发员<br>到期: 2026-07-18</div>
-          </div>
-        </div>
-        <div style="margin-bottom:16px">
-          <div style="font-size:.8rem;color:var(--muted);margin-bottom:6px">API 端点</div>
-          <code style="background:var(--active);padding:8px 12px;border-radius:6px;display:block;font-size:.78rem">https://atlas.traceclaw.cn</code>
-        </div>
-        <button style="width:100%;padding:10px;border-radius:var(--radius);background:var(--ink);color:var(--panel);border:none;font-weight:600;cursor:pointer;font-size:.85rem" onclick="alert('更多智能体即将上线：图片识零件员、库存管理员、清关助手…')">
-          🔓 升级订阅
-        </button>
-      </div>
     </div>
   </div>
 
   <!-- Status Bar -->
   <div class="status-bar">
-    <span class="dot" id="statusDot" style="background:var(--muted)"></span> atlas.traceclaw.cn
-    <span id="loginStatus">未登录</span>
+    <span class="dot" id="statusDot"></span>
+    <span>atlas.traceclaw.cn · </span>
+    <span id="loginStatus" style="cursor:pointer" onclick="toggleUserPopup()">登录 / 注册 👤</span>
     <span class="right">已学习 338 条历史 · API 0次</span>
   </div>
 </div>
 
-<!-- ═══ Command Palette ═══ -->
-<div class="overlay hidden" id="commandPaletteOverlay">
-  <div class="palette">
-    <input type="text" id="commandInput" placeholder="输入命令…" autofocus>
-    <div class="results" id="commandResults">
-      <div class="result-item selected" data-action="quote">
-        <span class="icon">💎</span>
-        <div><div>报价员</div><div class="desc">粘贴询盘，AI 3秒出报价</div></div>
-        <span class="shortcut-k">Ctrl+1</span>
-      </div>
-      <div class="result-item" data-action="prospect">
-        <span class="icon">🎯</span>
-        <div><div>客户开发员</div><div class="desc">搜索潜在客户，自动写开发信</div></div>
-        <span class="shortcut-k">Ctrl+2</span>
-      </div>
-      <div class="result-item" data-action="knowledge">
-        <span class="icon">📁</span>
-        <div><div>导入知识库</div><div class="desc">拖入 Excel/CSV/PDF 文件</div></div>
-      </div>
-      <div class="result-item" data-action="settings">
-        <span class="icon">⚙️</span>
-        <div><div>设置</div><div class="desc">订阅状态、API 端点</div></div>
-      </div>
+<!-- Hidden KB file input -->
+<input type="file" id="kbFileInput" multiple accept=".xlsx,.xls,.csv,.pdf,.txt,.md" onchange="handleKBFiles(this.files)" style="display:none">
+<input type="file" id="trainFileInput" accept=".xlsx,.xls" onchange="handleTrain(this.files)" style="display:none">
+
+<!-- ═══ Settings Modal ═══ -->
+<div class="overlay hidden" id="settingsOverlay">
+  <div class="modal settings-modal" id="settingsModal">
+    <div class="settings-sidebar" id="settingsSidebar">
+      <div class="section-title">设置</div>
+    </div>
+    <div class="settings-content" id="settingsContent"></div>
+  </div>
+</div>
+
+<!-- ═══ Login Modal ═══ -->
+<div class="overlay hidden" id="loginOverlay">
+  <div class="modal login-modal" id="loginModal">
+    <h2 id="loginTitle">登录 Atlas</h2>
+    <div class="subtitle" id="loginSubtitle">登录后同步租赁状态与知识库</div>
+    <div class="field"><input type="email" id="loginEmail" placeholder="邮箱"></div>
+    <div class="field"><input type="password" id="loginPassword" placeholder="密码"></div>
+    <div class="field" id="registerFields" style="display:none">
+      <input id="regCompany" placeholder="公司名称" style="margin-bottom:8px">
+      <select id="regType">
+        <option value="">选择企业类型</option>
+        <option>配件生产商</option><option>经销商/贸易商</option><option>修理厂/服务站</option><option>外贸公司</option>
+      </select>
+    </div>
+    <button class="btn-primary" style="width:100%" id="loginBtn" onclick="doLogin()">登录</button>
+    <div class="error" id="loginError"></div>
+    <div class="switch-link" id="loginSwitch">
+      没有账号？<a onclick="toggleRegister()">注册</a>
     </div>
   </div>
 </div>
 
+<!-- ═══ User Popup ═══ -->
+<div class="user-popup hidden" id="userPopup"></div>
+
 <script>
 /* ═══════════════════════════════════════════
-   Atlas 擎天 V2 — 交互逻辑
+   Atlas 擎天 V3 — Web 预览版 交互逻辑
+   对齐客户端 v1.3.0 标准
    ═══════════════════════════════════════════ */
 
+const API = 'https://atlas.traceclaw.cn';
+
+// ═══ State ═══
+const S = {
+  theme: localStorage.getItem('atlas-theme') || 'dark',
+  accent: localStorage.getItem('atlas-accent') || '#00ff88',
+  token: localStorage.getItem('atlas-token') || null,
+  user: null,
+  quota: null,
+  activeView: 'knowledge',
+  settingsSection: 'general',
+  isRegister: false,
+};
+
+// ═══ Theme ═══
+function applyTheme() {
+  document.body.dataset.theme = S.theme;
+  document.documentElement.style.setProperty('--green', S.accent);
+  // Derive green-bg from accent hex
+  const hex = S.accent.replace('#','');
+  const r = parseInt(hex.slice(0,2),16), g = parseInt(hex.slice(2,4),16), b = parseInt(hex.slice(4,6),16);
+  document.documentElement.style.setProperty('--green-bg', `rgba(${r},${g},${b},0.08)`);
+  localStorage.setItem('atlas-theme', S.theme);
+  localStorage.setItem('atlas-accent', S.accent);
+}
+applyTheme();
+
+// ═══ Settings Sections ═══
+const SETTINGS_SECTIONS = [
+  { id:'general', icon:'⚙️', label:'常规', cat:'system' },
+  { id:'theme', icon:'🎨', label:'主题', cat:'system' },
+  { id:'storage', icon:'💾', label:'数据存储', cat:'system' },
+  { id:'model', icon:'🤖', label:'模型', cat:'ai' },
+  { id:'proxy', icon:'🛜', label:'代理配置', cat:'ai' },
+  { id:'rules', icon:'📜', label:'报价员规则', cat:'employees' },
+  { id:'dev-rules', icon:'🧠', label:'客户开发员规则', cat:'employees' },
+  { id:'smtp', icon:'✉️', label:'邮件配置', cat:'employees' },
+  { id:'index', icon:'📇', label:'索引库', cat:'employees' },
+  { id:'channels', icon:'📡', label:'通道设置', cat:'connect' },
+  { id:'mcp', icon:'🔌', label:'MCP', cat:'connect' },
+  { id:'plugins', icon:'🧩', label:'插件管理', cat:'connect' },
+  { id:'market', icon:'🛒', label:'租赁', cat:'account' },
+  { id:'usage', icon:'📊', label:'用量统计', cat:'account' },
+];
+
+const SETTINGS_CATEGORIES = {
+  system:    { icon:'📋', label:'系统' },
+  ai:        { icon:'🧠', label:'AI 引擎' },
+  employees: { icon:'👤', label:'数字员工' },
+  connect:   { icon:'🔌', label:'连接与集成' },
+  account:   { icon:'📊', label:'账户' },
+};
+
+function initSettingsNav() {
+  const nav = document.getElementById('settingsSidebar');
+  nav.innerHTML = '';
+  let lastCat = '';
+  SETTINGS_SECTIONS.forEach(s => {
+    const cat = s.cat || 'other';
+    if (cat !== lastCat) {
+      lastCat = cat;
+      const ci = SETTINGS_CATEGORIES[cat] || {icon:'📌',label:cat};
+      const catEl = document.createElement('div');
+      catEl.className = 'section-title';
+      catEl.style.cssText = 'margin-top:' + (cat === 'system' ? '0' : '12px') + ';padding:8px 14px 4px';
+      catEl.innerHTML = ci.icon + ' ' + ci.label;
+      nav.appendChild(catEl);
+    }
+    const el = document.createElement('div');
+    el.className = 'settings-nav-item' + (s.id === S.settingsSection ? ' active' : '');
+    el.innerHTML = '<span class="nav-icon">' + s.icon + '</span> <span>' + s.label + '</span>';
+    el.onclick = function() { S.settingsSection = s.id; openSettings(); };
+    nav.appendChild(el);
+  });
+}
+
+function openSettings() {
+  initSettingsNav();
+  renderSettingsContent();
+  document.getElementById('settingsOverlay').classList.remove('hidden');
+  document.getElementById('settingsBtn').classList.add('active');
+}
+
+
+// ═══ 代理配置 ═══
+function renderProxySettings(el) {
+  el.innerHTML = `<h3>🛜 代理配置</h3>
+    <p style="font-size:.78rem;color:var(--muted);margin-bottom:18px">海外平台（Google / Reddit / LinkedIn）需配置代理才能爬取。中国大陆直连 Alibaba 无需代理。</p>
+
+    <div class="settings-card" style="margin-bottom:4px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <input type="checkbox" id="proxyEnabled" onchange="toggleProxyFields()" style="accent-color:var(--green);width:18px;height:18px;flex-shrink:0;cursor:pointer">
+        <label for="proxyEnabled" style="font-size:.84rem;font-weight:500;cursor:pointer;user-select:none">启用代理</label>
+      </div>
+      <div style="font-size:.72rem;color:var(--muted);margin-top:2px;margin-left:28px">开启后 Google / Reddit / LinkedIn 通过代理访问</div>
+    </div>
+
+    <div class="settings-row">
+      <div class="settings-col">
+        <div class="field-label">代理协议</div>
+        <select id="proxyProtocol" disabled>
+          <option value="socks5">SOCKS5（推荐）</option>
+          <option value="http">HTTP</option>
+          <option value="https">HTTPS</option>
+        </select>
+      </div>
+      <div class="settings-col" style="flex:0 0 120px">
+        <div class="field-label">端口</div>
+        <input id="proxyPort" placeholder="1080" type="number" disabled style="text-align:center">
+      </div>
+    </div>
+
+    <div class="field">
+      <div class="field-label">代理地址</div>
+      <input id="proxyHost" placeholder="127.0.0.1" disabled>
+    </div>
+
+    <div class="settings-row">
+      <div class="settings-col">
+        <div class="field-label">用户名（可选）</div>
+        <input id="proxyUser" placeholder="无需认证则留空" disabled>
+      </div>
+      <div class="settings-col">
+        <div class="field-label">密码（可选）</div>
+        <input id="proxyPass" type="password" placeholder="无需认证则留空" disabled>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:8px;margin-top:20px">
+      <button id="proxySaveBtn" class="btn-primary" onclick="saveProxyConfig()" style="flex:1">💾 保存配置</button>
+      <button class="btn-secondary" onclick="testProxyConn()">🔍 测试连接</button>
+    </div>
+    <div id="proxyResult" style="margin-top:10px;font-size:.76rem"></div>`;
+
+  // Load saved config
+  fetch(API + '/api/config/proxy').then(r=>r.json()).then(d=>{
+    if (d.ok && d.config) {
+      const c = d.config;
+      document.getElementById('proxyEnabled').checked = c.enabled || false;
+      document.getElementById('proxyProtocol').value = c.protocol || 'socks5';
+      document.getElementById('proxyHost').value = c.host || '';
+      document.getElementById('proxyPort').value = c.port || '';
+      document.getElementById('proxyUser').value = c.user || '';
+      document.getElementById('proxyPass').value = c.password || '';
+      toggleProxyFields();
+    }
+  }).catch(()=>{});
+}
+
+function toggleProxyFields() {
+  const on = document.getElementById('proxyEnabled').checked;
+  ['proxyProtocol','proxyHost','proxyPort','proxyUser','proxyPass','proxySaveBtn'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.disabled = !on;
+  });
+}
+
+function saveProxyConfig() {
+  const cfg = {
+    enabled: document.getElementById('proxyEnabled').checked,
+    protocol: document.getElementById('proxyProtocol').value,
+    host: document.getElementById('proxyHost').value,
+    port: parseInt(document.getElementById('proxyPort').value) || 1080,
+    user: document.getElementById('proxyUser').value,
+    password: document.getElementById('proxyPass').value,
+  };
+  fetch(API + '/api/config/proxy', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify(cfg)
+  }).then(r=>r.json()).then(d=>{
+    const el = document.getElementById('proxyResult');
+    el.innerHTML = d.ok ? '<span style="color:var(--green)">✅ ' + (d.message || '已保存') + '</span>'
+                        : '<span style="color:#e06c75">❌ ' + (d.error || '保存失败') + '</span>';
+  });
+}
+
+function testProxyConn() {
+  const el = document.getElementById('proxyResult');
+  el.innerHTML = '<span style="color:var(--green)">⏳ 测试中...</span>';
+  saveProxyConfig();  // 先保存
+  setTimeout(() => {
+    fetch(API + '/api/config/proxy/test', {method:'POST'}).then(r=>r.json()).then(d=>{
+      el.innerHTML = d.ok ? '<span style="color:var(--green)">✅ Google 可达! ' + (d.latency_ms||'') + 'ms</span>'
+                           : '<span style="color:#e06c75">❌ ' + (d.error || '连接失败') + '</span>';
+    }).catch(()=>{
+      el.innerHTML = '<span style="color:#e06c75">❌ 网络错误</span>';
+    });
+  }, 500);
+}
+
+
+// ═══ 邮件配置 ═══
+function renderSmtpSettings(el) {
+  el.innerHTML = `<h3>✉️ 邮件配置</h3>
+    <p style="font-size:.78rem;color:var(--muted);margin-bottom:18px">配置发件邮箱，用于发送客户开发信。推荐使用企业邮箱（见下方指引）。</p>
+
+    <div class="settings-row">
+      <div class="settings-col">
+        <div class="field-label">SMTP 服务器</div>
+        <input id="smtpHost" placeholder="smtp.qiye.aliyun.com">
+      </div>
+      <div class="settings-col" style="flex:0 0 140px">
+        <div class="field-label">端口</div>
+        <select id="smtpPort">
+          <option value="587">587 (STARTTLS)</option>
+          <option value="465">465 (SSL)</option>
+          <option value="25">25</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="settings-card" style="margin-bottom:4px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <input type="checkbox" id="smtpTls" checked style="accent-color:var(--green);width:18px;height:18px;flex-shrink:0;cursor:pointer">
+        <label for="smtpTls" style="font-size:.84rem;font-weight:500;cursor:pointer;user-select:none">启用 TLS 加密</label>
+      </div>
+      <div style="font-size:.72rem;color:var(--muted);margin-top:2px;margin-left:28px">端口 587 建议开启，端口 465 自动 SSL 无需 TLS</div>
+    </div>
+
+    <div class="settings-row">
+      <div class="settings-col">
+        <div class="field-label">发件邮箱</div>
+        <input id="smtpEmail" placeholder="sender@yourcompany.com">
+      </div>
+      <div class="settings-col">
+        <div class="field-label">密码 / 授权码</div>
+        <input id="smtpPass" type="password" placeholder="企业邮箱登录密码或客户端授权码">
+      </div>
+    </div>
+
+    <div class="field">
+      <div class="field-label">发件人名称</div>
+      <input id="smtpName" placeholder="如：Jason / 张经理 / Sales Team">
+    </div>
+
+    <div style="margin-top:16px;padding:12px 14px;background:var(--active);border-radius:8px;font-size:.72rem">
+      <b style="font-size:.76rem;color:var(--ink)">📋 常用企业邮箱 SMTP</b>
+      <table style="width:100%;margin-top:8px;border-collapse:collapse;font-size:.72rem">
+        <tr style="color:var(--muted)"><td style="padding:2px 6px">阿里企业邮</td><td style="color:var(--green);font-weight:500">外贸首选</td><td>smtp.qiye.aliyun.com</td><td>465</td><td>SSL</td></tr>
+        <tr style="color:var(--muted)"><td style="padding:2px 6px">腾讯企业邮</td><td>国内通用</td><td>smtp.exmail.qq.com</td><td>587</td><td>TLS</td></tr>
+        <tr style="color:var(--muted)"><td style="padding:2px 6px">Gmail</td><td><a href="https://myaccount.google.com/apppasswords" target="_blank" style="color:var(--green)">需应用密码</a></td><td>smtp.gmail.com</td><td>587</td><td>TLS</td></tr>
+        <tr style="color:var(--muted)"><td style="padding:2px 6px">QQ 邮箱</td><td>个人可用</td><td>smtp.qq.com</td><td>587</td><td>TLS</td></tr>
+      </table>
+    </div>
+
+    <div style="display:flex;gap:8px;margin-top:20px">
+      <button class="btn-primary" onclick="saveSmtpConfig()" style="flex:1">💾 保存配置</button>
+      <button class="btn-secondary" onclick="testSmtpConn()">🔍 测试发送</button>
+    </div>
+    <div id="smtpResult" style="margin-top:10px;font-size:.76rem"></div>`;
+
+  // Load saved config
+  fetch(API + '/api/puzzler/status').then(r=>r.json()).then(d=>{
+    if (d.ok && d.configured) {
+      document.getElementById('smtpHost').value = d.host || '';
+      document.getElementById('smtpPort').value = d.port || 587;
+      document.getElementById('smtpTls').checked = d.use_tls !== false;
+      document.getElementById('smtpEmail').value = d.user || '';
+      document.getElementById('smtpName').value = d.from_name || '';
+    }
+  }).catch(()=>{});
+}
+
+function saveSmtpConfig() {
+  const cfg = {
+    host: document.getElementById('smtpHost').value,
+    port: parseInt(document.getElementById('smtpPort').value) || 587,
+    use_tls: document.getElementById('smtpTls').checked,
+    user: document.getElementById('smtpEmail').value,
+    password: document.getElementById('smtpPass').value,
+    from_name: document.getElementById('smtpName').value,
+    from_email: document.getElementById('smtpEmail').value,
+  };
+  fetch(API + '/api/puzzler/smtp-config', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify(cfg)
+  }).then(r=>r.json()).then(d=>{
+    const el = document.getElementById('smtpResult');
+    el.innerHTML = d.ok ? '<span style="color:var(--green)">✅ ' + (d.message || '已保存') + '</span>'
+                        : '<span style="color:#e06c75">❌ ' + (d.error || '保存失败') + '</span>';
+  });
+}
+
+function testSmtpConn() {
+  const el = document.getElementById('smtpResult');
+  el.innerHTML = '<span style="color:var(--green)">⏳ 发送测试邮件...</span>';
+  saveSmtpConfig();
+  setTimeout(() => {
+    fetch(API + '/api/puzzler/smtp-test', {method:'POST'}).then(r=>r.json()).then(d=>{
+      el.innerHTML = d.ok ? '<span style="color:var(--green)">✅ 测试邮件已发送! ' + (d.message||'') + '</span>'
+                           : '<span style="color:#e06c75">❌ ' + (d.error || '发送失败') + '</span>';
+    }).catch(()=>{
+      el.innerHTML = '<span style="color:#e06c75">❌ 网络错误</span>';
+    });
+  }, 500);
+}
+
+
+// ═══ 规则记忆面板（通用：报价员 & 客户开发员）═══
+function renderRulesSettings(el, agent) {
+  const AGENT_INFO = {
+    quoter:   { icon:'📜', name:'报价员', desc:'审查标准、品牌矩阵、折扣表、七星等级规则', hint:'用 Markdown 编写规则。报价员会自动读取此文档作为审查依据。' },
+    developer:{ icon:'🧠', name:'客户开发员', desc:'搜索策略、客户画像维度、开发信模板、跟进频率', hint:'定义找客户的标准：哪些行业优先、如何判断匹配度、开发信的语气和结构。' },
+  };
+  const info = AGENT_INFO[agent] || AGENT_INFO.developer;
+
+  el.innerHTML = `<h3>${info.icon} ${info.name} · 规则记忆</h3>
+    <p style="font-size:.78rem;color:var(--muted);margin-bottom:4px">${info.desc}</p>
+    <div style="font-size:.72rem;color:var(--dim);margin-bottom:14px;padding:8px 12px;background:var(--green-bg);border-radius:6px">💡 ${info.hint}</div>
+
+    <div style="display:flex;gap:8px;margin-bottom:8px;align-items:center">
+      <select id="rulesVersion" style="font-size:.72rem;padding:4px 8px">
+        <option value="">当前版本</option>
+      </select>
+      <button class="btn-secondary" style="font-size:.7rem;padding:4px 10px" onclick="loadRulesVersion('${agent}')">📜 加载选中版本</button>
+    </div>
+
+    <textarea id="rulesEditor" style="width:100%;height:360px;padding:14px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font-family:monospace;font-size:.82rem;line-height:1.6;resize:vertical" spellcheck="false"></textarea>
+
+    <div style="display:flex;gap:8px;margin-top:14px">
+      <button class="btn-primary" onclick="saveRules('${agent}')" style="flex:1">💾 保存规则</button>
+      <button class="btn-secondary" onclick="loadRules('${agent}')">🔄 重新加载</button>
+    </div>
+    <div style="font-size:.72rem;color:var(--dim);margin-top:8px">修改自动备份，可在「版本历史」中恢复。</div>
+    <div id="rulesMsg" style="margin-top:8px;font-size:.76rem"></div>`;
+
+  loadRules(agent);
+}
+
+async function loadRules(agent) {
+  const editor = document.getElementById('rulesEditor');
+  const select = document.getElementById('rulesVersion');
+  if (!editor) return;
+
+  editor.value = '⏳ 加载中...';
+  try {
+    const resp = await fetch(API + '/api/rules?agent=' + agent);
+    const data = await resp.json();
+    if (data.ok) {
+      editor.value = data.raw || '';
+      // Load backups
+      if (select) {
+        const vResp = await fetch(API + '/api/rules/versions');
+        const vData = await vResp.json();
+        select.innerHTML = '<option value="">当前版本</option>';
+        (vData.data || []).forEach(v => {
+          select.innerHTML += '<option value="' + v.filename + '">' + v.filename + ' (' + v.modified + ')</option>';
+        });
+      }
+    } else {
+      editor.value = '# 加载失败: ' + (data.error || '未知错误');
+    }
+  } catch(e) {
+    editor.value = '# 网络错误: ' + e.message;
+  }
+}
+
+async function saveRules(agent) {
+  const editor = document.getElementById('rulesEditor');
+  const msg = document.getElementById('rulesMsg');
+  if (!editor) return;
+
+  msg.innerHTML = '<span style="color:var(--green)">⏳ 保存中...</span>';
+  try {
+    const resp = await fetch(API + '/api/rules?agent=' + agent, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({content: editor.value})
+    });
+    const data = await resp.json();
+    if (data.ok) {
+      msg.innerHTML = '<span style="color:var(--green)">✅ 已保存 (' + (data.size||0) + ' 字节) · 备份: ' + (data.backups||[]).length + ' 份</span>';
+      // Refresh versions
+      setTimeout(() => loadRules(agent), 500);
+    } else {
+      msg.innerHTML = '<span style="color:#e06c75">❌ ' + (data.error || '保存失败') + '</span>';
+    }
+  } catch(e) {
+    msg.innerHTML = '<span style="color:#e06c75">❌ 网络错误: ' + e.message + '</span>';
+  }
+}
+
+async function loadRulesVersion(agent) {
+  const select = document.getElementById('rulesVersion');
+  const editor = document.getElementById('rulesEditor');
+  const version = select ? select.value : '';
+  if (!version || !editor) return;
+  if (!confirm('加载备份版本 ' + version + ' 将覆盖当前编辑器内容，确定？')) return;
+  try {
+    const resp = await fetch(API + '/api/rules/restore/' + version);
+    const data = await resp.json();
+    if (data.ok) {
+      editor.value = data.raw || '';
+      document.getElementById('rulesMsg').innerHTML = '<span style="color:var(--green)">✅ 已加载备份版本: ' + version + '</span>';
+    } else {
+      alert('加载失败: ' + (data.error || ''));
+    }
+  } catch(e) {
+    alert('加载版本失败: ' + e.message);
+  }
+}
+
+function renderSettingsContent() {
+  const el = document.getElementById('settingsContent');
+  const s = S.settingsSection;
+  switch(s) {
+    case 'general':
+      el.innerHTML = `
+        <h3>常规设置</h3>
+        <div class="field"><div class="field-label">语言</div>
+          <select><option>简体中文</option><option>English</option></select></div>
+        <div class="field"><div class="field-label">缩放 (100%)</div>
+          <input type="range" min="80" max="150" value="100" style="accent-color:var(--green);width:100%"></div>
+        <div class="field"><div class="field-label">HTTP 代理</div>
+          <input placeholder="不使用代理（直连）"></div>
+        <div class="setting-row"><span>系统通知</span>
+          <button class="btn-secondary" style="background:var(--green-bg);color:var(--green)">已开启</button></div>`;
+      break;
+    case 'storage':
+      el.innerHTML = `
+        <h3>数据存储路径</h3>
+        <input value="~/atlas-data" readonly style="color:var(--muted)">
+        <button class="btn-primary" style="align-self:flex-start;margin-top:12px">选择文件夹</button>
+        <p style="font-size:.75rem;color:var(--dim)">知识库文件、历史报价、pricing.md 均存储在此目录</p>`;
+      break;
+    case 'mcp':
+      (() => {
+        const builtinServers = [
+          { id:'erp', icon:'🏭', name:'ERP (用友/金蝶)', desc:'库存查询、供应商价格、客户应收应付', tools:'库存查询 / 采购订单 / 财务数据', npm:'atlas-mcp-erp', color:'#4ea6ff' },
+          { id:'crm', icon:'👥', name:'CRM 系统', desc:'客户画像、销售机会、跟进记录', tools:'客户查询 / 创建商机 / 更新跟进', npm:'mcp-hubspot (已有开源)', color:'#f7a641' },
+          { id:'email', icon:'📧', name:'企业邮箱', desc:'邮件搜索、发送、附件提取', tools:'搜邮件 / 发邮件 / 读附件 / 线程', npm:'mcp-server-email (已有开源)', color:'#e06c75' },
+          { id:'maas', icon:'⚙️', name:'MaaS 制造执行', desc:'工单状态、质检数据、设备监控', tools:'工单查询 / 质检报告 / 排产状态', npm:'atlas-mcp-maas', color:'#7ecf5e' },
+          { id:'logistics', icon:'🚚', name:'物流追踪', desc:'运单状态、在途跟踪、签收确认', tools:'查运单 / 轨迹 / 签收通知', npm:'atlas-mcp-logistics', color:'#c678dd' },
+          { id:'wework', icon:'💬', name:'企业微信/钉钉', desc:'消息推送、审批通知、群消息', tools:'发消息 / 查审批 / 群通知', npm:'atlas-mcp-wework', color:'#56b6c2' },
+          { id:'tax', icon:'💰', name:'税务/开票', desc:'发票查验、税率查询、开票申请', tools:'查发票 / 税号验证 / 自动开票', npm:'atlas-mcp-tax', color:'#d19a66' },
+        ];
+        let h = '<h3>🔌 MCP 服务器</h3>';
+        h += '<p style="font-size:.8rem;color:var(--muted);margin-bottom:4px">MCP 让 AI 直接调用外部系统。选择你要接入的服务，一键连接。</p>';
+        h += '<p style="font-size:.72rem;color:var(--dim);margin-bottom:14px">⏱ 快速接入：已有开源方案 → 10 分钟内可连通</p>';
+        h += '<div style="display:flex;flex-direction:column;gap:8px">';
+        builtinServers.forEach(s => {
+          h += `<div style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;background:var(--active);border-radius:8px;border-left:3px solid ${s.color}">
+            <div style="font-size:1.3rem;flex-shrink:0;width:28px;text-align:center">${s.icon}</div>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:.8rem;font-weight:600">${s.name}</div>
+              <div style="font-size:.7rem;color:var(--muted);margin:2px 0">${s.desc}</div>
+              <div style="font-size:.68rem;color:var(--dim)">🛠 ${s.tools}</div>
+            </div>
+            <button onclick="connectMCP('${s.id}')" style="flex-shrink:0;padding:5px 10px;border-radius:5px;font-size:.7rem;font-weight:600;cursor:pointer;border:1px solid ${s.color};background:transparent;color:${s.color}">接入</button>
+          </div>`;
+        });
+        h += '</div>';
+        h += '<div style="margin-top:16px;padding:12px;background:var(--active);border-radius:8px;font-size:.75rem"><b>已连接的服务器</b><br><span style="color:var(--muted)">暂无。点击上方「接入」按钮开始连接。</span></div>';
+        h += '<div class="field" style="margin-top:16px"><div class="field-label">自定义 MCP 服务器</div></div>';
+        h += '<div class="field"><input placeholder="服务器名称"></div>';
+        h += '<div class="field"><input placeholder="命令 (npx / python / node)"></div>';
+        h += '<button class="btn-secondary" style="margin-top:4px">➕ 手动添加</button>';
+        el.innerHTML = h;
+        // register connectMCP globally
+        window.connectMCP = (id) => {
+          const srv = builtinServers.find(s=>s.id===id);
+          if (!srv) return;
+          const overlay = document.createElement('div');
+          overlay.id = 'mcp-modal';
+          overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.65);z-index:9999;display:flex;align-items:center;justify-content:center';
+          overlay.onclick = function(e) { if (e.target === overlay) overlay.remove(); };
+          const m = document.createElement('div');
+          m.style.cssText = 'background:var(--card);border:1px solid var(--border);border-radius:14px;padding:24px;width:420px;max-width:92vw;color:var(--text);font-size:.85rem;font-family:inherit';
+          m.innerHTML = '<h3 style="margin:0 0 4px;font-size:1.05rem">' + srv.icon + ' ' + srv.name + '</h3>' +
+            '<p style="margin:0 0 16px;font-size:.76rem;color:var(--muted);line-height:1.5">' + srv.desc + '</p>' +
+            '<div style="margin-bottom:12px"><label style="font-size:.76rem;color:var(--muted);display:block;margin-bottom:3px">MCP 服务器地址</label>' +
+            '<input id="mcp-url-inp" placeholder="https://your-server.com" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:7px;background:var(--bg);color:var(--text);font-size:.82rem"></div>' +
+            '<div style="margin-bottom:14px"><label style="font-size:.76rem;color:var(--muted);display:block;margin-bottom:3px">API 密钥（可选）</label>' +
+            '<input id="mcp-key-inp" placeholder="sk-..." type="password" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:7px;background:var(--bg);color:var(--text);font-size:.82rem"></div>' +
+            '<div style="margin-bottom:14px;padding:8px 12px;background:var(--green-bg);border-radius:7px;font-size:.73rem;color:var(--muted)">' + srv.tools + '</div>' +
+            '<div style="display:flex;gap:8px">' +
+            '<button id="mcp-test-btn" style="flex:1;padding:9px;border-radius:7px;font-size:.8rem;cursor:pointer;border:1px solid var(--green);background:transparent;color:var(--green);font-weight:600" onclick="testMcpConn(\'' + srv.id + '\')">🔍 测试连接</button>' +
+            '<button style="flex:1;padding:9px;border-radius:7px;font-size:.8rem;cursor:pointer;border:none;background:var(--green);color:var(--bg);font-weight:600" onclick="saveMcpCfg(\'' + srv.id + '\',\'' + srv.name.replace(/'/g,"\\'") + '\')">💾 保存并接入</button></div>' +
+            '<div id="mcp-result-el" style="margin-top:10px;font-size:.76rem;min-height:20px"></div>';
+          overlay.appendChild(m);
+          document.body.appendChild(overlay);
+          setTimeout(function() { var inp = document.getElementById('mcp-url-inp'); if (inp) inp.focus(); }, 150);
+  
+
+        window.testMcpConn = async function(sid) {
+          var url = document.getElementById('mcp-url-inp').value.trim();
+          var key = document.getElementById('mcp-key-inp').value.trim();
+          var el = document.getElementById('mcp-result-el');
+          var btn = document.getElementById('mcp-test-btn');
+          if (!url) { if (el) el.innerHTML = '<span style="color:#ff4d4f">❌ 请填写服务器地址</span>'; return; }
+          if (btn) { btn.textContent = '⏳ 测试中...'; btn.disabled = true; }
+          try {
+            var token = localStorage.getItem('atlas-token');
+            var resp = await fetch('/api/mcp/test', { method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+(token||'')}, body:JSON.stringify({url:url,api_key:key}) });
+            var j = await resp.json();
+            if (j.ok) { if (el) el.innerHTML = '<span style="color:var(--green)">✅ 连接成功！' + j.count + ' 个工具</span>'; }
+            else { if (el) el.innerHTML = '<span style="color:#ff4d4f">❌ ' + (j.error||'连接失败') + '</span>'; }
+          } catch(e) { if (el) el.innerHTML = '<span style="color:#ff4d4f">❌ 网络错误</span>'; }
+          if (btn) { btn.textContent = '🔍 测试连接'; btn.disabled = false; }
+        };
+
+        window.saveMcpCfg = async function(sid, name) {
+          var url = document.getElementById('mcp-url-inp').value.trim();
+          var key = document.getElementById('mcp-key-inp').value.trim();
+          if (!url) { alert('请填写 MCP 服务器地址'); return; }
+          var token = localStorage.getItem('atlas-token');
+          try {
+            var resp = await fetch('/api/mcp/connect', { method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+(token||'')}, body:JSON.stringify({server_id:sid,name:name,url:url,api_key:key||''}) });
+            var j = await resp.json();
+            if (j.ok) { var ov = document.getElementById('mcp-modal'); if (ov) ov.remove(); alert('✅ 已接入'); showSettings('mcp'); }
+            else { alert('❌ ' + (j.error||'保存失败')); }
+          } catch(e) { alert('网络错误'); }
+        };      };
+      })();
+      break;
+    case 'theme':
+      el.innerHTML = `
+        <h3>主题</h3>
+        <div style="display:flex;gap:10px">
+          <button onclick="setTheme('dark')" class="btn-secondary" style="flex:1;padding:12px;font-size:.85rem;font-weight:600;${S.theme==='dark'?'border-color:var(--green);background:var(--green-bg)':''}">🌙 深色</button>
+          <button onclick="setTheme('light')" class="btn-secondary" style="flex:1;padding:12px;font-size:.85rem;font-weight:600;${S.theme==='light'?'border-color:var(--green);background:var(--green-bg)':''}">☀️ 浅色</button>
+        </div>
+        <div class="field" style="margin-top:16px"><div class="field-label">强调色</div>
+          <div style="display:flex;gap:8px">
+            ${['#00ff88','#7ecf5e','#8ab4f8','#fdd663','#f28b82','#c58af9'].map(c =>
+              `<div class="accent-dot${S.accent===c?' active':''}" style="background:${c}" onclick="setAccent('${c}')"></div>`
+            ).join('')}
+          </div></div>`;
+      break;
+    case 'model':
+      el.innerHTML = `
+        <h3>模型设置</h3>
+        <p style="font-size:.82rem;color:var(--muted);margin-bottom:12px">Atlas 云端自动选择最优模型，你只需要告诉数字员工你想要的效果</p>
+        <div class="field"><div class="field-label">智能模式</div>
+          <select>
+            <option selected>⚡ 高速模式（推荐，响应最快）</option>
+            <option>🧠 深度推理（复杂询盘/多维度分析）</option>
+            <option>💰 节省模式（低频使用，性价比优先）</option>
+          </select></div>
+        <p style="font-size:.75rem;color:var(--dim);margin-top:12px">模型自动选取由 Atlas 云端管理，根据订阅套餐和任务复杂度实时调度。你不需要关心底层用什么模型。</p>`;
+      break;
+    case 'rules':
+      (() => {
+        const agents = [
+          {id:'developer', icon:'🎯', name:'客户开发员'},
+          {id:'quoter', icon:'💎', name:'报价员'},
+          {id:'buyer', icon:'🛒', name:'采购员'},
+          {id:'image', icon:'🔍', name:'图片识零件员'},
+          {id:'stock', icon:'📦', name:'库存管理员'},
+          {id:'customs', icon:'🛃', name:'清关助理'},
+        ];
+        S.selectedRulesAgent = S.selectedRulesAgent || 'quoter';
+        const cur = agents.find(a => a.id === S.selectedRulesAgent) || agents[0];
+        let opts = agents.map(a => `<option value="${a.id}" ${a.id===S.selectedRulesAgent?'selected':''}>${a.icon} ${a.name}</option>`).join('');
+        el.innerHTML = `
+          <h3>${cur.icon} ${cur.name} · 规则记忆</h3>
+          <p style="font-size:.82rem;color:var(--muted);margin-bottom:12px">每个数字员工有独立的规则文件。选择员工后，编辑下方规则，保存即生效。</p>
+          <div class="field" style="margin-bottom:12px">
+            <div class="field-label">选择数字员工</div>
+            <select id="rulesAgentSelect" onchange="switchRulesAgent(this.value)" style="width:100%">${opts}</select>
+          </div>
+          <div style="margin-bottom:12px"><textarea id="rulesEditor" style="width:100%;height:260px;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:12px;color:var(--ink);font-family:monospace;font-size:.78rem;resize:vertical;line-height:1.5" placeholder="加载中..."></textarea></div>
+          <div style="display:flex;gap:8px"><button class="btn-primary" onclick="saveRules()">💾 保存规则</button><button class="btn-secondary" onclick="loadRules()">🔄 重新加载</button></div>`;
+        loadRules();
+      })();
+      break;
+    case 'market':
+      el.innerHTML = `
+        <h3>数字员工市场</h3>
+        <p style="font-size:.82rem;color:var(--muted)">租赁更多数字员工，扩展你的 AI 团队</p>
+        ${[
+          {icon:'💎',name:'报价员',price:'已租赁',desc:'从历史数据学习定价规律'},
+          {icon:'🎯',name:'客户开发员',price:'已租赁',desc:'搜客户→画像→开发信'},
+          {icon:'🛒',name:'采购员',price:'',desc:'供应商比价+智能下单'},
+          {icon:'🔍',name:'图片识零件员',price:'',desc:'拍照识OE号，自动匹配'},
+          {icon:'📦',name:'库存管理员',price:'',desc:'需求预测+呆滞预警'},
+          {icon:'🛃',name:'清关助理',price:'',desc:'HS编码+报关单生成'},
+        ].map(a => `
+          <div style="display:flex;align-items:center;gap:12px;padding:14px;background:var(--active);border-radius:10px;margin-bottom:8px">
+            <div style="font-size:1.5rem">${a.icon}</div>
+            <div style="flex:1"><div style="font-size:.85rem;font-weight:600">${a.name}</div><div style="font-size:.72rem;color:var(--muted)">${a.desc}</div></div>
+            <button style="padding:6px 14px;border-radius:6px;font-size:.78rem;font-weight:600;cursor:pointer;border:none;${a.price==='已租赁'?'background:var(--green-bg);color:var(--green)':'background:var(--green);color:var(--bg)'}">${a.price}</button>
+          </div>`).join('')}`;
+      break;
+    case 'proxy':
+      renderProxySettings(el);
+      return;
+    case 'smtp':
+      renderSmtpSettings(el);
+      return;
+    case 'channels':
+      (() => {
+        const configs = JSON.parse(localStorage.getItem('atlas-channels') || '{}');
+        const chs = [
+          { id:'feishu', icon:'📱', name:'飞书', fields:[
+            {k:'app_id',label:'App ID',ph:'cli_a...',type:'text'},
+            {k:'app_secret',label:'App Secret',ph:'请在飞书开放平台获取',type:'password'},
+            {k:'verification_token',label:'Verification Token',ph:'事件订阅验证',type:'text'},
+          ]},
+          { id:'wecom', icon:'💬', name:'企业微信', fields:[
+            {k:'corp_id',label:'Corp ID',ph:'ww...',type:'text'},
+            {k:'agent_id',label:'Agent ID',ph:'1000001',type:'text'},
+            {k:'secret',label:'App Secret',ph:'企业微信应用Secret',type:'password'},
+            {k:'token',label:'Token',ph:'回调验证Token',type:'text'},
+            {k:'aes_key',label:'EncodingAESKey',ph:'43位随机字符串',type:'text'},
+          ]},
+          { id:'email', icon:'📧', name:'邮件', fields:[
+            {k:'smtp_host',label:'SMTP 服务器',ph:'smtp.example.com',type:'text'},
+            {k:'smtp_port',label:'SMTP 端口',ph:'465',type:'text'},
+            {k:'smtp_user',label:'邮箱账号',ph:'noreply@company.com',type:'text'},
+            {k:'smtp_pass',label:'邮箱密码/授权码',ph:'',type:'password'},
+          ]},
+        ];
+        // Configuration tutorials for each channel
+        const tutorials = {
+          feishu: { title: '飞书配置教程', url: '/tutorial#feishu' },
+          wecom: { title: '企业微信配置教程', url: '/tutorial#wecom' },
+          email: { title: '邮件配置教程', url: '/tutorial#email' },
+        };
+        let h = '<h3>通道设置</h3>';
+        chs.forEach(ch => {
+          const cfg = configs[ch.id] || {};
+          const connected = !!cfg.app_id || !!cfg.corp_id || !!cfg.smtp_host;
+          h += `<div style="background:var(--active);border-radius:8px;margin-bottom:8px;overflow:hidden">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:12px;cursor:default">
+              <div onclick="toggleChannelCfg('${ch.id}')" style="display:flex;align-items:center;gap:10px;cursor:pointer;flex:1">
+                <span style="font-size:1.2rem">${ch.icon}</span>
+                <div><div style="font-size:.85rem;font-weight:600">${ch.name}</div>
+                <div style="font-size:.72rem;color:${connected?'var(--green)':'var(--muted)'}">${connected?'已配置':'未连接'}</div></div>
+              </div>
+              <button onclick="event.stopPropagation();showTutorial('${ch.id}')" style="padding:3px 10px;border-radius:6px;font-size:.68rem;cursor:pointer;border:1px solid var(--line);background:var(--active);color:var(--muted);margin-right:6px;transition:all .15s" onmouseenter="this.style.borderColor='var(--green)';this.style.color='var(--green)'" onmouseleave="this.style.borderColor='var(--line)';this.style.color='var(--muted)'">📖 查看教程 →</button>
+              <span onclick="toggleChannelCfg('${ch.id}')" style="font-size:.7rem;color:var(--dim);cursor:pointer" id="ch-arrow-${ch.id}">▶</span>
+            </div>
+            <div id="ch-cfg-${ch.id}" style="display:none;padding:0 12px 12px">`;
+          ch.fields.forEach(f => {
+            const val = cfg[f.k] || '';
+            h += `<div class="field"><div class="field-label">${f.label}</div>
+              <input type="${f.type}" id="ch-${ch.id}-${f.k}" placeholder="${f.ph}" value="${val}" autocomplete="off"></div>`;
+          });
+          h += `<div style="display:flex;gap:8px;margin-top:4px">
+            <button class="btn-primary" onclick="saveChannel('${ch.id}')">💾 保存</button>
+            <button class="btn-secondary" onclick="testChannel('${ch.id}')">🔗 测试连接</button>
+          </div>
+          </div></div></div>
+          <div style="margin-top:6px;padding:12px;background:var(--green-bg);border-radius:8px;display:none" id="tut-${ch.id}"></div>`;
+        });
+        el.innerHTML = h;
+      })();
+      break;
+    case 'plugins':
+      el.innerHTML = `<h3>插件管理</h3>
+        <div style="padding:40px;text-align:center;color:var(--dim)"><div style="font-size:2rem;margin-bottom:8px">🧩</div><div>即将上线</div><div style="font-size:.78rem;margin-top:4px">支持自定义插件扩展数字员工能力</div></div>`;
+      break;
+    case 'index':
+      el.innerHTML = `
+        <h3>索引库</h3>
+        <p style="font-size:.82rem;color:var(--muted)">重建知识库索引以更新 AI 学习数据</p>
+        <div class="card">
+          ${[{label:'历史报价索引',val:'338 条'},{label:'客户数据索引',val:'156 条'},{label:'供应商价格索引',val:'42 条'},{label:'pricing.md',val:'已加载'}].map(r =>
+            `<div class="setting-row"><span>${r.label}</span><span class="val">${r.val}</span></div>`).join('')}
+        </div>
+        <button class="btn-secondary" style="align-self:flex-start;margin-top:8px;border-color:rgba(253,214,99,.2);color:#fdd663">🔄 重建全部索引</button>`;
+      break;
+    case 'usage':
+      (() => {
+        const q = S.quota || {};
+        const items = S.user ? [
+          {label:'报价用量',val:`${q.quoter_used||0}/${q.quoter_limit||1}`,u:'份'},
+          {label:'开发信用量',val:`${q.developer_used||0}/${q.developer_limit||1}`,u:'封'},
+          {label:'历史报价',val:'338',u:'条'},
+          {label:'生成报价',val:'47',u:'次'},
+        ] : [
+          {label:'报价用量',val:'—',u:'请登录'},
+          {label:'开发信用量',val:'—',u:'请登录'},
+          {label:'历史报价',val:'338',u:'条'},
+          {label:'生成报价',val:'47',u:'次'},
+        ];
+        let h = '<h3>用量统计</h3>';
+        h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">';
+        items.forEach(m => {
+          h += `<div class="card"><div style="font-size:.72rem;color:var(--muted);margin-bottom:4px">${m.label}</div><div style="font-size:1.2rem;font-weight:700">${m.val} <span style="font-size:.75rem;color:var(--dim);font-weight:400">${m.u}</span></div></div>`;
+        });
+        h += '</div>';
+        if (!S.user) h += '<p style="font-size:.75rem;color:var(--dim);margin-top:12px">登录后显示实时用量数据</p>';
+        else h += '<p style="font-size:.75rem;color:var(--dim);margin-top:12px">详细用量请前往 atlas.traceclaw.cn 查看</p>';
+        el.innerHTML = h;
+      })();
+      break;
+  }
+}
+
+function setTheme(t) { S.theme = t; applyTheme(); renderSettingsContent(); }
+function setAccent(c) { S.accent = c; applyTheme(); renderSettingsContent(); }
+
+// ═══ Settings overlay click-outside ═══
+document.getElementById('settingsOverlay').addEventListener('click', function(e) {
+  if (e.target === this) closeSettings();
+});
+
+// ═══ Rules (pricing memory) ═══
+function switchRulesAgent(agentId) {
+  S.selectedRulesAgent = agentId;
+  S.settingsSection = 'rules';
+  openSettings();
+}
+
+// OLD loadRules removed — using new renderRulesSettings-based version
+
+// OLD saveRules removed — using new version
+
+function closeSettings() {
+  document.getElementById('settingsOverlay').classList.add('hidden');
+  document.getElementById('settingsBtn').classList.remove('active');
+}
+
+// ═══ Channel Config ═══
+function toggleChannelCfg(id) {
+  const panel = document.getElementById('ch-cfg-' + id);
+  const arrow = document.getElementById('ch-arrow-' + id);
+  if (!panel) return;
+  const isOpen = panel.style.display !== 'none';
+  panel.style.display = isOpen ? 'none' : 'block';
+  arrow.textContent = isOpen ? '▶' : '▼';
+}
+
+function showTutorial(id) {
+  // Open tutorial page in new tab, scrolled to the right channel
+  const urls = { feishu: '/tutorial#feishu', wecom: '/tutorial#wecom', email: '/tutorial#email' };
+  const url = urls[id] || '/tutorial';
+  window.open(url, '_blank');
+}
+
+function copyFeishuPermissions() {
+  const btn = event.target;
+  if (!btn) return;
+  const text = '{"scopes": {"tenant": ["aily:file:read", "aily:file:write", "application:application.app_message_stats.overview:readonly", "application:application:self_manage", "application:bot.menu:write", "cardkit:card:write", "contact:contact.base:readonly", "contact:user.employee_id:readonly", "corehr:file:download", "docs:document.content:read", "event:ip_list", "im:chat", "im:chat.access_event.bot_p2p_chat:read", "im:chat.members:bot_access", "im:message", "im:message.group_at_msg:readonly", "im:message.group_msg", "im:message.p2p_msg:readonly", "im:message:readonly", "im:message:send_as_bot", "im:resource", "sheets:spreadsheet", "wiki:wiki:readonly"], "user": ["aily:file:read", "aily:file:write", "contact:contact.base:readonly", "im:chat.access_event.bot_p2p_chat:read"]}}';
+  
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(() => {
+      const origHTML = btn.innerHTML;
+      btn.innerHTML = '✅ 已复制';
+      btn.style.background = 'var(--green)';
+      btn.style.color = 'var(--bg)';
+      btn.style.borderColor = 'var(--green)';
+      setTimeout(() => {
+        btn.innerHTML = origHTML;
+        btn.style.background = 'transparent';
+        btn.style.color = 'var(--green)';
+        btn.style.borderColor = 'var(--green)';
+      }, 2000);
+    }).catch(() => {
+      btn.innerHTML = '❌ 失败';
+      setTimeout(() => { btn.innerHTML = '📋 复制'; }, 2000);
+    });
+  } else {
+    // Fallback: create textarea
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.left = '-9999px';
+    ta.style.top = '0';
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    try {
+      document.execCommand('copy');
+      btn.innerHTML = '✅ 已复制';
+      btn.style.background = 'var(--green)';
+      btn.style.color = 'var(--bg)';
+      setTimeout(() => {
+        btn.innerHTML = '📋 复制';
+        btn.style.background = 'transparent';
+        btn.style.color = 'var(--green)';
+      }, 2000);
+    } catch(e) {
+      btn.innerHTML = '❌ 失败';
+      setTimeout(() => { btn.innerHTML = '📋 复制'; }, 2000);
+    }
+    document.body.removeChild(ta);
+  }
+}
+async function saveChannel(id) {
+  const configs = JSON.parse(localStorage.getItem('atlas-channels') || '{}');
+  const cfg = {};
+  const fieldMap = {
+    feishu: ['app_id','app_secret','verification_token'],
+    wecom: ['corp_id','agent_id','secret','token','aes_key'],
+    email: ['smtp_host','smtp_port','smtp_user','smtp_pass'],
+  };
+  (fieldMap[id] || []).forEach(k => {
+    const el = document.getElementById('ch-' + id + '-' + k);
+    if (el) cfg[k] = el.value.trim();
+  });
+  configs[id] = cfg;
+  localStorage.setItem('atlas-channels', JSON.stringify(configs));
+  
+  // Sync config to server for callback endpoints (Feishu URL verification etc.)
+  if (S.token) {
+    try {
+      const res = await fetch(API + '/api/channels/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + S.token },
+        body: JSON.stringify({ channel: id, config: cfg })
+      });
+      const data = await res.json();
+      if (data.ok) console.log('[Channels] ' + id + ' config synced to server');
+    } catch(e) { console.warn('[Channels] Server sync failed:', e.message); }
+  }
+  
+  S.settingsSection = 'channels';
+  openSettings();
+}
+
+async function testChannel(id) {
+  if (!S.token) { alert('请先登录后再测试通道连接'); return; }
+  saveChannel(id); // save first
+  const configs = JSON.parse(localStorage.getItem('atlas-channels') || '{}');
+  const cfg = configs[id] || {};
+  try {
+    const res = await fetch(API + '/api/channels/test', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + S.token },
+      body: JSON.stringify({ channel: id, config: cfg })
+    });
+    const data = await res.json();
+    if (data.ok) {
+      alert('✅ 连接成功！' + id + ' 通道已就绪');
+    } else {
+      alert('❌ 连接失败：' + (data.error || '请检查配置参数'));
+    }
+  } catch(e) {
+    alert('⚠️ 网络错误，请确认 atlas.traceclaw.cn 服务运行中');
+  }
+}
+
+// ═══ Login ═══
+function toggleRegister() {
+  S.isRegister = !S.isRegister;
+  document.getElementById('loginTitle').textContent = S.isRegister ? '注册 Atlas' : '登录 Atlas';
+  document.getElementById('loginSubtitle').textContent = S.isRegister ? '创建账号，开启 AI 数字员工' : '登录后同步租赁状态与知识库';
+  document.getElementById('registerFields').style.display = S.isRegister ? 'block' : 'none';
+  document.getElementById('loginBtn').textContent = S.isRegister ? '注册' : '登录';
+  document.getElementById('loginSwitch').innerHTML = S.isRegister
+    ? '已有账号？<a onclick="toggleRegister()">登录</a>'
+    : '没有账号？<a onclick="toggleRegister()">注册</a>';
+  document.getElementById('loginError').textContent = '';
+}
+
+async function doLogin() {
+  const email = document.getElementById('loginEmail').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  const errEl = document.getElementById('loginError');
+  errEl.textContent = '';
+
+  if (!email || !password) { errEl.textContent = '请填写邮箱和密码'; return; }
+
+  if (S.isRegister) {
+    const company = document.getElementById('regCompany').value.trim();
+    const company_type = document.getElementById('regType').value;
+    if (!company || !company_type) { errEl.textContent = '请填写公司名称和类型'; return; }
+    if (password.length < 6) { errEl.textContent = '密码至少6位'; return; }
+
+    try {
+      const res = await fetch(API + '/api/register', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, company, company_type })
+      });
+      const data = await res.json();
+      if (!data.ok) { errEl.textContent = data.error; return; }
+      onLoginSuccess(data);
+    } catch(e) { errEl.textContent = '网络错误，请重试'; }
+  } else {
+    try {
+      const res = await fetch(API + '/api/login', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      const data = await res.json();
+      if (!data.ok) { errEl.textContent = data.error || '邮箱或密码错误'; return; }
+      onLoginSuccess(data);
+    } catch(e) { errEl.textContent = '网络错误，请重试'; }
+  }
+}
+
+function onLoginSuccess(data) {
+  S.token = data.token;
+  S.user = data.user;
+  localStorage.setItem('atlas-token', data.token);
+  document.getElementById('loginOverlay').classList.add('hidden');
+  updateUIForLogin();
+  loadKnowledgeBase();
+}
+
+async function restoreSession() {
+  if (!S.token) return;
+  try {
+    const res = await fetch(API + '/api/me', {
+      headers: { 'Authorization': 'Bearer ' + S.token }
+    });
+    const data = await res.json();
+    if (data.ok) {
+      S.user = data.user;
+      S.quota = data.quota;
+      updateUIForLogin();
+      loadKnowledgeBase();
+    } else {
+      logout();
+    }
+  } catch(e) { /* keep token, retry later */ }
+}
+
+function updateUIForLogin() {
+  const userBtn = document.getElementById('userBtn');
+  if (userBtn) userBtn.style.color = 'var(--green)';
+  document.getElementById('statusDot').style.background = 'var(--green)';
+  const ls = document.getElementById('loginStatus');
+  ls.textContent = S.user ? `${S.user.company} · 已登录 👤` : '已登录';
+  ls.style.color = 'var(--green)';
+  ls.style.fontWeight = '600';
+}
+
+function logout() {
+  S.token = null; S.user = null; S.quota = null;
+  localStorage.removeItem('atlas-token');
+  const userBtn = document.getElementById('userBtn');
+  if (userBtn) userBtn.style.color = '';
+  document.getElementById('statusDot').style.background = 'var(--muted)';
+  const ls = document.getElementById('loginStatus');
+  ls.textContent = '登录 / 注册 👤';
+  ls.style.color = '';
+  ls.style.fontWeight = '';
+  document.getElementById('userPopup').classList.add('hidden');
+}
+
+function handleUserClick() {
+  if (S.user) { toggleUserPopup(); return; }
+  openLogin();
+}
+
+function toggleUserPopup() {
+  const popup = document.getElementById('userPopup');
+  if (!popup.classList.contains('hidden')) { popup.classList.add('hidden'); return; }
+  if (!S.user) {
+    openLogin();
+    return;
+  }
+  popup.innerHTML = `
+    <div class="up-name">${S.user.company}</div>
+    <div class="up-email">${S.user.email}</div>
+    <div class="up-quota">
+      🤖 报价员 · 免费试用 (${S.quota?.quoter_used||0}/${S.quota?.quoter_limit||1})<br>
+      🔍 客户开发员 · 免费试用 (${S.quota?.developer_used||0}/${S.quota?.developer_limit||1})
+    </div>
+    <div class="up-row">
+      <button class="btn-secondary" onclick="window.open('${API}/dashboard?token='+encodeURIComponent(S.token||''),'_blank')">控制台</button>
+      <button class="btn-secondary btn-danger" onclick="logout()">退出</button>
+    </div>`;
+  popup.classList.remove('hidden');
+}
+
+function openLogin() {
+  // Reset form
+  S.isRegister = false;
+  document.getElementById('loginTitle').textContent = '登录 Atlas';
+  document.getElementById('loginSubtitle').textContent = '登录后同步租赁状态与知识库';
+  document.getElementById('registerFields').style.display = 'none';
+  document.getElementById('loginBtn').textContent = '登录';
+  document.getElementById('loginSwitch').innerHTML = '没有账号？<a onclick="toggleRegister()">注册</a>';
+  document.getElementById('loginError').textContent = '';
+  document.getElementById('loginEmail').value = '';
+  document.getElementById('loginPassword').value = '';
+  document.getElementById('loginOverlay').classList.remove('hidden');
+}
+
+function showLoginPrompt() {
+  alert('👤 请先登录 Atlas 账号\n\n登录后可使用：\n• 数字员工报价/客户开发\n• 知识库同步\n• 历史数据学习');
+  openLogin();
+}
+
+// ═══ Login overlay ═══
+document.getElementById('loginOverlay').addEventListener('click', function(e) {
+  if (e.target === this) this.classList.add('hidden');
+});
+
+// ═══ Settings gear button ═══
+document.getElementById('settingsBtn').addEventListener('click', () => {
+  if (document.getElementById('settingsOverlay').classList.contains('hidden')) {
+    S.settingsSection = 'general';
+    openSettings();
+  } else {
+    closeSettings();
+  }
+});
+
 // ═══ Activity Bar ═══
-document.querySelectorAll('.ab-item').forEach(el => {
+document.querySelectorAll('.ab-item[data-view]').forEach(el => {
   el.addEventListener('click', () => {
-    document.querySelectorAll('.ab-item').forEach(e => e.classList.remove('active'));
+    document.querySelectorAll('.ab-item[data-view]').forEach(e => e.classList.remove('active'));
     el.classList.add('active');
-    const view = el.dataset.view;
-    if (view === 'knowledge') {
+    S.activeView = el.dataset.view;
+    if (S.activeView === 'knowledge') {
       document.getElementById('knowledgeTree').style.display = 'block';
       document.getElementById('agentList').style.display = 'none';
       document.getElementById('sidebarTitle').textContent = '知识库';
-      showWelcome();
-    } else if (view === 'agents') {
+    } else if (S.activeView === 'agents') {
       document.getElementById('knowledgeTree').style.display = 'none';
       document.getElementById('agentList').style.display = 'block';
-      document.getElementById('sidebarTitle').textContent = '租赁';
-      showWelcome();
-    } else if (view === 'settings') {
-      showView('settings');
+      document.getElementById('sidebarTitle').textContent = '数字员工';
     }
+    showWelcome();
   });
 });
 
 // ═══ Tabs ═══
 function openTab(id, label) {
-  // 检查是否已开
   const existing = document.querySelector(`.tab[data-file="${id}"]`);
   if (existing) {
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -382,7 +1448,6 @@ function openTab(id, label) {
     showView(id);
     return;
   }
-  // 新建 tab
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   const tab = document.createElement('div');
   tab.className = 'tab active';
@@ -403,52 +1468,67 @@ function closeTab(id) {
   const wasActive = tab.classList.contains('active');
   const prev = tab.previousElementSibling;
   tab.remove();
-  if (wasActive && prev) {
-    prev.classList.add('active');
-    showView(prev.dataset.file);
-  } else if (wasActive) {
-    showWelcome();
-  }
+  if (wasActive && prev) { prev.classList.add('active'); showView(prev.dataset.file); }
+  else if (wasActive) showWelcome();
 }
 
 function showView(id) {
-  ['welcome', 'quote', 'prospect', 'file', 'settings'].forEach(v => {
+  ['welcome', 'quote', 'prospect', 'file'].forEach(v => {
     const el = document.getElementById('view-' + v);
     if (el) el.style.display = 'none';
   });
   const target = document.getElementById('view-' + id);
-  if (target) {
-    target.style.display = id === 'quote' || id === 'prospect' ? 'flex' : 'flex';
-  } else {
-    document.getElementById('view-welcome').style.display = 'flex';
-  }
+  if (target) target.style.display = 'flex';
+  else document.getElementById('view-welcome').style.display = 'flex';
 }
 
 function showWelcome() {
   showView('welcome');
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  const welcomeTab = document.querySelector('.tab[data-file="welcome"]');
-  if (welcomeTab) welcomeTab.classList.add('active');
+  const wt = document.querySelector('.tab[data-file="welcome"]');
+  if (wt) wt.classList.add('active');
 }
 
-// ═══ Agent 激活 ═══
+// ═══ Agents ═══
+let _trainFileInput = null;
+function trainAgentCard(agentId) {
+  if (!S.user) { showLoginPrompt(); return; }
+  S.selectedRulesAgent = agentId;
+  if (!_trainFileInput) {
+    _trainFileInput = document.getElementById('trainFileInput');
+  }
+  _trainFileInput.click();
+}
 function useAgent(type) {
+  if (!S.user) { showLoginPrompt(); return; }
+  // Sync selectedRulesAgent so 知识库上传/训练自动对应正确Agent
+  const typeToAgent = {quote:'quoter', prospect:'developer'};
+  if (typeToAgent[type]) S.selectedRulesAgent = typeToAgent[type];
   if (type === 'quote') {
     openTab('quote', '💎 报价员');
-    // 同时切 sidebar 到智能体视图
-    document.querySelectorAll('.ab-item').forEach(e => e.classList.remove('active'));
+    S.activeView = 'agents';
+    document.querySelectorAll('.ab-item[data-view]').forEach(e => e.classList.remove('active'));
     document.querySelector('.ab-item[data-view="agents"]').classList.add('active');
     document.getElementById('knowledgeTree').style.display = 'none';
     document.getElementById('agentList').style.display = 'block';
-    document.getElementById('sidebarTitle').textContent = '租赁';
+    document.getElementById('sidebarTitle').textContent = '数字员工';
     setTimeout(() => document.getElementById('quoteInput')?.focus(), 200);
   } else if (type === 'prospect') {
     openTab('prospect', '🎯 客户开发员');
-    document.querySelectorAll('.ab-item').forEach(e => e.classList.remove('active'));
+    S.activeView = 'agents';
+    document.querySelectorAll('.ab-item[data-view]').forEach(e => e.classList.remove('active'));
     document.querySelector('.ab-item[data-view="agents"]').classList.add('active');
     document.getElementById('knowledgeTree').style.display = 'none';
     document.getElementById('agentList').style.display = 'block';
-    document.getElementById('sidebarTitle').textContent = '租赁';
+    document.getElementById('sidebarTitle').textContent = '数字员工';
+    setTimeout(() => document.getElementById('prospectInput')?.focus(), 200);
+
+    S.activeView = 'agents';
+    document.querySelectorAll('.ab-item[data-view]').forEach(e => e.classList.remove('active'));
+    document.querySelector('.ab-item[data-view="agents"]').classList.add('active');
+    document.getElementById('knowledgeTree').style.display = 'none';
+    document.getElementById('agentList').style.display = 'block';
+    document.getElementById('sidebarTitle').textContent = '数字员工';
     setTimeout(() => document.getElementById('prospectInput')?.focus(), 200);
   }
 }
@@ -458,220 +1538,632 @@ function showLocked() {
 }
 
 function openFile(name) {
-  document.getElementById('fileNameDisplay').textContent = '📊 ' + name + ' — 预览（完整版支持 AI 解析）';
-  openTab('file', '📊 ' + name.split('.')[0]);
+  document.getElementById('fileNameDisplay').innerHTML = '📊 <strong>' + name + '</strong><br><span style="font-size:.78rem;color:var(--muted)">预览（完整客户端支持 AI 解析）</span>';
+  openTab('file', '📊 ' + name.replace(/\.[^.]+$/, ''));
 }
 
-function addKnowledge() {
-  alert('📁 拖入 Excel / CSV / PDF 文件到知识库\n（完整客户端支持拖拽导入和 AI 自动解析）');
+// ═══ File Upload ═══
+S.attachedFiles = { quote: [], prospect: [] };
+
+const FILE_ICONS = { xlsx:'📊', xls:'📊', csv:'📊', pdf:'📄', jpg:'🖼️', jpeg:'🖼️', png:'🖼️', webp:'🖼️', txt:'📝', md:'📝' };
+
+function getFileIcon(name) {
+  const ext = (name.split('.').pop() || '').toLowerCase();
+  return FILE_ICONS[ext] || '📁';
+}
+function isImage(name) { return /\.(jpg|jpeg|png|webp)$/i.test(name); }
+function isExcel(name) { return /\.(xlsx|xls|csv)$/i.test(name); }
+function isPdf(name) { return /\.pdf$/i.test(name); }
+
+function handleDrop(e, agent) {
+  e.preventDefault();
+  e.target.classList.remove('drag-over');
+  if (e.dataTransfer.files.length) handleFiles(e.dataTransfer.files, agent);
+}
+
+function handleFiles(fileList, agent) {
+  const arr = Array.from(fileList).map(f => ({
+    name: f.name, size: f.size, type: f.type, file: f
+  }));
+  S.attachedFiles[agent] = [...S.attachedFiles[agent], ...arr];
+  renderFileChips(agent);
+}
+
+function removeFile(agent, idx) {
+  S.attachedFiles[agent].splice(idx, 1);
+  renderFileChips(agent);
+}
+
+function renderFileChips(agent) {
+  const files = S.attachedFiles[agent];
+  const chipsEl = document.getElementById(agent + 'FileChips');
+  const zoneEl = document.getElementById(agent + 'UploadZone');
+  if (!chipsEl || !zoneEl) return;
+  
+  if (files.length === 0) {
+    chipsEl.innerHTML = '';
+    zoneEl.style.display = 'flex';
+    return;
+  }
+  zoneEl.style.display = 'none';
+  
+  let h = '';
+  files.forEach((f, i) => {
+    const sizeStr = f.size > 1024*1024 ? (f.size/(1024*1024)).toFixed(1)+'MB' : (f.size/1024).toFixed(0)+'KB';
+    let cls = 'file-chip';
+    if (isExcel(f.name)) cls += ' chip-excel';
+    else if (isImage(f.name)) cls += ' chip-image';
+    else if (isPdf(f.name)) cls += ' chip-pdf';
+    h += `<div class="${cls}"><span class="chip-icon">${getFileIcon(f.name)}</span> ${f.name} <span style="color:var(--dim);font-size:.65rem">${sizeStr}</span><span class="chip-remove" onclick="removeFile('${agent}',${i})">✕</span></div>`;
+  });
+  chipsEl.innerHTML = h;
+}
+
+// ═══ Knowledge Base Import ═══
+async function handleKBFiles(fileList) {
+  if (!S.token) { alert('请先登录后再上传文件'); return; }
+  const files = Array.from(fileList);
+  const agent = S.selectedRulesAgent || 'quoter';
+  const agentNames = {developer:'客户开发员',quoter:'报价员',buyer:'采购员',image:'图片识零件员',stock:'库存管理员',customs:'清关助理'};
+  const agentName = agentNames[agent] || agent;
+  
+  let uploaded = 0;
+  for (const f of files) {
+    const formData = new FormData();
+    formData.append('file', f);
+    formData.append('agent', agent);
+    try {
+      const res = await fetch(API + '/api/kb/upload', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + S.token },
+        body: formData
+      });
+      const data = await res.json();
+      if (data.ok) {
+        const icon = getFileIcon(f.name);
+        const div = document.createElement('div');
+        div.className = 'tree-item';
+        div.onclick = () => openFile(f.name);
+        div.innerHTML = `<span style="font-size:.9rem;width:16px;text-align:center">${icon}</span> ${f.name}`;
+        div.style.animation = 'fadeIn .15s ease';
+        document.getElementById('knowledgeTree').insertBefore(div, document.getElementById('knowledgeTree').firstChild);
+        uploaded++;
+      }
+    } catch(e) { console.error('Upload failed:', f.name, e); }
+  }
+  
+  if (uploaded > 0) {
+    alert('📤 ' + uploaded + ' 个文件已上传到「' + agentName + '」知识库\n\n点击 🧠 训练 让 AI 学习这些文件');
+  } else {
+    alert('⚠️ 上传失败，请检查网络后重试');
+  }
+  
+  document.querySelectorAll('.ab-item[data-view]').forEach(e => e.classList.remove('active'));
+  document.querySelector('.ab-item[data-view="knowledge"]').classList.add('active');
+  document.getElementById('knowledgeTree').style.display = 'block';
+  document.getElementById('agentList').style.display = 'none';
+  document.getElementById('sidebarTitle').textContent = agentName + ' · 知识库';
+  document.getElementById('kbFileInput').value = '';
+
+// ═══ Load Knowledge Base from API ═══
+function formatFileSize(bytes) {
+  if (bytes < 1024) return bytes + 'B';
+  if (bytes < 1024*1024) return (bytes/1024).toFixed(1) + 'KB';
+  return (bytes/(1024*1024)).toFixed(1) + 'MB';
+}
+function formatTime(ts) {
+  const d = new Date(ts * 1000);
+  const now = new Date();
+  const pad = n => String(n).padStart(2,'0');
+  const date = d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+  const time = pad(d.getHours())+':'+pad(d.getMinutes());
+  return date + ' ' + time;
+}
+async function loadKnowledgeBase() {
+  const tree = document.getElementById('knowledgeTree');
+  const emptyEl = document.getElementById('kbEmpty');
+  if (!tree) return;
+  
+  if (!S.token) {
+    tree.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted);font-size:.8rem">📂 登录后显示知识库文件</div>';
+    return;
+  }
+  
+  tree.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted);font-size:.8rem">⏳ 加载中...</div>';
+  
+  try {
+    const res = await fetch(API + '/api/kb/list', {
+      headers: { 'Authorization': 'Bearer ' + S.token }
+    });
+    const data = await res.json();
+    if (!data.ok) {
+      tree.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted);font-size:.8rem">📂 暂无文件，点击 📤 上传</div>';
+      return;
+    }
+    
+    const files = data.files || [];
+    if (files.length === 0) {
+      tree.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted);font-size:.8rem">📂 知识库为空<br><span style="font-size:.72rem">点击 📤 上传 Excel/CSV/PDF 文件</span></div>';
+      return;
+    }
+    
+    // Group files by agent
+    const groups = {};
+    const agentNames = {quoter:'报价员', developer:'客户开发员', buyer:'采购员', image:'图片识零件员', stock:'库存管理员', customs:'清关助理'};
+    files.forEach(f => {
+      const agent = f.agent || 'quoter';
+      if (!groups[agent]) groups[agent] = [];
+      groups[agent].push(f);
+    });
+    
+    let h = '';
+    Object.keys(groups).sort().forEach(agent => {
+      const aname = agentNames[agent] || agent;
+      h += '<div style="padding:6px 14px;font-size:.68rem;font-weight:600;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-top:4px">' + aname + ' (' + groups[agent].length + ')</div>';
+      groups[agent].forEach(f => {
+        const icon = getFileIcon(f.name);
+        h += '<div class="tree-item" onclick="openKBFile(\'' + f.name + '\',\'' + f.agent + '\')" title="' + f.name + ' · ' + formatFileSize(f.size) + ' · ' + formatTime(f.modified) + '">';
+        h += '<span style="font-size:.9rem;width:16px;text-align:center">' + icon + '</span>';
+        h += '<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + f.name + '</span>';
+        h += '<span style="font-size:.62rem;color:var(--dim);flex-shrink:0;margin-left:6px">' + formatFileSize(f.size) + '</span>';
+        h += '</div>';
+      });
+    });
+    
+    tree.innerHTML = h;
+  } catch(e) {
+    tree.innerHTML = '<div style="padding:20px;text-align:center;color:#ff4444;font-size:.8rem">⚠️ 加载失败<br><span style="font-size:.72rem;color:var(--muted)">检查网络连接</span></div>';
+    console.error('KB load error:', e);
+  }
+}
+
+function openKBFile(name, agent) {
+  document.getElementById('fileNameDisplay').innerHTML = '📊 <strong>' + name + '</strong><br><span style="font-size:.78rem;color:var(--muted)">' + (agent||'知识库') + ' · 预览（完整客户端支持 AI 解析）</span>';
+  openTab('file', '📊 ' + name.replace(/\.[^.]+$/, ''));
+}
+}
+
+// ═══ Training (upload Excel → extract rules) ═══
+async function handleTrain(fileList) {
+  if (!fileList.length) return;
+  if (!S.token) { alert('请先登录后再训练AI'); return; }
+  const file = fileList[0];
+  if (!file.name.match(/\.(xlsx|xls)$/i)) { alert('仅支持 .xlsx 格式的报价留底Excel'); return; }
+  
+  const formData = new FormData();
+  formData.append('file', file);
+  
+  const trainAgent = S.selectedRulesAgent || 'quoter';
+  const trainAgentNames = {developer:'客户开发员',quoter:'报价员',buyer:'采购员',image:'图片识零件员',stock:'库存管理员',customs:'清关助理'};
+  const trainAgentName = trainAgentNames[trainAgent] || trainAgent;
+  alert(`🧠 开始训练「${trainAgentName}」\n上传: ${file.name} (${(file.size/1024).toFixed(0)}KB)\nAI 正在审视数据，提取规则...`);
+  
+  try {
+    const res = await fetch(API + '/api/train?agent=' + encodeURIComponent(S.selectedRulesAgent || 'quoter'), {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + S.token },
+      body: formData
+    });
+    const data = await res.json();
+    if (data.ok) {
+      alert(`✅ 「${trainAgentName}」训练完成！\n\n📊 提取了 ${data.record_count} 条记录\n🔍 发现 ${data.patterns_found} 类模式\n📝 规则已写入 ${trainAgentName} 的记忆\n\n去「设置 → 定价规则」查看`);
+      // Auto switch to knowledge view
+      document.querySelectorAll('.ab-item[data-view]').forEach(e => e.classList.remove('active'));
+      document.querySelector('.ab-item[data-view="knowledge"]').classList.add('active');
+      document.getElementById('knowledgeTree').style.display = 'block';
+      document.getElementById('agentList').style.display = 'none';
+      document.getElementById('sidebarTitle').textContent = trainAgentName + ' · 知识库';
+    } else {
+      alert('❌ 训练失败: ' + (data.error || '未知错误'));
+    }
+  } catch(e) {
+    alert('⚠️ 网络错误\n请确认 atlas.traceclaw.cn 可访问且已登录');
+  }
+  document.getElementById('trainFileInput').value = '';
 }
 
 // ═══ Quote Chat ═══
 function sendQuote() {
   const input = document.getElementById('quoteInput');
   const msg = input.value.trim();
-  if (!msg) return;
-
+  const files = S.attachedFiles.quote;
+  if (!msg && files.length === 0) return;
   const messages = document.getElementById('quoteMessages');
-
-  // User message
   const userMsg = document.createElement('div');
   userMsg.className = 'chat-msg user';
-  userMsg.textContent = msg;
+  let text = msg || '';
+  if (files.length > 0) {
+    text += (text ? '\n' : '') + '📎 附件：' + files.map(f => getFileIcon(f.name)+' '+f.name).join('、');
+    S.attachedFiles.quote = [];
+    renderFileChips('quote');
+  }
+  userMsg.textContent = text;
   messages.appendChild(userMsg);
   input.value = '';
-
-  // Agent response（模拟 AI 推理）
   setTimeout(() => {
     const resp = document.createElement('div');
     resp.className = 'chat-msg agent';
-    resp.innerHTML = `
-      <div class="label">💎 报价员 Agent</div>
-      <strong>分析完成。</strong> 基于你 338 条历史报价中的<strong> 47 条康明斯喷油器</strong>记录：<br><br>
-      <div class="result-card">
-        <table>
-          <tr><th>配件</th><td>福田康明斯喷油器 (OE: 5264231)</td></tr>
-          <tr><th>数量</th><td>50 件</td></tr>
-          <tr><th>目的地</th><td>迪拜（中东 · 运费+¥350/件）</td></tr>
-          <tr><th>历史均价</th><td>¥3,200 · 你的毛利率 22%</td></tr>
-          <tr><th>建议单价</th><td style="color:var(--ink);font-weight:700">¥3,520</td></tr>
-          <tr><th>批量折扣</th><td>50件 → 减 6% → ¥3,309/件</td></tr>
-          <tr style="border-top:1px solid var(--line)"><th>总报价</th><td class="total">¥165,450</td></tr>
-        </table>
-      </div>
-      <br>导出 Excel？ 📥 确认报价？
-    `;
+    resp.innerHTML = `<div class="label">💎 报价员 Agent</div>
+      <strong>分析完成。</strong> 基于 338 条历史报价中的<strong> 47 条康明斯喷油器</strong>记录：<br><br>
+      <div class="result-card"><table>
+        <tr><th>配件</th><td>福田康明斯喷油器 (OE: 5264231)</td></tr>
+        <tr><th>数量</th><td>50 件</td></tr>
+        <tr><th>目的地</th><td>迪拜（中东 · 运费+¥350/件）</td></tr>
+        <tr><th>历史均价</th><td>¥3,200 · 毛利率 22%</td></tr>
+        <tr><th>建议单价</th><td style="color:var(--green);font-weight:700">¥3,520</td></tr>
+        <tr><th>批量折扣</th><td>50件 → 减 6% → ¥3,309/件</td></tr>
+        <tr style="border-top:1px solid var(--line)"><th>总报价</th><td class="total">¥165,450</td></tr>
+      </table></div><br>导出 Excel？ 📥 确认报价？`;
     messages.appendChild(resp);
     messages.scrollTop = messages.scrollHeight;
   }, 800);
-
   messages.scrollTop = messages.scrollHeight;
 }
 
 // ═══ Prospect Chat ═══
-function sendProspect() {
+
+async function sendProspect() {
   const input = document.getElementById('prospectInput');
-  const msg = input.value.trim();
-  if (!msg) return;
-
   const messages = document.getElementById('prospectMessages');
+  if (!input || !messages) return;
+  const raw = input.value.trim();
+  if (!raw) return;
 
+  // Parse: "industry country keywords" (space-separated)
+  const parts = raw.split(' ');
+  const industry = parts.slice(0, 2).join(' ') || raw;
+  const country = parts.length > 2 ? parts[2] : '';
+  const keywords = parts.slice(3).join(' ') || raw;
+
+  // User message
   const userMsg = document.createElement('div');
   userMsg.className = 'chat-msg user';
-  userMsg.textContent = msg;
+  userMsg.innerHTML = '<b>你</b><br>' + raw;
   messages.appendChild(userMsg);
+
+  // Loading
+  const loadingMsg = document.createElement('div');
+  loadingMsg.className = 'chat-msg agent';
+  loadingMsg.id = 'prospectLoading';
+  loadingMsg.innerHTML = '<div class="label">🎯 客户开发员</div>⏳ 正在执行：搜客 → 背调 → 开发信...<br><span style="font-size:.72rem;color:var(--muted)">约需 30-60 秒</span>';
+  messages.appendChild(loadingMsg);
+  messages.scrollTop = messages.scrollHeight;
   input.value = '';
 
-  setTimeout(() => {
-    const resp = document.createElement('div');
-    resp.className = 'chat-msg agent';
-    resp.innerHTML = `
-      <div class="label">🎯 客户开发员 Agent</div>
-      搜索完成。找到 <strong>23 家</strong> 潜在客户：<br><br>
-      <div class="result-card" style="margin-bottom:8px">
-        <strong>🏭 Al-Futtaim Auto</strong> · 迪拜<br>
-        <span style="color:var(--muted);font-size:.75rem">年采购额 ~$2.8M · 康明斯配件 · 匹配度 92%</span><br>
-        <span style="font-size:.78rem">📧 procurement@alfuttaim.ae</span>
-      </div>
-      <div class="result-card" style="margin-bottom:8px">
-        <strong>🏭 Diesel Tech Middle East</strong> · 利雅得<br>
-        <span style="color:var(--muted);font-size:.75rem">年采购额 ~$1.5M · 喷油器+油泵 · 匹配度 85%</span><br>
-        <span style="font-size:.78rem">📧 info@dieseltech-me.com</span>
-      </div>
-      <div class="result-card" style="margin-bottom:8px">
-        <strong>🏭 Arabian Auto Parts</strong> · 多哈<br>
-        <span style="color:var(--muted);font-size:.75rem">年采购额 ~$900K · 康明斯/Perkins · 匹配度 78%</span><br>
-        <span style="font-size:.78rem">📧 sales@arabianautoparts.qa</span>
-      </div>
-      要为以上客户生成开发信吗？ ✉️
-    `;
-    messages.appendChild(resp);
-    messages.scrollTop = messages.scrollHeight;
-  }, 1200);
+  try {
+    const resp = await fetch(API + '/api/puzzler/pipeline', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ industry, country, keywords, language: 'en', channels: ['linkedin','google','b2b'] })
+    });
+    const data = await resp.json();
 
-  messages.scrollTop = messages.scrollHeight;
+    document.getElementById('prospectLoading')?.remove();
+    const resultMsg = document.createElement('div');
+    resultMsg.className = 'chat-msg agent';
+
+    if (!data.ok) {
+      resultMsg.innerHTML = '<div class="label">🎯 客户开发员</div>❌ ' + (data.error || '管道执行失败');
+    } else {
+      const s = data.summary || {};
+      let h = '<div class="label">🎯 客户开发员</div>';
+      h += '<b>✅ 管道完成！</b> 线索 ' + (s.total_leads||0) + ' 家 | 背调 ' + (s.bgcheck_count||0) + ' 份 | 匹配分析 ' + (s.match_count||0) + ' 份 | 开发信 ' + (s.email_count||0) + ' 封';
+      if (s.avg_match_score) h += '<br>📊 平均匹配度: <b style="color:var(--green)">' + s.avg_match_score + '%</b>';
+      if (s.recommended_action) h += '<br>💡 ' + s.recommended_action;
+      h += '<br><br>';
+
+      // ── Show leads with match analysis ──
+      const leads = data.leads || [];
+      const matches = data.match_analyses || {};
+      const emails = data.emails || [];
+      
+      if (leads.length > 0) {
+        h += '<b>📋 客户匹配分析：</b><br>';
+        h += '<div style="max-height:400px;overflow-y:auto">';
+        leads.slice(0, 5).forEach(l => {
+          const name = l.company || '?';
+          const match = matches[name] || {};
+          const bestMatch = match.best_match || l.products_interested?.[0] || '待分析';
+          const bestScore = match.best_score || l.score || 0;
+          const scoreColor = bestScore >= 60 ? 'var(--green)' : bestScore >= 30 ? '#e6a817' : 'var(--dim)';
+          
+          h += '<div style="margin:6px 0;padding:10px;background:var(--bg);border-radius:8px;font-size:.76rem;border-left:3px solid ' + scoreColor + '">';
+          h += '<div style="display:flex;justify-content:space-between;align-items:center">';
+          h += '<b>' + name + '</b>';
+          h += '<span style="color:' + scoreColor + ';font-weight:600">' + bestScore + '%</span>';
+          h += '</div>';
+          h += '<div style="color:var(--dim);font-size:.7rem">' + (l.source||'?') + ' · ' + (l.country||'') + '</div>';
+          h += '<div style="margin-top:4px">🎯 最佳匹配: <b>' + bestMatch + '</b></div>';
+          if (match.pitch_strategy) h += '<div style="color:var(--dim);font-size:.7rem">' + match.pitch_strategy + '</div>';
+          h += '<div style="margin-top:4px">📧 ' + (l.email||'?') + ' · 👤 ' + (l.contact||'?') + '</div>';
+          
+          // Send button per lead
+          const emailObj = emails.find(e => e.company === name);
+          if (emailObj && emailObj.email && l.email) {
+            h += '<button onclick="sendOneClientEmail(\'' + name.replace(/'/g, '\\\'') + '\')" style="margin-top:6px;padding:4px 10px;border-radius:4px;font-size:.7rem;cursor:pointer;border:1px solid var(--green);background:var(--green-bg);color:var(--green)">✉️ 发送开发信</button>';
+          }
+          
+          h += '</div>';
+        });
+        h += '</div><br>';
+      }
+
+      // ── Bulk send ──
+      if (emails.length > 0) {
+        h += '<button onclick="sendAllEmails()" id="btnBulkSend" style="padding:8px 16px;border-radius:8px;font-size:.8rem;cursor:pointer;border:none;background:var(--green);color:#fff">📮 一键群发 ' + emails.length + ' 封开发信</button>';
+        h += ' <button onclick="openEmailConfig()" style="padding:8px 16px;border-radius:8px;font-size:.8rem;cursor:pointer;border:1px solid var(--line);background:transparent;color:var(--muted)">⚙️ 配置邮箱</button>';
+        h += '<br><br>';
+      }
+
+      h += '<button onclick="showMatchDetail()" style="padding:6px 12px;border-radius:6px;font-size:.76rem;cursor:pointer;border:1px solid var(--green);background:transparent;color:var(--green)">🔍 查看详细背调</button>';
+    }
+
+    resultMsg.innerHTML = h;
+    messages.appendChild(resultMsg);
+    messages.scrollTop = messages.scrollHeight;
+  } catch(e) {
+    document.getElementById('prospectLoading')?.remove();
+    const errMsg = document.createElement('div');
+    errMsg.className = 'chat-msg agent';
+    errMsg.innerHTML = '<div class="label">🎯 客户开发员</div>❌ 网络错误: ' + e.message;
+    messages.appendChild(errMsg);
+    messages.scrollTop = messages.scrollHeight;
+  }
 }
 
-// ═══ Command Palette ═══
-const overlay = document.getElementById('commandPaletteOverlay');
-const cmdInput = document.getElementById('commandInput');
+// ═══ 邮件配置与发送 ═══
+let lastPipelineResult = null;  // 缓存最后一次管道结果
 
+// Override: after pipeline completes, save result
+const origSendProspect = sendProspect;
+sendProspect = async function() {
+  const input = document.getElementById('prospectInput');
+  const messages = document.getElementById('prospectMessages');
+  if (!input || !messages) return;
+  const raw = input.value.trim();
+  if (!raw) return;
+  
+  const parts = raw.split(' ');
+  const industry = parts.slice(0, 2).join(' ') || raw;
+  const country = parts.length > 2 ? parts[2] : '';
+  const keywords = parts.slice(3).join(' ') || raw;
+  
+  const userMsg = document.createElement('div');
+  userMsg.className = 'chat-msg user';
+  userMsg.innerHTML = '<b>你</b><br>' + raw;
+  messages.appendChild(userMsg);
+  
+  const loadingMsg = document.createElement('div');
+  loadingMsg.className = 'chat-msg agent';
+  loadingMsg.id = 'prospectLoading';
+  loadingMsg.innerHTML = '<div class="label">🎯 客户开发员</div>⏳ 正在执行：搜客 → 背调 → 匹配分析 → 开发信...<br><span style="font-size:.72rem;color:var(--muted)">约需 30-60 秒</span>';
+  messages.appendChild(loadingMsg);
+  messages.scrollTop = messages.scrollHeight;
+  input.value = '';
+  
+  try {
+    const resp = await fetch(API + '/api/puzzler/pipeline', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ industry, country, keywords, language: 'en', channels: ['linkedin','google','b2b'] })
+    });
+    const data = await resp.json();
+    lastPipelineResult = data;  // 缓存结果
+    
+    document.getElementById('prospectLoading')?.remove();
+    const resultMsg = document.createElement('div');
+    resultMsg.className = 'chat-msg agent';
+    
+    if (!data.ok) {
+      resultMsg.innerHTML = '<div class="label">🎯 客户开发员</div>❌ ' + (data.error || '管道执行失败');
+    } else {
+      const s = data.summary || {};
+      let h = '<div class="label">🎯 客户开发员</div>';
+      h += '<b>✅ 管道完成！</b> 线索 ' + (s.total_leads||0) + ' 家 | 背调 ' + (s.bgcheck_count||0) + ' 份 | 匹配分析 ' + (s.match_count||0) + ' 份 | 开发信 ' + (s.email_count||0) + ' 封';
+      if (s.avg_match_score) h += '<br>📊 平均匹配度: <b style="color:var(--green)">' + s.avg_match_score + '%</b>';
+      if (s.recommended_action) h += '<br>💡 ' + s.recommended_action;
+      h += '<br><br>';
+      
+      const leads = data.leads || [];
+      const matches = data.match_analyses || {};
+      const emails = data.emails || [];
+      
+      if (leads.length > 0) {
+        h += '<b>📋 客户匹配分析：</b><br>';
+        h += '<div style="max-height:400px;overflow-y:auto">';
+        leads.slice(0, 5).forEach(l => {
+          const name = l.company || '?';
+          const match = matches[name] || {};
+          const bestMatch = match.best_match || (l.products_interested||[])[0] || '待分析';
+          const bestScore = match.best_score || l.score || 0;
+          const scoreColor = bestScore >= 60 ? 'var(--green)' : bestScore >= 30 ? '#e6a817' : 'var(--dim)';
+          
+          h += '<div style="margin:6px 0;padding:10px;background:var(--bg);border-radius:8px;font-size:.76rem;border-left:3px solid ' + scoreColor + '">';
+          h += '<div style="display:flex;justify-content:space-between;align-items:center">';
+          h += '<b>' + name + '</b>';
+          h += '<span style="color:' + scoreColor + ';font-weight:600">' + bestScore + '%</span>';
+          h += '</div>';
+          h += '<div style="color:var(--dim);font-size:.7rem">' + (l.source||'?') + ' · ' + (l.country||'') + '</div>';
+          h += '<div style="margin-top:4px">🎯 最佳匹配: <b>' + bestMatch + '</b></div>';
+          if (match.pitch_strategy) h += '<div style="color:var(--dim);font-size:.7rem">' + match.pitch_strategy + '</div>';
+          h += '<div style="margin-top:4px">📧 ' + (l.email||'?') + ' · 👤 ' + (l.contact||'?') + '</div>';
+          
+          const emailObj = emails.find(e => e.company === name);
+          if (emailObj && emailObj.email && l.email) {
+            h += '<button onclick="sendOneClientEmail(\'' + name.replace(/'/g, '\\\'') + '\')" style="margin-top:6px;padding:4px 10px;border-radius:4px;font-size:.7rem;cursor:pointer;border:1px solid var(--green);background:var(--green-bg);color:var(--green)">✉️ 发送开发信</button>';
+          }
+          h += '</div>';
+        });
+        h += '</div><br>';
+      }
+      
+      if (emails.length > 0) {
+        h += '<button onclick="sendAllEmails()" id="btnBulkSend" style="padding:8px 16px;border-radius:8px;font-size:.8rem;cursor:pointer;border:none;background:var(--green);color:#fff">📮 一键群发 ' + emails.length + ' 封开发信</button>';
+        h += ' <button onclick="openEmailConfig()" style="padding:8px 16px;border-radius:8px;font-size:.8rem;cursor:pointer;border:1px solid var(--line);background:transparent;color:var(--muted)">⚙️ 配置邮箱</button>';
+        h += '<br><br>';
+      }
+      
+      h += '<button onclick="showMatchDetail()" style="padding:6px 12px;border-radius:6px;font-size:.76rem;cursor:pointer;border:1px solid var(--green);background:transparent;color:var(--green)">🔍 查看详细背调</button>';
+    }
+    
+    resultMsg.innerHTML = h;
+    messages.appendChild(resultMsg);
+    messages.scrollTop = messages.scrollHeight;
+  } catch(e) {
+    document.getElementById('prospectLoading')?.remove();
+    const errMsg = document.createElement('div');
+    errMsg.className = 'chat-msg agent';
+    errMsg.innerHTML = '<div class="label">🎯 客户开发员</div>❌ 网络错误: ' + e.message;
+    messages.appendChild(errMsg);
+    messages.scrollTop = messages.scrollHeight;
+  }
+};
+
+function sendOneClientEmail(companyName) {
+  if (!lastPipelineResult) return alert('请先运行客户搜索管道');
+  const emails = lastPipelineResult.emails || [];
+  const emailObj = emails.find(e => e.company === companyName);
+  if (!emailObj) return alert('未找到该客户的开发信');
+  
+  const em = emailObj.email || {};
+  const to = emailObj.recipient || '';
+  if (!to) return alert('该客户没有邮箱地址');
+  
+  if (!confirm('确认发送开发信到 ' + to + '？\n\n主题: ' + (em.subject||''))) return;
+  
+  fetch(API + '/api/puzzler/send', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({to_email: to, subject: em.subject||'', body: em.body||'', to_name: companyName})
+  }).then(r => r.json()).then(d => {
+    alert(d.ok ? '✅ 已发送至 ' + to : '❌ ' + (d.error||'发送失败'));
+  }).catch(e => alert('❌ 网络错误: ' + e.message));
+}
+
+async function sendAllEmails() {
+  if (!lastPipelineResult) return alert('❌ 请先运行客户搜索管道');
+  const emails = lastPipelineResult.emails || [];
+  if (emails.length === 0) return alert('❌ 没有可发送的开发信');
+  
+  // Check SMTP config first
+  const statusResp = await fetch(API + '/api/puzzler/status').then(r => r.json());
+  if (!statusResp.configured) {
+    if (confirm('⚠️ 邮箱尚未配置，是否现在配置？')) { openEmailConfig(); }
+    return;
+  }
+  
+  if (!confirm('确认群发 ' + emails.length + ' 封开发信？')) return;
+  
+  const payload = emails.map(e => ({
+    to_email: e.recipient || '',
+    to_name: e.company || '',
+    subject: (e.email||{}).subject || '',
+    body: (e.email||{}).body || ''
+  })).filter(e => e.to_email);
+  
+  const btn = document.getElementById('btnBulkSend');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ 发送中...'; }
+  
+  const resp = await fetch(API + '/api/puzzler/send', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({emails: payload})
+  }).then(r => r.json());
+  
+  if (btn) { btn.disabled = false; btn.textContent = '📮 一键群发 ' + emails.length + ' 封开发信'; }
+  alert('📬 发送完成: ' + (resp.sent||0) + '/' + (resp.total||0) + ' 封成功');
+}
+
+function openEmailConfig() {
+  let overlay = document.getElementById('emailConfigOverlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'emailConfigOverlay';
+    overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center';
+    overlay.innerHTML = '<div style="background:var(--card);border-radius:12px;padding:24px;width:380px;max-width:90vw"><div style="font-weight:600;margin-bottom:16px">⚙️ 配置发信邮箱 (SMTP)</div><div style="margin-bottom:10px"><label style="font-size:.76rem;color:var(--muted)">SMTP服务器</label><input id="cfgHost" style="width:100%;padding:8px;border-radius:6px;border:1px solid var(--line);background:var(--bg);font-size:.82rem" placeholder="smtp.gmail.com"></div><div style="margin-bottom:10px"><label style="font-size:.76rem;color:var(--muted)">端口</label><input id="cfgPort" style="width:100%;padding:8px;border-radius:6px;border:1px solid var(--line);background:var(--bg);font-size:.82rem" value="587"></div><div style="margin-bottom:10px"><label style="font-size:.76rem;color:var(--muted)">邮箱账号</label><input id="cfgUser" style="width:100%;padding:8px;border-radius:6px;border:1px solid var(--line);background:var(--bg);font-size:.82rem" placeholder="your@company.com"></div><div style="margin-bottom:10px"><label style="font-size:.76rem;color:var(--muted)">密码/授权码</label><input id="cfgPass" type="password" style="width:100%;padding:8px;border-radius:6px;border:1px solid var(--line);background:var(--bg);font-size:.82rem"></div><div style="margin-bottom:10px"><label style="font-size:.76rem;color:var(--muted)">发件人名称</label><input id="cfgName" style="width:100%;padding:8px;border-radius:6px;border:1px solid var(--line);background:var(--bg);font-size:.82rem" placeholder="Atlas Auto Parts"></div><div style="display:flex;gap:8px;margin-top:16px"><button id="btnSaveSMTP" style="flex:1;padding:10px;border-radius:8px;border:none;background:var(--green);color:#fff;font-size:.82rem;cursor:pointer">💾 保存配置</button><button onclick="document.getElementById(\'emailConfigOverlay\').remove()" style="padding:10px 16px;border-radius:8px;border:1px solid var(--line);background:transparent;font-size:.82rem;cursor:pointer">取消</button></div></div>';
+    document.body.appendChild(overlay);
+    
+    // Load existing config
+    fetch(API + '/api/puzzler/status').then(r => r.json()).then(d => {
+      if (d.configured) {
+        document.getElementById('cfgHost').value = d.host || '';
+        document.getElementById('cfgUser').value = d.user || '';
+        document.getElementById('cfgName').value = d.from_name || '';
+      }
+    });
+    
+    // Save handler
+    document.getElementById('btnSaveSMTP').onclick = async () => {
+      const cfg = {
+        host: document.getElementById('cfgHost').value,
+        port: parseInt(document.getElementById('cfgPort').value) || 587,
+        user: document.getElementById('cfgUser').value,
+        password: document.getElementById('cfgPass').value,
+        from_name: document.getElementById('cfgName').value
+      };
+      if (!cfg.host || !cfg.user || !cfg.password) return alert('请填写完整配置');
+      const resp = await fetch(API + '/api/puzzler/config', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify(cfg)
+      }).then(r => r.json());
+      alert(resp.ok ? '✅ SMTP 配置成功！' : '❌ ' + (resp.error||'配置失败'));
+      if (resp.ok) overlay.remove();
+    };
+  }
+}
+
+function showMatchDetail() {
+  if (!lastPipelineResult) return;
+  const matches = lastPipelineResult.match_analyses || {};
+  const bgchecks = lastPipelineResult.bgchecks || {};
+  
+  let detail = '📊 客户匹配详情\n\n';
+  for (const [name, match] of Object.entries(matches)) {
+    const bg = bgchecks[name] || {};
+    detail += '🏭 ' + name + '\n';
+    detail += '  匹配度: ' + (match.best_score||0) + '% → ' + (match.best_match||'待分析') + '\n';
+    detail += '  策略: ' + (match.pitch_strategy||'') + '\n';
+    const bg_rec = bg.recommendation || {};
+    if (bg_rec.verdict) detail += '  评级: ' + bg_rec.verdict + '\n';
+    detail += '\n';
+  }
+  alert(detail);
+}
+
+// ═══ Resize ═══
+let isResizing = false;
+function startResize(e) { isResizing = true; document.body.style.cursor = 'col-resize'; }
+document.addEventListener('mousemove', (e) => {
+  if (!isResizing) return;
+  document.getElementById('sidebar').style.width = Math.max(180, Math.min(400, e.clientX - 48)) + 'px';
+});
+document.addEventListener('mouseup', () => { isResizing = false; document.body.style.cursor = ''; });
+
+// ═══ Hotkeys ═══
 document.addEventListener('keydown', (e) => {
-  if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
-    e.preventDefault();
-    overlay.classList.remove('hidden');
-    cmdInput.value = '';
-    cmdInput.focus();
-  }
   if (e.key === 'Escape') {
-    overlay.classList.add('hidden');
+    closeSettings();
+    document.getElementById('loginOverlay').classList.add('hidden');
+    document.getElementById('userPopup').classList.add('hidden');
   }
-  // Shortcuts
+  if ((e.ctrlKey || e.metaKey) && e.key === 'k') { e.preventDefault(); /* command palette placeholder */ }
   if ((e.ctrlKey || e.metaKey) && e.key === '1') { e.preventDefault(); useAgent('quote'); }
   if ((e.ctrlKey || e.metaKey) && e.key === '2') { e.preventDefault(); useAgent('prospect'); }
 });
 
-overlay.addEventListener('click', (e) => {
-  if (e.target === overlay) overlay.classList.add('hidden');
-});
-
-document.querySelectorAll('.result-item').forEach(item => {
-  item.addEventListener('click', () => {
-    const action = item.dataset.action;
-    overlay.classList.add('hidden');
-    if (action === 'quote') useAgent('quote');
-    else if (action === 'prospect') useAgent('prospect');
-    else if (action === 'settings') showView('settings');
-    else if (action === 'knowledge') {
-      document.querySelector('.ab-item[data-view="knowledge"]').click();
-      addKnowledge();
-    }
-  });
-});
-
-cmdInput.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') {
-    const selected = document.querySelector('.result-item.selected');
-    if (selected) selected.click();
+// ═══ User popup click-outside ═══
+document.addEventListener('click', (e) => {
+  const popup = document.getElementById('userPopup');
+  // Don't hide if clicking the trigger buttons themselves
+  if (e.target.id === 'loginStatus' || e.target.closest('#userBtn') || e.target.closest('#settingsBtn')) return;
+  if (!popup.classList.contains('hidden') && !popup.contains(e.target)) {
+    popup.classList.add('hidden');
   }
 });
 
-// ═══ Sidebar resize ═══
-const handle = document.getElementById('resizeHandle');
-const sidebar = document.getElementById('sidebar');
-let isResizing = false;
-
-handle.addEventListener('mousedown', (e) => {
-  isResizing = true;
-  document.body.style.cursor = 'col-resize';
-});
-
-document.addEventListener('mousemove', (e) => {
-  if (!isResizing) return;
-  const w = Math.max(180, Math.min(400, e.clientX - 48));
-  sidebar.style.width = w + 'px';
-});
-
-document.addEventListener('mouseup', () => {
-  isResizing = false;
-  document.body.style.cursor = '';
-});
+// ═══ Init ═══
+restoreSession();
 </script>
-
-<script>
-// User panel toggle
-function toggleUserPanel() {
-  const panel = document.getElementById('userPanel');
-  if (panel) {
-    panel.classList.toggle('hidden');
-  } else {
-    // Create panel if not exists
-    const p = document.createElement('div');
-    p.id = 'userPanel';
-    p.className = 'overlay';
-    p.style.cssText = 'align-items:flex-end;justify-content:flex-start;padding:0 0 60px 56px;background:transparent;pointer-events:none;z-index:200';
-    p.innerHTML = `<div style="background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:20px;width:240px;pointer-events:auto;box-shadow:0 8px 32px rgba(0,0,0,0.5)">
-      <div style="font-size:.85rem;font-weight:600;margin-bottom:4px">未登录</div>
-      <div style="font-size:.72rem;color:var(--muted);margin-bottom:14px">登录后同步租赁状态</div>
-      <button onclick="simulateLogin()" style="width:100%;padding:8px 0;border-radius:8px;border:none;background:var(--green);color:var(--bg);font-size:.82rem;font-weight:600;cursor:pointer;font-family:inherit">登录 Atlas</button>
-      <div style="display:flex;gap:6px;margin-top:8px">
-        <button onclick="window.open('https://atlas.traceclaw.cn/dashboard','_blank')" style="flex:1;padding:5px 0;border-radius:6px;border:1px solid var(--line);background:transparent;color:var(--muted);font-size:.72rem;cursor:pointer;font-family:inherit">控制台</button>
-      </div>
-    </div>`;
-    document.body.appendChild(p);
-    p.addEventListener('click', function(e) { if(e.target===this) this.classList.add('hidden'); });
-  }
-}
-
-function simulateLogin() {
-  const userBtn = document.getElementById('userBtn');
-  const panel = document.getElementById('userPanel');
-  const statusDot = document.getElementById('statusDot');
-  const loginStatus = document.getElementById('loginStatus');
-  
-  userBtn.style.color = 'var(--green)';
-  statusDot.style.background = 'var(--green)';
-  loginStatus.textContent = '测试公司 · 已登录';
-  loginStatus.style.color = 'var(--green)';
-  
-  if (panel) {
-    panel.querySelector('div').innerHTML = `<div style="font-size:.85rem;font-weight:600;margin-bottom:4px">测试公司</div>
-      <div style="font-size:.72rem;color:var(--muted);margin-bottom:10px">test@company.com</div>
-      <div style="background:var(--bg);border-radius:8px;padding:10px;margin-bottom:10px;font-size:.72rem;color:var(--dim);line-height:1.6">
-        🤖 报价员 · 免费试用 (0/1)<br>
-        🔍 客户开发员 · 免费试用 (0/1)
-      </div>
-      <div style="display:flex;gap:6px">
-        <button onclick="window.open('https://atlas.traceclaw.cn/dashboard','_blank')" style="flex:1;padding:5px 0;border-radius:6px;border:1px solid var(--line);background:transparent;color:var(--muted);font-size:.72rem;cursor:pointer;font-family:inherit">控制台</button>
-        <button onclick="simulateLogout()" style="flex:1;padding:5px 0;border-radius:6px;border:1px solid var(--line);background:transparent;color:#ff4444;font-size:.72rem;cursor:pointer;font-family:inherit">退出</button>
-      </div>`;
-  }
-}
-
-function simulateLogout() {
-  location.reload();
-}
-</script>
-
 </body>
 </html>
