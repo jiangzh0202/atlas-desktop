@@ -133,7 +133,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);height:100vh;
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:100;display:flex;align-items:center;justify-content:center}
 .overlay.hidden{display:none}
 .user-popup.hidden{display:none}
-.modal{background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:0 16px 48px rgba(0,0,0,.5);overflow:hidden;transition:background .3s}
+.modal{background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:0 16px 48px rgba(0,0,0,.5);overflow:hidden;transition:background .3s;user-select:text}
 .modal input,.modal select{background:var(--active);border:1px solid var(--line);border-radius:6px;padding:8px 12px;color:var(--ink);font-size:.85rem;outline:none;font-family:inherit;width:100%;transition:border-color .15s}
 .modal input:focus,.modal select:focus{border-color:var(--green)}
 .modal .btn-primary{background:var(--green);color:var(--bg);border:none;border-radius:6px;padding:8px 16px;font-size:.85rem;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s}
@@ -150,7 +150,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);height:100vh;
 .settings-nav-item:hover{background:var(--active);color:var(--ink)}
 .settings-nav-item.active{background:var(--active);color:var(--ink);border-left-color:var(--green)}
 .settings-nav-item .nav-icon{font-size:.9rem}
-.settings-content{flex:1;padding:24px;overflow-y:auto;display:flex;flex-direction:column;gap:16px}
+.settings-content{flex:1;padding:24px;overflow-y:auto;display:flex;flex-direction:column;gap:16px;user-select:text}
 .settings-content h3{font-size:.95rem;font-weight:600}
 .settings-content .field{margin-bottom:8px}
 .settings-content .field-label{font-size:.78rem;color:var(--muted);margin-bottom:6px}
@@ -206,17 +206,14 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);height:100vh;
 <div class="sidebar" id="sidebar">
   <div class="sidebar-header">
     <span id="sidebarTitle">知识库</span>
+    <a href="/tutorial" title="教程" style="font-size:.82rem;color:var(--green);text-decoration:none">📖</a>
+    <a href="/" title="返回官网" style="font-size:.82rem;color:var(--muted);text-decoration:none;margin-right:4px">🏠</a>
     <span class="actions" title="上传参考文件到知识库" onclick="document.getElementById('kbFileInput').click()">📤</span>
     <span class="actions" title="训练AI — 从知识库文件提取规则" onclick="document.getElementById('trainFileInput').click()" style="margin-left:4px">🧠</span>
   </div>
   <div class="sidebar-body" id="sidebarBody">
     <div id="knowledgeTree">
-      <div class="tree-item" onclick="openFile('历史报价_2024.xlsx')"><span style="font-size:.9rem;width:16px;text-align:center">📊</span> 历史报价_2024.xlsx</div>
-      <div class="tree-item" onclick="openFile('历史报价_2025Q1.xlsx')"><span style="font-size:.9rem;width:16px;text-align:center">📊</span> 历史报价_2025Q1.xlsx</div>
-      <div class="tree-item" onclick="openFile('客户清单.csv')"><span style="font-size:.9rem;width:16px;text-align:center">👥</span> 客户清单.csv</div>
-      <div class="tree-item" onclick="openFile('供应商价格表.xlsx')"><span style="font-size:.9rem;width:16px;text-align:center">💰</span> 供应商价格表.xlsx</div>
-      <div class="tree-item" onclick="openFile('报价模板.xlsx')"><span style="font-size:.9rem;width:16px;text-align:center">📋</span> 报价模板.xlsx</div>
-      <div class="tree-item" onclick="openFile('pricing.md')"><span style="font-size:.9rem;width:16px;text-align:center">📝</span> pricing.md</div>
+      <div style="padding:20px;text-align:center;color:var(--muted);font-size:.8rem" id="kbEmpty">📂 登录后显示知识库文件</div>
     </div>
     <div id="agentList" style="display:none">
       <div class="agent-card" id="agent-prospect">
@@ -541,8 +538,59 @@ function renderSettingsContent() {
         el.innerHTML = h;
         // register connectMCP globally
         window.connectMCP = (id) => {
-          alert('即将配置「' + builtinServers.find(s=>s.id===id)?.name + '」— 请在弹出窗口中输入 API 密钥和服务器地址。');
+          const srv = builtinServers.find(s=>s.id===id);
+          if (!srv) return;
+          const overlay = document.createElement('div');
+          overlay.id = 'mcp-modal';
+          overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.65);z-index:9999;display:flex;align-items:center;justify-content:center';
+          overlay.onclick = function(e) { if (e.target === overlay) overlay.remove(); };
+          const m = document.createElement('div');
+          m.style.cssText = 'background:var(--card);border:1px solid var(--border);border-radius:14px;padding:24px;width:420px;max-width:92vw;color:var(--text);font-size:.85rem;font-family:inherit';
+          m.innerHTML = '<h3 style="margin:0 0 4px;font-size:1.05rem">' + srv.icon + ' ' + srv.name + '</h3>' +
+            '<p style="margin:0 0 16px;font-size:.76rem;color:var(--muted);line-height:1.5">' + srv.desc + '</p>' +
+            '<div style="margin-bottom:12px"><label style="font-size:.76rem;color:var(--muted);display:block;margin-bottom:3px">MCP 服务器地址</label>' +
+            '<input id="mcp-url-inp" placeholder="https://your-server.com" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:7px;background:var(--bg);color:var(--text);font-size:.82rem"></div>' +
+            '<div style="margin-bottom:14px"><label style="font-size:.76rem;color:var(--muted);display:block;margin-bottom:3px">API 密钥（可选）</label>' +
+            '<input id="mcp-key-inp" placeholder="sk-..." type="password" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:7px;background:var(--bg);color:var(--text);font-size:.82rem"></div>' +
+            '<div style="margin-bottom:14px;padding:8px 12px;background:var(--green-bg);border-radius:7px;font-size:.73rem;color:var(--muted)">' + srv.tools + '</div>' +
+            '<div style="display:flex;gap:8px">' +
+            '<button id="mcp-test-btn" style="flex:1;padding:9px;border-radius:7px;font-size:.8rem;cursor:pointer;border:1px solid var(--green);background:transparent;color:var(--green);font-weight:600" onclick="testMcpConn(\'' + srv.id + '\')">🔍 测试连接</button>' +
+            '<button style="flex:1;padding:9px;border-radius:7px;font-size:.8rem;cursor:pointer;border:none;background:var(--green);color:var(--bg);font-weight:600" onclick="saveMcpCfg(\'' + srv.id + '\',\'' + srv.name.replace(/'/g,"\\'") + '\')">💾 保存并接入</button></div>' +
+            '<div id="mcp-result-el" style="margin-top:10px;font-size:.76rem;min-height:20px"></div>';
+          overlay.appendChild(m);
+          document.body.appendChild(overlay);
+          setTimeout(function() { var inp = document.getElementById('mcp-url-inp'); if (inp) inp.focus(); }, 150);
+  
+
+        window.testMcpConn = async function(sid) {
+          var url = document.getElementById('mcp-url-inp').value.trim();
+          var key = document.getElementById('mcp-key-inp').value.trim();
+          var el = document.getElementById('mcp-result-el');
+          var btn = document.getElementById('mcp-test-btn');
+          if (!url) { if (el) el.innerHTML = '<span style="color:#ff4d4f">❌ 请填写服务器地址</span>'; return; }
+          if (btn) { btn.textContent = '⏳ 测试中...'; btn.disabled = true; }
+          try {
+            var token = localStorage.getItem('atlas-token');
+            var resp = await fetch('/api/mcp/test', { method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+(token||'')}, body:JSON.stringify({url:url,api_key:key}) });
+            var j = await resp.json();
+            if (j.ok) { if (el) el.innerHTML = '<span style="color:var(--green)">✅ 连接成功！' + j.count + ' 个工具</span>'; }
+            else { if (el) el.innerHTML = '<span style="color:#ff4d4f">❌ ' + (j.error||'连接失败') + '</span>'; }
+          } catch(e) { if (el) el.innerHTML = '<span style="color:#ff4d4f">❌ 网络错误</span>'; }
+          if (btn) { btn.textContent = '🔍 测试连接'; btn.disabled = false; }
         };
+
+        window.saveMcpCfg = async function(sid, name) {
+          var url = document.getElementById('mcp-url-inp').value.trim();
+          var key = document.getElementById('mcp-key-inp').value.trim();
+          if (!url) { alert('请填写 MCP 服务器地址'); return; }
+          var token = localStorage.getItem('atlas-token');
+          try {
+            var resp = await fetch('/api/mcp/connect', { method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+(token||'')}, body:JSON.stringify({server_id:sid,name:name,url:url,api_key:key||''}) });
+            var j = await resp.json();
+            if (j.ok) { var ov = document.getElementById('mcp-modal'); if (ov) ov.remove(); alert('✅ 已接入'); showSettings('mcp'); }
+            else { alert('❌ ' + (j.error||'保存失败')); }
+          } catch(e) { alert('网络错误'); }
+        };      };
       })();
       break;
     case 'theme':
@@ -637,18 +685,25 @@ function renderSettingsContent() {
             {k:'smtp_pass',label:'邮箱密码/授权码',ph:'',type:'password'},
           ]},
         ];
+        // Configuration tutorials for each channel
+        const tutorials = {
+          feishu: { title: '飞书配置教程', url: '/tutorial#feishu' },
+          wecom: { title: '企业微信配置教程', url: '/tutorial#wecom' },
+          email: { title: '邮件配置教程', url: '/tutorial#email' },
+        };
         let h = '<h3>通道设置</h3>';
         chs.forEach(ch => {
           const cfg = configs[ch.id] || {};
           const connected = !!cfg.app_id || !!cfg.corp_id || !!cfg.smtp_host;
           h += `<div style="background:var(--active);border-radius:8px;margin-bottom:8px;overflow:hidden">
-            <div onclick="toggleChannelCfg('${ch.id}')" style="display:flex;align-items:center;justify-content:space-between;padding:12px;cursor:pointer">
-              <div style="display:flex;align-items:center;gap:10px">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:12px;cursor:default">
+              <div onclick="toggleChannelCfg('${ch.id}')" style="display:flex;align-items:center;gap:10px;cursor:pointer;flex:1">
                 <span style="font-size:1.2rem">${ch.icon}</span>
                 <div><div style="font-size:.85rem;font-weight:600">${ch.name}</div>
                 <div style="font-size:.72rem;color:${connected?'var(--green)':'var(--muted)'}">${connected?'已配置':'未连接'}</div></div>
               </div>
-              <span style="font-size:.7rem;color:var(--dim)" id="ch-arrow-${ch.id}">▶</span>
+              <button onclick="event.stopPropagation();showTutorial('${ch.id}')" style="padding:3px 10px;border-radius:6px;font-size:.68rem;cursor:pointer;border:1px solid var(--line);background:var(--active);color:var(--muted);margin-right:6px;transition:all .15s" onmouseenter="this.style.borderColor='var(--green)';this.style.color='var(--green)'" onmouseleave="this.style.borderColor='var(--line)';this.style.color='var(--muted)'">📖 查看教程 →</button>
+              <span onclick="toggleChannelCfg('${ch.id}')" style="font-size:.7rem;color:var(--dim);cursor:pointer" id="ch-arrow-${ch.id}">▶</span>
             </div>
             <div id="ch-cfg-${ch.id}" style="display:none;padding:0 12px 12px">`;
           ch.fields.forEach(f => {
@@ -659,7 +714,9 @@ function renderSettingsContent() {
           h += `<div style="display:flex;gap:8px;margin-top:4px">
             <button class="btn-primary" onclick="saveChannel('${ch.id}')">💾 保存</button>
             <button class="btn-secondary" onclick="testChannel('${ch.id}')">🔗 测试连接</button>
-          </div></div></div>`;
+          </div>
+          </div></div></div>
+          <div style="margin-top:6px;padding:12px;background:var(--green-bg);border-radius:8px;display:none" id="tut-${ch.id}"></div>`;
         });
         el.innerHTML = h;
       })();
@@ -782,7 +839,63 @@ function toggleChannelCfg(id) {
   arrow.textContent = isOpen ? '▶' : '▼';
 }
 
-function saveChannel(id) {
+function showTutorial(id) {
+  // Open tutorial page in new tab, scrolled to the right channel
+  const urls = { feishu: '/tutorial#feishu', wecom: '/tutorial#wecom', email: '/tutorial#email' };
+  const url = urls[id] || '/tutorial';
+  window.open(url, '_blank');
+}
+
+function copyFeishuPermissions() {
+  const btn = event.target;
+  if (!btn) return;
+  const text = '{"scopes": {"tenant": ["aily:file:read", "aily:file:write", "application:application.app_message_stats.overview:readonly", "application:application:self_manage", "application:bot.menu:write", "cardkit:card:write", "contact:contact.base:readonly", "contact:user.employee_id:readonly", "corehr:file:download", "docs:document.content:read", "event:ip_list", "im:chat", "im:chat.access_event.bot_p2p_chat:read", "im:chat.members:bot_access", "im:message", "im:message.group_at_msg:readonly", "im:message.group_msg", "im:message.p2p_msg:readonly", "im:message:readonly", "im:message:send_as_bot", "im:resource", "sheets:spreadsheet", "wiki:wiki:readonly"], "user": ["aily:file:read", "aily:file:write", "contact:contact.base:readonly", "im:chat.access_event.bot_p2p_chat:read"]}}';
+  
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(() => {
+      const origHTML = btn.innerHTML;
+      btn.innerHTML = '✅ 已复制';
+      btn.style.background = 'var(--green)';
+      btn.style.color = 'var(--bg)';
+      btn.style.borderColor = 'var(--green)';
+      setTimeout(() => {
+        btn.innerHTML = origHTML;
+        btn.style.background = 'transparent';
+        btn.style.color = 'var(--green)';
+        btn.style.borderColor = 'var(--green)';
+      }, 2000);
+    }).catch(() => {
+      btn.innerHTML = '❌ 失败';
+      setTimeout(() => { btn.innerHTML = '📋 复制'; }, 2000);
+    });
+  } else {
+    // Fallback: create textarea
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.left = '-9999px';
+    ta.style.top = '0';
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    try {
+      document.execCommand('copy');
+      btn.innerHTML = '✅ 已复制';
+      btn.style.background = 'var(--green)';
+      btn.style.color = 'var(--bg)';
+      setTimeout(() => {
+        btn.innerHTML = '📋 复制';
+        btn.style.background = 'transparent';
+        btn.style.color = 'var(--green)';
+      }, 2000);
+    } catch(e) {
+      btn.innerHTML = '❌ 失败';
+      setTimeout(() => { btn.innerHTML = '📋 复制'; }, 2000);
+    }
+    document.body.removeChild(ta);
+  }
+}
+async function saveChannel(id) {
   const configs = JSON.parse(localStorage.getItem('atlas-channels') || '{}');
   const cfg = {};
   const fieldMap = {
@@ -796,6 +909,20 @@ function saveChannel(id) {
   });
   configs[id] = cfg;
   localStorage.setItem('atlas-channels', JSON.stringify(configs));
+  
+  // Sync config to server for callback endpoints (Feishu URL verification etc.)
+  if (S.token) {
+    try {
+      const res = await fetch(API + '/api/channels/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + S.token },
+        body: JSON.stringify({ channel: id, config: cfg })
+      });
+      const data = await res.json();
+      if (data.ok) console.log('[Channels] ' + id + ' config synced to server');
+    } catch(e) { console.warn('[Channels] Server sync failed:', e.message); }
+  }
+  
   S.settingsSection = 'channels';
   openSettings();
 }
@@ -877,6 +1004,7 @@ function onLoginSuccess(data) {
   localStorage.setItem('atlas-token', data.token);
   document.getElementById('loginOverlay').classList.add('hidden');
   updateUIForLogin();
+  loadKnowledgeBase();
 }
 
 async function restoreSession() {
@@ -890,6 +1018,7 @@ async function restoreSession() {
       S.user = data.user;
       S.quota = data.quota;
       updateUIForLogin();
+      loadKnowledgeBase();
     } else {
       logout();
     }
@@ -1195,6 +1324,83 @@ async function handleKBFiles(fileList) {
   document.getElementById('agentList').style.display = 'none';
   document.getElementById('sidebarTitle').textContent = agentName + ' · 知识库';
   document.getElementById('kbFileInput').value = '';
+
+// ═══ Load Knowledge Base from API ═══
+function formatFileSize(bytes) {
+  if (bytes < 1024) return bytes + 'B';
+  if (bytes < 1024*1024) return (bytes/1024).toFixed(1) + 'KB';
+  return (bytes/(1024*1024)).toFixed(1) + 'MB';
+}
+function formatTime(ts) {
+  const d = new Date(ts * 1000);
+  const now = new Date();
+  const pad = n => String(n).padStart(2,'0');
+  const date = d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+  const time = pad(d.getHours())+':'+pad(d.getMinutes());
+  return date + ' ' + time;
+}
+async function loadKnowledgeBase() {
+  const tree = document.getElementById('knowledgeTree');
+  const emptyEl = document.getElementById('kbEmpty');
+  if (!tree) return;
+  
+  if (!S.token) {
+    tree.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted);font-size:.8rem">📂 登录后显示知识库文件</div>';
+    return;
+  }
+  
+  tree.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted);font-size:.8rem">⏳ 加载中...</div>';
+  
+  try {
+    const res = await fetch(API + '/api/kb/list', {
+      headers: { 'Authorization': 'Bearer ' + S.token }
+    });
+    const data = await res.json();
+    if (!data.ok) {
+      tree.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted);font-size:.8rem">📂 暂无文件，点击 📤 上传</div>';
+      return;
+    }
+    
+    const files = data.files || [];
+    if (files.length === 0) {
+      tree.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted);font-size:.8rem">📂 知识库为空<br><span style="font-size:.72rem">点击 📤 上传 Excel/CSV/PDF 文件</span></div>';
+      return;
+    }
+    
+    // Group files by agent
+    const groups = {};
+    const agentNames = {quoter:'报价员', developer:'客户开发员', buyer:'采购员', image:'图片识零件员', stock:'库存管理员', customs:'清关助理'};
+    files.forEach(f => {
+      const agent = f.agent || 'quoter';
+      if (!groups[agent]) groups[agent] = [];
+      groups[agent].push(f);
+    });
+    
+    let h = '';
+    Object.keys(groups).sort().forEach(agent => {
+      const aname = agentNames[agent] || agent;
+      h += '<div style="padding:6px 14px;font-size:.68rem;font-weight:600;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-top:4px">' + aname + ' (' + groups[agent].length + ')</div>';
+      groups[agent].forEach(f => {
+        const icon = getFileIcon(f.name);
+        h += '<div class="tree-item" onclick="openKBFile(\'' + f.name + '\',\'' + f.agent + '\')" title="' + f.name + ' · ' + formatFileSize(f.size) + ' · ' + formatTime(f.modified) + '">';
+        h += '<span style="font-size:.9rem;width:16px;text-align:center">' + icon + '</span>';
+        h += '<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + f.name + '</span>';
+        h += '<span style="font-size:.62rem;color:var(--dim);flex-shrink:0;margin-left:6px">' + formatFileSize(f.size) + '</span>';
+        h += '</div>';
+      });
+    });
+    
+    tree.innerHTML = h;
+  } catch(e) {
+    tree.innerHTML = '<div style="padding:20px;text-align:center;color:#ff4444;font-size:.8rem">⚠️ 加载失败<br><span style="font-size:.72rem;color:var(--muted)">检查网络连接</span></div>';
+    console.error('KB load error:', e);
+  }
+}
+
+function openKBFile(name, agent) {
+  document.getElementById('fileNameDisplay').innerHTML = '📊 <strong>' + name + '</strong><br><span style="font-size:.78rem;color:var(--muted)">' + (agent||'知识库') + ' · 预览（完整客户端支持 AI 解析）</span>';
+  openTab('file', '📊 ' + name.replace(/\.[^.]+$/, ''));
+}
 }
 
 // ═══ Training (upload Excel → extract rules) ═══
