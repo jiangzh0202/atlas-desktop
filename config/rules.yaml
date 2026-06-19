@@ -1,0 +1,117 @@
+# ═══════════════════════════════════════════════════════════
+# 元策·擎天 报价规则（唯一数据源）
+# 修改后重启服务即刻生效。
+# calculator.py / matrix.py / quotation_agent / sentinel 全部读此文件
+# ═══════════════════════════════════════════════════════════
+
+# ─── 12维报价变量系数 ───
+dimensions:
+  quality_grade:       # 质量档
+    "A+": 1.08         # 原厂件
+    "B+": 1.00         # 品牌件（基准）
+    "C+": 0.92         # 副厂件
+    "D":  0.85         # 国产通用件
+
+  trade_term:          # 贸易术语
+    FOB: 1.00
+    CNF: 1.03
+    CIF: 1.06
+
+  payment_term:        # 付款方式（风险溢价）
+    prepaid:    0.00
+    bl_copy:    0.02
+    15days:     0.03
+    30days:     0.05
+    60days:     0.08
+    90days:     0.12
+
+  region:              # 地区成熟度
+    east_asia:      1.00
+    southeast_asia: 1.05
+    middle_east:    1.08
+    africa:         1.12
+    south_america:  1.10
+    east_europe:    1.06
+
+  warranty:            # 质保溢价
+    none:     0.00
+    normal:   0.00
+    extended: 0.05
+
+  application:         # 应用场景风险
+    truck:     1.00
+    mining:    1.15
+    excavator: 1.10
+    generator: 1.05
+    bus:       1.02
+    marine:    1.20
+    power_pack: 1.08
+
+  star_margin_floor:   # 客户星级→利润率底线
+    1: 0.25
+    2: 0.20
+    3: 0.15
+    4: 0.12
+    5: 0.08
+    6: 0.06
+    7: 0.05
+
+  default_profit_margin: 0.08   # 默认利润率
+
+# ─── 品牌折扣矩阵 ───
+brands:
+  A2080:
+    tiers:
+      - {price_min: 0,     price_max: 5,      qty_threshold: null, discount_lt: 0,    discount_gte: 0}
+      - {price_min: 5,     price_max: 50,     qty_threshold: null, discount_lt: 16,   discount_gte: 16}
+      - {price_min: 50,    price_max: 1000,   qty_threshold: 30,   discount_lt: 23,   discount_gte: 24}
+      - {price_min: 1000,  price_max: 999999, qty_threshold: 10,   discount_lt: 24,   discount_gte: 25.5}
+    cap_discount: 25.5
+    special_policy: "福田任务未完成 → 可突破顶格多下1-2个点"
+
+  卡友配:
+    tiers:
+      - {price_min: 0,       price_max: 100000, qty_threshold: null, discount_lt: 15, discount_gte: 15}
+      - {price_min: 100000,  price_max: 999999, qty_threshold: null, discount_lt: 18, discount_gte: 18}
+    cap_discount: 18
+    min_order_amount: 30000
+    special_policy: "供应部王双确认：总额>=10万下18个点"
+
+  E9300:
+    tiers:
+      - {price_min: 0,     price_max: 1000,   qty_threshold: null, discount_lt: 15, discount_gte: 15}
+      - {price_min: 1000,  price_max: 999999, qty_threshold: 30,   discount_lt: 15, discount_gte: 17}
+    cap_discount: 17
+
+  东亚:
+    tiers:
+      - {price_min: 0, price_max: 999999, qty_threshold: null, discount_lt: 7, discount_gte: 7}
+    cap_discount: 7
+    special_policy: "国6后处理件：4%"
+
+  BOSCH:
+    tiers:
+      - {price_min: 0, price_max: 999999, qty_threshold: null, discount_lt: 24, discount_gte: 24}
+    cap_discount: 24
+
+# ─── 默认折扣（未匹配品牌时） ───
+default_discount_pct: 15
+
+# ─── 审核流程 ───
+approval_flow:
+  - {amount: 50000,       approver: "报价员"}
+  - {amount: 200000,      approver: "主管"}
+  - {amount: 999999999,   approver: "老板"}
+
+# ─── 价格底线 ───
+price_floors:
+  - id: "PF001"
+    desc: "折后价不得低于含税进价×1.05"
+  - id: "PF002"
+    desc: "ISF3.8缸盖最低: 780元"
+    oe: "缸盖ISF3.8"
+    min_price: 780
+
+# ─── 临时政策 ───
+temporary_policies:
+  - "福田任务未完成(缺200万) → 额外多下1-2点 | 有效期至月底"

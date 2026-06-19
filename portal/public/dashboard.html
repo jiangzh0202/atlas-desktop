@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>控制台 — 擎天 Atlas</title>
+<style>
+/* Dark mode (default) */
+:root,[data-theme="dark"]{--bg:#0a0a0a;--card:#141414;--border:#2a2a2a;--text:#f0f0f0;--muted:#888;--green:#00ff88;--red:#ff4444;--amber:#ffaa00}
+/* Light mode */
+[data-theme="light"]{--bg:#f2f2f4;--card:#ffffff;--border:#d0d0d5;--text:#1a1a1e;--muted:#666;--green:#00cc66;--red:#cc3333;--amber:#cc8800}
+body{transition:background .3s,color .3s}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex}
+/* Sidebar */
+.sidebar{width:200px;background:var(--card);border-right:1px solid var(--border);padding:20px 0;display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:50}
+.sidebar .logo{padding:0 20px 20px;font-size:1.1rem;font-weight:700;border-bottom:1px solid var(--border);margin-bottom:12px}
+.sidebar .logo span{color:var(--green)}
+.sidebar .nav-item{display:flex;align-items:center;gap:10px;padding:10px 20px;font-size:.88rem;color:var(--muted);cursor:pointer;transition:all .15s;border:none;background:none;width:100%;text-align:left;font-family:inherit}
+.sidebar .nav-item:hover{color:var(--text);background:rgba(255,255,255,0.03)}
+.sidebar .nav-item.active{color:var(--green);background:rgba(0,255,136,0.05);border-right:2px solid var(--green)}
+.sidebar .spacer{flex:1}
+.th-btn{background:transparent;border:1px solid var(--border);border-radius:8px;cursor:pointer;color:var(--muted);font-family:inherit;font-size:.82rem;transition:all .15s}
+.th-btn:hover{color:var(--text);border-color:var(--muted)}
+.sidebar .user-info{padding:16px 20px;border-top:1px solid var(--border);font-size:.8rem;color:var(--muted)}
+.sidebar .user-info .name{color:var(--text);font-weight:600}
+.sidebar .user-info .logout{color:var(--red);cursor:pointer;font-size:.78rem;margin-top:4px;display:inline-block}
+/* Main */
+.main{margin-left:200px;flex:1;padding:32px 40px;min-height:100vh}
+.topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:28px}
+.topbar h1{font-size:1.5rem;font-weight:700}
+.topbar .badge{display:inline-block;padding:4px 12px;border-radius:8px;font-size:.78rem;font-weight:600}
+.badge-free{background:rgba(255,255,255,0.05);color:var(--muted)}
+.badge-basic{background:rgba(255,170,0,0.1);color:var(--amber)}
+.badge-standard{background:rgba(0,255,136,0.1);color:var(--green)}
+.badge-pro{background:rgba(0,136,255,0.1);color:#08f}
+.badge-enterprise{background:rgba(255,68,68,0.1);color:var(--red)}
+/* Cards */
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px;margin-bottom:20px}
+.card h3{font-size:1rem;margin-bottom:16px}
+.card .muted{color:var(--muted);font-size:.85rem}
+/* Stat cards */
+.stat-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:24px}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px}
+.stat-card .label{font-size:.8rem;color:var(--muted);margin-bottom:6px}
+.stat-card .value{font-size:1.6rem;font-weight:700}
+.stat-card .value.green{color:var(--green)}
+.stat-card .value.red{color:var(--red)}
+/* Progress */
+.progress-bar{height:6px;background:var(--border);border-radius:3px;margin-top:10px;overflow:hidden}
+.progress-bar .fill{height:100%;border-radius:3px;background:var(--green);transition:width .3s}
+.progress-bar .fill.warn{background:var(--amber)}
+.progress-bar .fill.danger{background:var(--red)}
+/* Buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;padding:8px 20px;border-radius:8px;font-size:.85rem;font-weight:600;cursor:pointer;border:none;font-family:inherit;transition:all .15s;text-decoration:none}
+.btn-g{background:var(--green);color:var(--bg)}
+.btn-g:hover{opacity:.9}
+.btn-o{background:transparent;color:var(--text);border:1px solid var(--border)}
+.btn-o:hover{border-color:var(--muted)}
+.btn-r{background:transparent;color:var(--red);border:1px solid var(--red)}
+.btn-sm{padding:6px 14px;font-size:.78rem}
+/* Tab content */
+.tab{display:none}
+.tab.active{display:block}
+/* Table */
+table{width:100%;border-collapse:collapse;font-size:.85rem}
+th{text-align:left;padding:10px 12px;color:var(--muted);font-weight:600;border-bottom:1px solid var(--border);font-size:.78rem}
+td{padding:10px 12px;border-bottom:1px solid var(--border)}
+td .status{display:inline-block;padding:2px 8px;border-radius:6px;font-size:.72rem}
+.status-paid{background:rgba(0,255,136,0.1);color:var(--green)}
+.status-pending{background:rgba(255,170,0,0.1);color:var(--amber)}
+/* Pricing cards for recharge tab */
+.pcards{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px}
+.pcard{background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:20px;text-align:center;cursor:pointer;transition:all .15s}
+.pcard:hover{border-color:var(--muted)}
+.pcard.selected{border-color:var(--green);background:rgba(0,255,136,0.03)}
+.pcard .plan-name{font-size:.9rem;font-weight:600;margin-bottom:4px}
+.pcard .plan-price{font-size:1.4rem;font-weight:700;color:var(--green);margin-bottom:4px}
+.pcard .plan-quota{font-size:.8rem;color:var(--muted)}
+/* Form */
+.field{margin-bottom:14px}
+.field label{display:block;font-size:.82rem;color:var(--muted);margin-bottom:6px}
+.field input,.field select{width:100%;padding:10px 14px;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:.88rem;outline:none;font-family:inherit}
+.field input:focus,.field select:focus{border-color:var(--green)}
+/* Modal */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:200;align-items:center;justify-content:center}
+.modal-overlay.show{display:flex}
+.modal{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:28px;width:100%;max-width:400px;margin:20px}
+.modal h3{font-size:1.1rem;margin-bottom:16px}
+/* Toast */
+.toast{position:fixed;top:20px;right:20px;padding:12px 20px;border-radius:8px;color:#fff;font-size:.85rem;z-index:300;opacity:0;transition:opacity .3s}
+.toast.show{opacity:1}
+.toast-ok{background:var(--green);color:var(--bg)}
+.toast-err{background:var(--red)}
+</style>
+</head>
+<body>
+
+<div class="sidebar">
+  <div class="logo"><span>擎天</span> Atlas</div>
+  <button class="nav-item active" data-tab="overview" onclick="switchTab('overview')">📊 概览</button>
+  <button class="nav-item" data-tab="recharge" onclick="switchTab('recharge')">💰 租赁</button>
+  <button class="nav-item" data-tab="billing" onclick="switchTab('billing')">📋 账单</button>
+  <button class="nav-item" data-tab="invoice" onclick="switchTab('invoice')">🧾 发票</button>
+  <button class="nav-item" data-tab="oauth" onclick="switchTab('oauth')">🔐 客户端授权</button>
+  <div class="spacer"></div>
+  <div class="user-info">
+    <div class="name" id="uname">---</div>
+    <div id="ucompany" style="color:var(--muted);font-size:.72rem"></div>
+    <span class="logout" onclick="logout()">退出登录</span>
+  </div>
+</div>
+
+<div class="main">
+  <!-- ═══ 概览 ═══ -->
+  <div class="tab active" id="tab-overview">
+    <div class="topbar">
+      <h1>概览</h1>
+      <span class="badge badge-free" id="plan-badge">免费版</span><span class="badge badge-free" id="plan-d-badge" style="margin-left:8px">免费版</span>
+    </div>
+    <div class="stat-row">
+      <div class="stat-card">
+        <div class="label">🤖 报价员 · 本月已用</div>
+        <div class="value" id="quota-q-used">0</div>
+        <div class="progress-bar"><div class="fill" id="quota-q-bar" style="width:0%"></div></div>
+        <div style="font-size:.75rem;color:var(--muted);margin-top:6px">剩余 <span id="quota-q-remain">0</span> 份</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">🤖 报价员 · 套餐</div>
+        <div class="value green" id="plan-q-name" style="font-size:1.2rem">免费版</div>
+        <div style="font-size:.75rem;color:var(--muted);margin-top:6px">单次成本 <span id="plan-q-price">-</span></div>
+      </div>
+      <div class="stat-card">
+        <div class="label">🔍 客户开发员 · 本月已用</div>
+        <div class="value" id="quota-d-used">0</div>
+        <div class="progress-bar"><div class="fill" id="quota-d-bar" style="width:0%"></div></div>
+        <div style="font-size:.75rem;color:var(--muted);margin-top:6px">剩余 <span id="quota-d-remain">0</span> 封</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">🔍 客户开发员 · 套餐</div>
+        <div class="value green" id="plan-d-name" style="font-size:1.2rem">免费版</div>
+        <div style="font-size:.75rem;color:var(--muted);margin-top:6px">单次成本 <span id="plan-d-price">-</span></div>
+      </div>
+    </div>
+    <div class="stat-row">
+      <div class="stat-card">
+        <div class="label">快捷操作</div>
+        <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+          <button class="btn btn-g btn-sm" onclick="switchTab('recharge')">租赁数字员工</button>
+          <button class="btn btn-o btn-sm" onclick="switchTab('invoice')">申请发票</button>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <h3>欢迎使用擎天 Atlas</h3>
+      <p class="muted">上传 Excel 询盘 → AI 自动匹配配件 → 生成报价单。报价员免费试用 5 份报价，客户开发员免费试用 10 封开发信。租赁数字员工即可解锁更多配额。</p>
+    </div>
+  </div>
+
+  <!-- ═══ 充值 ═══ -->
+  <div class="tab" id="tab-recharge">
+    <div class="topbar"><h1>租赁 / 数字员工</h1></div>
+    <!-- 报价员 -->
+    <div class="card">
+      <h3>🤖 报价员 — 档位选择</h3>
+      <div class="pcards" id="plan-cards-quoter"></div>
+      <div style="margin-top:12px">
+        <div style="display:flex;gap:10px;align-items:center;margin-bottom:10px;flex-wrap:wrap">
+          <span style="font-size:.82rem;color:var(--muted)">付费方式：</span>
+          <label style="cursor:pointer;padding:6px 16px;border-radius:8px;font-size:.82rem;background:rgba(0,255,136,0.1);color:var(--green);font-weight:600" id="q-period-m" onclick="selectPeriod('quoter','month')">月付</label>
+          <label style="cursor:pointer;padding:6px 16px;border-radius:8px;font-size:.82rem;color:var(--muted)" id="q-period-y" onclick="selectPeriod('quoter','year')">年付（8.5折）</label>
+        </div>
+        <button class="btn btn-g" onclick="doRecharge('quoter')">确认租赁 · 报价员</button>
+      </div>
+    </div>
+    <!-- 客户开发员 -->
+    <div class="card" style="margin-top:20px">
+      <h3>🔍 客户开发员 — 档位选择</h3>
+      <div class="pcards" id="plan-cards-developer"></div>
+      <div style="margin-top:12px">
+        <div style="display:flex;gap:10px;align-items:center;margin-bottom:10px;flex-wrap:wrap">
+          <span style="font-size:.82rem;color:var(--muted)">付费方式：</span>
+          <label style="cursor:pointer;padding:6px 16px;border-radius:8px;font-size:.82rem;background:rgba(0,255,136,0.1);color:var(--green);font-weight:600" id="d-period-m" onclick="selectPeriod('developer','month')">月付</label>
+          <label style="cursor:pointer;padding:6px 16px;border-radius:8px;font-size:.82rem;color:var(--muted)" id="d-period-y" onclick="selectPeriod('developer','year')">年付（8.5折）</label>
+        </div>
+        <button class="btn btn-g" onclick="doRecharge('developer')">确认租赁 · 客户开发员</button>
+      </div>
+    </div>
+    <div class="card">
+      <h3>租赁说明</h3>
+      <p class="muted">点击确认后将跳转嘟噜支付页面，支持微信扫码支付。支付成功后租赁即时生效，配额自动到账。</p>
+    </div>
+  </div>
+
+  <!-- ═══ 账单 ═══ -->
+  <div class="tab" id="tab-billing">
+    <div class="topbar"><h1>账单记录</h1></div>
+    <div class="card">
+      <table>
+        <thead><tr><th>订单号</th><th>套餐</th><th>金额</th><th>状态</th><th>时间</th></tr></thead>
+        <tbody id="billing-tbody"><tr><td colspan="5" style="text-align:center;color:var(--muted);padding:40px">暂无账单记录</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ═══ 发票 ═══ -->
+  <div class="tab" id="tab-invoice">
+    <div class="topbar"><h1>申请发票</h1></div>
+    <div class="card">
+      <h3>开票信息</h3>
+      <div class="field"><label>关联订单</label><select id="inv-order"></select></div>
+      <div class="field"><label>发票抬头</label><input type="text" id="inv-title" placeholder="公司全称"></div>
+      <div class="field"><label>税号</label><input type="text" id="inv-tax" placeholder="统一社会信用代码（选填）"></div>
+      <button class="btn btn-g" onclick="doInvoice()">提交申请</button>
+    </div>
+    <div class="card">
+      <h3>开票记录</h3>
+      <table>
+        <thead><tr><th>发票号</th><th>抬头</th><th>金额</th><th>状态</th><th>时间</th></tr></thead>
+        <tbody id="invoice-tbody"><tr><td colspan="5" style="text-align:center;color:var(--muted);padding:40px">暂无发票记录</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ═══ 客户端授权 ═══ -->
+  <div class="tab" id="tab-oauth">
+    <div class="topbar"><h1>客户端授权</h1></div>
+    <div class="card">
+      <h3>桌面客户端授权</h3>
+      <p class="muted" style="margin-bottom:16px">擎天桌面客户端需要在此授权后使用报价引擎。授权后客户端可直接调用 API。</p>
+      <div class="stat-row">
+        <div class="stat-card">
+          <div class="label">授权状态</div>
+          <div class="value green" style="font-size:1rem">✅ 已授权</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">授权设备</div>
+          <div class="value" style="font-size:1rem">Web 端</div>
+        </div>
+      </div>
+      <p class="muted" style="margin-top:12px">在桌面客户端中点击「登录」，浏览器将自动打开此页面完成授权。授权后有 30 天有效期。</p>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// Accept token from cross-domain login (e.g., ai.traceclaw.cn/desktop → dashboard)
+(function(){
+  const p = new URLSearchParams(location.search);
+  const t = p.get('token');
+  if (t) {
+    localStorage.setItem('atlas_token', t);
+    const u = new URL(location);
+    u.searchParams.delete('token');
+    history.replaceState({}, '', u);
+    location.reload();
+  }
+})();
+const API = '';
+const token = localStorage.getItem('atlas_token');
+if (!token) location.href = '/login';
+
+let user = null, quota = null, plans = {};
+let selectedPlanType = 'quoter', selectedPlan = 'standard';
+let selectedPeriodQ = 'month', selectedPeriodD = 'month';
+try { user = JSON.parse(localStorage.getItem('atlas_user')); } catch(e) {}
+
+// ─── Init ───
+async function init() {
+  try {
+    const r = await fetch(API+'/api/me', {headers:{'Authorization':'Bearer '+token}});
+    const d = await r.json();
+    if (!d.ok) { logout(); return; }
+    user = d.user; quota = d.quota;
+    localStorage.setItem('atlas_user', JSON.stringify(user));
+    renderOverview();
+    renderPlans();
+  } catch(e) { toast('网络错误', false); }
+}
+
+// ─── Tab switching ───
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  document.querySelector(`[data-tab="${name}"]`).classList.add('active');
+  if (name === 'billing') loadBilling();
+  if (name === 'invoice') loadInvoice();
+}
+
+// ─── Overview ───
+function renderOverview() {
+  if (!user || !quota) return;
+  document.getElementById('uname').textContent = user.company || user.email;
+  document.getElementById('ucompany').textContent = user.company_type || '';
+
+  // Helper for each plan type
+  function renderType(type, prefix) {
+    const q = quota[type] || { plan: 'free', plan_name: '免费版', quota_used: 0, quota_limit: 0, unlimited: false };
+    const cat = plans[type] || {};
+    const p = cat[q.plan] || { name: '免费版', unit_price: '-' };
+    document.getElementById('plan-'+prefix+'-name').textContent = p.name;
+    document.getElementById('plan-'+prefix+'-price').textContent = '¥'+p.unit_price+'/'+(type==='quoter'?'份':'封');
+    document.getElementById('quota-'+prefix+'-used').textContent = q.quota_used;
+    document.getElementById('quota-'+prefix+'-remain').textContent = q.unlimited ? '不限' : (q.quota_limit - q.quota_used);
+    const bar = document.getElementById('quota-'+prefix+'-bar');
+    if (q.unlimited || q.quota_limit <= 0) {
+      bar.style.width = '0%';
+    } else {
+      const pct = Math.min(100, Math.round(q.quota_used / q.quota_limit * 100));
+      bar.style.width = pct+'%';
+      bar.className = 'fill' + (pct > 80 ? ' danger' : pct > 50 ? ' warn' : '');
+    }
+  }
+  renderType('quoter', 'q');
+  renderType('developer', 'd');
+
+  // Badges
+  const qp = (plans.quoter||{})[quota.quoter?.plan||'free'] || {name:'免费版'};
+  const dp = (plans.developer||{})[quota.developer?.plan||'free'] || {name:'免费版'};
+  document.getElementById('plan-badge').textContent = '🤖 '+qp.name;
+  document.getElementById('plan-d-badge').textContent = '🔍 '+dp.name;
+}
+
+// ─── Plans / Recharge ───
+function renderPlans() {
+  fetch(API+'/api/plans').then(r=>r.json()).then(d=>{
+    if (!d.ok) return;
+    plans = d.plans;
+
+    function renderCards(type, containerId, unit) {
+      const cat = plans[type] || {};
+      const el = document.getElementById(containerId);
+      el.innerHTML = Object.entries(cat).map(([k,p])=>{
+        if (k==='free') return '';
+        const quotaText = p.quota > 0 ? p.quota+' '+unit : '不限';
+        const monthUnit = p.quota > 0 ? (p.price_month/p.quota).toFixed(1) : '-';
+        const yearMonthPrice = p.price_year ? (p.price_year/12) : null;
+        const yearUnit = (p.quota > 0 && yearMonthPrice) ? (yearMonthPrice/p.quota).toFixed(1) : null;
+        const yearText = p.price_year ? (p.price_year >= 10000 ? (p.price_year/10000).toFixed(2)+'万' : p.price_year.toLocaleString()) : '';
+        const yearMonthly = yearMonthPrice ? Math.round(yearMonthPrice).toLocaleString() : '';
+        const saving = (p.price_year && p.quota > 0) ? Math.round(p.price_month*12 - p.price_year) : 0;
+        return `<div class="pcard" data-plan-type="${type}" data-plan="${k}" onclick="selectPlan('${type}','${k}')">
+          <div class="plan-name">${p.name}</div>
+          <div class="plan-price">¥${p.price_month.toLocaleString()}<span style="font-size:.7rem;color:var(--muted)">/月</span></div>
+          <div class="plan-quota">${quotaText}/月 · ¥${monthUnit}/${unit}</div>
+          ${p.price_year ? `<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);font-size:.8rem;color:var(--muted);line-height:1.6">
+            <div>年付 ¥${yearText} ≈¥${yearMonthly}/月 · ¥${yearUnit}/${unit}</div>
+            <div style="display:inline-block;background:rgba(0,255,136,0.12);padding:3px 12px;border-radius:8px;font-weight:700;font-size:.82rem;color:var(--green);margin-top:5px">✨ 省 ¥${saving.toLocaleString()}</div>
+          </div>` : ''}
+        </div>`;
+      }).join('');
+    }
+    renderCards('quoter', 'plan-cards-quoter', '份');
+    renderCards('developer', 'plan-cards-developer', '封');
+    renderOverview();
+  });
+}
+
+function selectPlan(type, plan) {
+  selectedPlanType = type;
+  selectedPlan = plan;
+  const prefix = type === 'quoter' ? 'plan-cards-quoter' : 'plan-cards-developer';
+  document.querySelectorAll('.pcard').forEach(c=>c.classList.remove('selected'));
+  document.querySelector(`[data-plan-type="${type}"][data-plan="${plan}"]`)?.classList.add('selected');
+}
+
+function selectPeriod(type, period) {
+  const p = type === 'quoter' ? 'q' : 'd';
+  const mBtn = document.getElementById(p+'-period-m');
+  const yBtn = document.getElementById(p+'-period-y');
+  if (type === 'quoter') selectedPeriodQ = period;
+  else selectedPeriodD = period;
+  [mBtn, yBtn].forEach(b => { b.style.background = 'transparent'; b.style.color = 'var(--muted)'; b.style.fontWeight = '400'; });
+  const act = period === 'month' ? mBtn : yBtn;
+  act.style.background = 'rgba(0,255,136,0.1)';
+  act.style.color = 'var(--green)';
+  act.style.fontWeight = '600';
+}
+
+async function doRecharge(type) {
+  const btn = event.target; btn.textContent = '生成租赁单中...'; btn.disabled = true;
+  try {
+    const r = await fetch(API+'/api/recharge', {
+      method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+      body: JSON.stringify({plan_type: type || selectedPlanType, plan: selectedPlan, period: type==='quoter' ? selectedPeriodQ : selectedPeriodD})
+    });
+    const d = await r.json();
+    if (d.ok && d.order && d.order.pay_url) {
+      window.open(d.order.pay_url);
+      toast('支付页面已打开', true);
+    } else {
+      toast(d.error || '生成租赁单失败', false);
+    }
+  } catch(e) { toast('网络错误', false); }
+  btn.textContent = '确认租赁'; btn.disabled = false;
+}
+
+// ─── Billing ───
+async function loadBilling() {
+  try {
+    const r = await fetch(API+'/api/billing', {headers:{'Authorization':'Bearer '+token}});
+    const d = await r.json();
+    const tbody = document.getElementById('billing-tbody');
+    if (!d.orders || !d.orders.length) {
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:40px">暂无账单记录</td></tr>';
+      return;
+    }
+    tbody.innerHTML = d.orders.map(o=>{
+      const st = o.status === 'paid' ? '<span class="status status-paid">已支付</span>' : '<span class="status status-pending">待支付</span>';
+      const dt = new Date(o.created_at).toLocaleString('zh-CN',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
+      return `<tr><td>${o.id}</td><td>${o.item_name||''}</td><td>¥${o.amount.toFixed(0)}</td><td>${st}</td><td>${dt}</td></tr>`;
+    }).join('');
+  } catch(e) {}
+}
+
+// ─── Invoice ───
+async function loadInvoice() {
+  // Load paid orders for invoice selection
+  try {
+    const r = await fetch(API+'/api/billing', {headers:{'Authorization':'Bearer '+token}});
+    const d = await r.json();
+    const sel = document.getElementById('inv-order');
+    sel.innerHTML = '<option value="">请选择已支付订单</option>' + 
+      (d.orders||[]).filter(o=>o.status==='paid').map(o=>`<option value="${o.id}">${o.item_name||o.id} - ¥${o.amount.toFixed(0)}</option>`).join('');
+    // Load invoices
+    const r2 = await fetch(API+'/api/invoice', {headers:{'Authorization':'Bearer '+token}});
+    const d2 = await r2.json();
+    const tbody = document.getElementById('invoice-tbody');
+    if (!d2.invoices || !d2.invoices.length) {
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:40px">暂无发票记录</td></tr>';
+      return;
+    }
+    tbody.innerHTML = d2.invoices.map(i=>{
+      const st = i.status === 'issued' ? '<span class="status status-paid">已开具</span>' : '<span class="status status-pending">处理中</span>';
+      const dt = new Date(i.created_at).toLocaleString('zh-CN',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
+      return `<tr><td>${i.id}</td><td>${i.title}</td><td>¥${i.amount.toFixed(0)}</td><td>${st}</td><td>${dt}</td></tr>`;
+    }).join('');
+  } catch(e) {}
+}
+
+async function doInvoice() {
+  const order_id = document.getElementById('inv-order').value;
+  const title = document.getElementById('inv-title').value.trim();
+  const tax_id = document.getElementById('inv-tax').value.trim();
+  if (!order_id || !title) { toast('请选择订单并填写抬头', false); return; }
+  try {
+    const r = await fetch(API+'/api/invoice', {
+      method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+      body: JSON.stringify({order_id, title, tax_id})
+    });
+    const d = await r.json();
+    if (d.ok) { toast('发票申请已提交', true); loadInvoice(); }
+    else toast(d.error||'提交失败', false);
+  } catch(e) { toast('网络错误', false); }
+}
+
+// ─── Utils ───
+function logout() { localStorage.removeItem('atlas_token'); localStorage.removeItem('atlas_user'); location.href = '/'; }
+function toast(msg, ok) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.className = 'toast '+(ok?'toast-ok':'toast-err')+' show';
+  setTimeout(()=>el.classList.remove('show'), 2500);
+}
+
+init();
+function toggleTheme(){const t=document.documentElement.getAttribute('data-theme')==='light'?'dark':'light';document.documentElement.setAttribute('data-theme',t);const b=document.getElementById('themeToggle');const s=b.querySelector('span');b.innerHTML=(t==='dark'?'🌙':'☀️')+' <span style="font-size:.8rem">'+(t==='dark'?'暗黑模式':'白日模式')+'</span>';localStorage.setItem('atlas-theme',t)}
+(function(){const t=localStorage.getItem('atlas-theme')||'dark';document.documentElement.setAttribute('data-theme',t);const b=document.getElementById('themeToggle');if(b){const s=b.querySelector('span');b.innerHTML=(t==='dark'?'🌙':'☀️')+' <span style="font-size:.8rem">'+(t==='dark'?'暗黑模式':'白日模式')+'</span>'}})()
+</script>
+</body>
+</html>

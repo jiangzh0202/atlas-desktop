@@ -1,0 +1,75 @@
+name: Build Desktop Client
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+jobs:
+  build-tauri:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: macos-latest
+            target: aarch64-apple-darwin
+            ext: dmg
+            label: macOS-ARM
+          - platform: macos-latest
+            target: x86_64-apple-darwin
+            ext: dmg
+            label: macOS-Intel
+          - platform: windows-latest
+            target: x86_64-pc-windows-msvc
+            ext: exe
+            label: Windows-x64
+
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with: { node-version: "22" }
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install Tauri CLI
+        run: npm install -g @tauri-apps/cli@latest
+
+      - name: Copy desktop.html as frontend
+        run: |
+          mkdir -p html-dist
+          cp portal/public/desktop.html html-dist/index.html
+          # Copy tauri config
+          cp -r src-tauri html-dist/ 2>/dev/null || true
+
+      - name: Build Tauri
+        run: |
+          cd html-dist
+          tauri build --target ${{ matrix.target }}
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Atlas-${{ matrix.label }}
+          path: html-dist/src-tauri/target/${{ matrix.target }}/release/bundle/
+
+  create-release:
+    needs: build-tauri
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, "refs/tags/v")
+    steps:
+      - uses: actions/download-artifact@v4
+      
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            Atlas-macOS-ARM/**/*.dmg
+            Atlas-macOS-Intel/**/*.dmg
+            Atlas-Windows-x64/**/*.exe
+          draft: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

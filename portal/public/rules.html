@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>规则面板 · 元策擎天</title>
+<title>规则面板 · 擎天擎天</title>
 <style>
 :root{--bg:#f2f2f4;--card:#fff;--green:#7ecf5e;--green-soft:#e8f7e0;--text:#1a1a2e;--muted:#888;--red:#e94560;--amber:#f59e0b;--blue:#3b82f6;--line:rgba(0,0,0,0.06)}
 *{margin:0;padding:0;box-sizing:border-box}
@@ -48,15 +48,7 @@ a{color:var(--green);text-decoration:none}
 .badge-ok{background:#d4f5e0;color:#0d7a3e}
 </style></head>
 <body>
-<div class="topbar">
-  <div class="logo"><span>元策</span>·擎天</div>
-  <nav>
-    <a href="/">📊 首页</a><a href="/quotation">📋 报价</a><a href="/parts">🔧 配件</a>
-    <a href="/customers">👥 客户</a><a href="/rules" class="active">📐 规则</a>
-    <a href="/history">📜 历史</a><a href="/stock">📦 库存</a>
-    <a href="/agents">🤖 智能体</a><a href="/trade">🌍 贸易</a>
-    <a href="#" onclick="logout()" style="color:var(--red)">退出</a>
-  </nav>
+<script src="/atlas.js"></script>
 </div>
 
 <div class="container">
@@ -95,7 +87,7 @@ a{color:var(--green);text-decoration:none}
 
 <div id="toast" class="toast" style="display:none"></div>
 
-<script>if(!localStorage.getItem('atlas_token'))location='/login';
+<script>if(!getToken())location='/login';
 function logout(){localStorage.removeItem('atlas_token');location='/login'}
 
 let currentMd='';
@@ -104,7 +96,7 @@ async function load(){
   document.getElementById('content').value='加载中...';
   document.getElementById('status').textContent='加载中...';
   try{
-    const r=await fetch('/api/rules');
+    const r=await api('GET', '/api/rules');
     const d=await r.json();
     if(d.ok){
       currentMd=d.raw||'';
@@ -125,7 +117,7 @@ async function save(){
   const content=document.getElementById('content').value;
   document.getElementById('status').textContent='保存中...';
   try{
-    const r=await fetch('/api/rules',{
+    const r=await api('POST', '/api/rules', 
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({content:content})
@@ -239,4 +231,6 @@ function toast(msg,type){
   setTimeout(function(){el.style.display='none'},3000);
 }
 
-load();</script></body></html>
+load();</script>
+<script>initAtlas("rules")</script>
+</body></html>

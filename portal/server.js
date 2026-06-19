@@ -401,11 +401,13 @@ const server = http.createServer(async (req, res) => {
 
   // Get current user
   if (pathname === "/api/me" && req.method === "GET") {
-    const raw = getAuth(req);
-    if (!raw) return sendJSON(res, 401, { ok: false, error: "请先登录" });
-    const user = store.sanitizeUser(raw);
-    const quota = store.getUserQuota(user.id);
-    return sendJSON(res, 200, { ok: true, user, quota, max_channels: store.getMaxChannels(user.id), channels: store.getBoundChannels(user.id) });
+    const user = getAuth(req);
+    if (!user) return sendJSON(res, 401, { ok: false, error: "请登录" });
+    const { password_hash, channels, ...safe } = user;
+    // Add role for atlas.js nav filtering: quoter/purchaser
+    safe.role = safe.role || 'quoter';
+    safe.role_label = '报价员';
+    return sendJSON(res, 200, { ok: true, user: safe, data: safe });
   }
 
   // Channels config save (store server-side for callback verification)
@@ -799,13 +801,20 @@ function saveMcpConfigs(cfgs) {
     const trade_no = parsed.query.out_trade_no || parsed.query.trade_no || "";
     if (trade_no) {
       const order = store.markOrderPaid(trade_no);
-      if (order) console.log(`✅ 支付成功: ${order.id} plan=${order.plan} user=${order.user_id}`);
+      if (order) {
+        console.log(`✅ 支付成功: ${order.id} plan=${order.plan} user=${order.user_id}`);
+        // 自动代理升级：仅年付套餐 → 代理资格
+        if (order.period === "year" && order.plan && order.plan !== "free" && order.plan !== "basic") {
+          const agent = store.autoUpgradeToAgent(order.user_id, order.plan);
+          if (agent) console.log(`🎖️ 自动升级代理: ${order.user_id} → ${agent.level} (${agent.discount*100}折)`);
+        }
+      }
     }
     return res.end("success");
   }
 
   // Proxy quote engine APIs to Flask
-  if (pathname.startsWith("/api/parts") || pathname.startsWith("/api/parse") || pathname.startsWith("/api/quote") || pathname.startsWith("/api/train") || pathname.startsWith("/api/kb")) {
+  if (pathname.startsWith("/api/parts") || pathname.startsWith("/api/parse") || pathname.startsWith("/api/quote") || pathname.startsWith("/api/train") || pathname.startsWith("/api/kb") || pathname.startsWith("/api/translate") || pathname.startsWith("/api/inquiry") || pathname.startsWith("/api/pi") || pathname.startsWith("/api/stock") || pathname.startsWith("/api/customers") || pathname.startsWith("/api/history") || pathname.startsWith("/api/agents/status") || pathname.startsWith("/api/trigger-event") || pathname.startsWith("/api/trace")) {
     return proxyToFlask(req, res);
   }
 
@@ -826,7 +835,7 @@ function saveMcpConfigs(cfgs) {
     const parts = pathname.split("/");
     const userId = parts[4];
     const body = await readBody(req);
-    const { plan_type, plan_key } = JSON.parse(body);
+    const { plan_type, plan_key } = body;
     if (!["quoter", "developer"].includes(plan_type)) return sendJSON(res, 400, { error: "无效的员工类型" });
     const ok = store.updateUserPlan(userId, plan_type, plan_key);
     if (!ok) return sendJSON(res, 400, { error: "修改失败" });
@@ -839,14 +848,14 @@ function saveMcpConfigs(cfgs) {
 
   if (pathname === "/api/admin/agents" && req.method === "POST") {
     const body = await readBody(req);
-    const agent = store.createAgent(JSON.parse(body));
+    const agent = store.createAgent(body);
     return sendJSON(res, 200, { ok: true, agent });
   }
 
   if (pathname.startsWith("/api/admin/agent/") && req.method === "POST") {
     const agentId = pathname.split("/")[4];
     const body = await readBody(req);
-    const agent = store.updateAgent(agentId, JSON.parse(body));
+    const agent = store.updateAgent(agentId, body);
     if (!agent) return sendJSON(res, 404, { error: "代理不存在" });
     return sendJSON(res, 200, { ok: true, agent });
   }
@@ -863,9 +872,54 @@ function saveMcpConfigs(cfgs) {
 
   if (pathname === "/api/admin/models" && req.method === "POST") {
     const body = await readBody(req);
-    const { tier, ...cfg } = JSON.parse(body);
+    const { tier, ...cfg } = body;
     const updated = store.updateModelConfig(tier, cfg);
     return sendJSON(res, 200, { ok: true, config: updated });
+  }
+
+  
+  // ─── 套餐配置管理 ───
+  if (pathname === "/api/admin/plans" && req.method === "GET") {
+    return sendJSON(res, 200, { ok: true, plans: store.getPlansConfig() });
+  }
+
+  if (pathname.startsWith("/api/admin/plan/") && req.method === "POST") {
+    // URL: /api/admin/plan/{type}/{tierKey}
+    const parts = pathname.split("/");
+    const planType = parts[4];  // quoter or developer
+    const tierKey = parts[5];   // free/basic/standard/pro
+    const body = await readBody(req);
+    const updates = body;
+    const plan = store.updatePlansConfig(planType, tierKey, updates);
+    return sendJSON(res, 200, { ok: true, plan });
+  }
+
+  if (pathname === "/api/admin/orders" && req.method === "GET") {
+    const user = getAuth(req);
+    if (!user || user.email !== 'admin' && user.email !== 'admin@atlas.local') return sendJSON(res, 403, { ok: false, error: '无权限' });
+    const orders = store.listAllOrders();
+    return sendJSON(res, 200, { ok: true, orders });
+  }
+
+  if (pathname === "/api/admin/plan-add" && req.method === "POST") {
+    const body = await readBody(req);
+    const { type, tierKey, ...planData } = body;
+    const plan = store.addPlanTier(type, tierKey, planData);
+    return sendJSON(res, 200, { ok: true, plan });
+  }
+
+  if (pathname.startsWith("/api/admin/plan-delete/") && req.method === "POST") {
+    // URL: /api/admin/plan-delete/{type}/{tierKey}
+    const parts = pathname.split("/");
+    const planType = parts[4];
+    const tierKey = parts[5];
+    const ok = store.deletePlanTier(planType, tierKey);
+    return sendJSON(res, 200, { ok, message: ok ? "已删除" : "不存在" });
+  }
+
+  if (pathname === "/api/admin/plans-reset" && req.method === "POST") {
+    const plans = store.resetPlansToDefault();
+    return sendJSON(res, 200, { ok: true, plans, message: "已恢复默认套餐" });
   }
 
   // ═══ Static Pages ═══

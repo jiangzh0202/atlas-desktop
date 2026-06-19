@@ -70,7 +70,7 @@ tr:last-child td{border-bottom:none}
   <div class="login-card">
     <h1><span>擎天</span> Atlas</h1>
     <div class="sub">管理后台</div>
-    <input type="email" id="loginEmail" placeholder="管理员邮箱" value="admin@atlas.local" onkeydown="if(event.key==='Enter')login()">
+    <input type="email" id="loginEmail" placeholder="管理员邮箱" value="admin" onkeydown="if(event.key==='Enter')login()">
     <input type="password" id="loginPwd" placeholder="管理密码" onkeydown="if(event.key==='Enter')login()">
     <button onclick="login()">进入后台</button>
     <div class="err" id="loginErr"></div>
@@ -90,6 +90,7 @@ tr:last-child td{border-bottom:none}
     <button class="tab-btn active" onclick="switchTab('customers')">👥 客户管理</button>
     <button class="tab-btn" onclick="switchTab('agents')">🏪 代理管理</button>
     <button class="tab-btn" onclick="switchTab('models')">🤖 模型配置</button>
+    <button class="tab-btn" onclick="switchTab('orders')">💰 订单管理</button>
     <button class="tab-btn" onclick="switchTab('plans')">📦 套餐配置</button>
   </div>
 
@@ -106,14 +107,25 @@ tr:last-child td{border-bottom:none}
 
   <!-- ═══ 代理管理 ═══ -->
   <div class="tab-content" id="tabAgents">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
-      <div class="stats" id="agentStats" style="margin-bottom:0;flex:1"></div>
-      <button class="btn-primary" onclick="showAgentModal()" style="flex-shrink:0">➕ 添加代理</button>
+    <div style="margin-bottom:1rem">
+      <div class="stats" id="agentStats"></div>
+      <div style="text-align:right;margin-top:.5rem"><button class="btn-primary" onclick="showAgentModal()">➕ 添加代理</button></div>
     </div>
     <div class="table-wrap">
       <table>
-        <thead><tr><th>代理</th><th>城市</th><th>等级</th><th>折扣</th><th>客户数</th><th>销售额</th><th>状态</th><th>操作</th></tr></thead>
+        <thead><tr><th>代理</th><th>城市</th><th>等级</th><th>折扣</th><th>来源</th><th>客户数</th><th>销售额</th><th>状态</th><th>操作</th></tr></thead>
         <tbody id="agentTable"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ═══ 订单管理 ═══ -->
+  <div class="tab-content" id="tabOrders">
+    <div class="stats" id="orderStats"></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>订单号</th><th>客户</th><th>套餐</th><th>金额</th><th>周期</th><th>状态</th><th>时间</th></tr></thead>
+        <tbody id="orderTable"></tbody>
       </table>
     </div>
   </div>
@@ -156,12 +168,13 @@ function switchTab(tab){
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
   document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
   event.target.classList.add('active');
-  document.getElementById('tab'+{customers:'Customers',agents:'Agents',models:'Models',plans:'Plans'}[tab]).classList.add('active');
+  document.getElementById('tab'+{customers:'Customers',agents:'Agents',orders:'Orders',models:'Models',plans:'Plans'}[tab]).classList.add('active');
   loadTab(tab);
 }
 function loadTab(tab){
   if(tab==='customers') loadCustomers();
   else if(tab==='agents') loadAgents();
+  else if(tab==='orders') loadOrders();
   else if(tab==='models') loadModels();
   else if(tab==='plans') loadPlans();
 }
@@ -202,7 +215,7 @@ function showPlanModal(uid, email, qPlan, dPlan){
   overlay.innerHTML = `<div class="modal-card">
     <h3>修改套餐 — ${email}</h3>
     <div class="form-group"><label>报价员套餐</label><select id="planQuoter"><option value="free" ${qPlan==='free'?'selected':''}>免费试用</option><option value="basic" ${qPlan==='basic'?'selected':''}>入门 ¥998/月</option><option value="standard" ${qPlan==='standard'?'selected':''}>标准 ¥2980/月</option><option value="pro" ${qPlan==='pro'?'selected':''}>专业 ¥5980/月</option></select></div>
-    <div class="form-group"><label>客户开发员套餐</label><select id="planDeveloper"><option value="free" ${dPlan==='free'?'selected':''}>免费试用</option><option value="basic" ${dPlan==='basic'?'selected':''}>入门 ¥998/月</option><option value="standard" ${dPlan==='standard'?'selected':''}>标准 ¥2980/月</option><option value="pro" ${dPlan==='pro'?'selected':''}>专业 ¥5980/月</option></select></div>
+    <div class="form-group"><label>客户开发员套餐</label><select id="planDeveloper"><option value="free" ${dPlan==='free'?'selected':''}>免费试用</option><option value="standard" ${dPlan==='standard'?'selected':''}>标准 ¥998/月</option><option value="pro" ${dPlan==='pro'?'selected':''}>专业 ¥3,980/月</option><option value="enterprise" ${dPlan==='enterprise'?'selected':''}>企业 ¥7,900/月</option></select></div>
     <div style="display:flex;gap:8px;margin-top:1rem">
       <button class="btn-primary" id="btnSavePlan" style="flex:1">保存</button>
       <button class="btn-secondary" onclick="this.closest('.modal-overlay').remove()">取消</button>
@@ -238,10 +251,11 @@ async function loadAgents(){
       rows += `<tr>
         <td><b>${a.name}</b><br><span style="font-size:.68rem;color:var(--dim)">${a.phone||''} ${a.wechat||''}</span></td>
         <td>${a.city||'-'}</td>
-        <td><span class="badge badge-active">${a.level==='city'?'城市总代':a.level==='regional'?'区域代理':'推广大使'}</span></td>
+        <td><span class="badge badge-active">${a.level==='city'?'🥇城市总代':a.level==='regional'?'🥈区域代理':'🥉推广大使'}</span></td>
         <td>${Math.round((a.discount||0.85)*100)}折</td>
-        <td>${(a.customers||[]).length}</td>
-        <td>¥${(a.total_sales||0).toLocaleString()}</td>
+        <td><span style="font-size:.7rem;color:var(--dim)">${a.source==='auto_upgrade'?'🎖️自动':'👤手动'}</span></td>
+        <td>${(a.customers||[]).length}客户</td>
+        <td>¥${(a.total_sales||0).toLocaleString()}<br><span style="font-size:.65rem;color:var(--dim)">目标¥${(a.min_sales||0).toLocaleString()}</span></td>
         <td><span class="badge ${a.status==='active'?'badge-active':'badge-paused'}">${a.status==='active'?'正常':'暂停'}</span></td>
         <td>
           <button class="btn-sm green" onclick="showAgentModal('${a.id}')">编辑</button>
@@ -275,8 +289,19 @@ function showAgentModal(id){
         <div class="form-group"><label>微信</label><input id="agtWechat" value="${a.wechat||''}"></div>
       </div>
       <div class="row">
-        <div class="form-group"><label>等级</label><select id="agtLevel"><option value="city" ${a.level==='city'?'selected':''}>城市总代</option><option value="regional" ${a.level==='regional'?'selected':''}>区域代理</option><option value="ambassador" ${(a.level||'ambassador')==='ambassador'?'selected':''}>推广大使</option></select></div>
-        <div class="form-group"><label>折扣 (0-1)</label><input id="agtDiscount" type="number" step="0.05" min="0" max="1" value="${a.discount||0.85}"></div>
+        <div class="form-group"><label>等级</label><select id="agtLevel" onchange="onLevelChange()"><option value="city" ${a.level==='city'?'selected':''}>🥇 城市总代 (6折)</option><option value="regional" ${a.level==='regional'?'selected':''}>🥈 区域代理 (8折)</option><option value="ambassador" ${(a.level||'ambassador')==='ambassador'?'selected':''}>🥉 推广大使 (8.5折)</option></select></div>
+        <div class="form-group"><label>折扣</label><input id="agtDiscount" type="number" step="0.05" min="0" max="1" value="${a.discount||0.85}" readonly style="background:var(--bg);color:var(--muted)"></div>
+      </div>
+      <div style="background:var(--green-bg);padding:10px 12px;border-radius:8px;margin-bottom:.75rem;font-size:.76rem">
+        <b id="levelInfo">城市总代</b>：预付 <b id="depositShow">¥20,000</b> 或一次买 <b id="bulkShow">10</b> 套年付 · 年最低销售额 <b id="minSalesShow">¥100,000</b>
+      </div>
+      <div class="row">
+        <div class="form-group"><label>预付金额 ¥</label><input id="agtDeposit" type="number" value="${a.deposit||0}" placeholder="0 表示按套餐量入门"></div>
+        <div class="form-group"><label>或一次买 (套)</label><input id="agtBulk" type="number" value="${a.bulk_count||0}" placeholder="0 表示按预付金入门"></div>
+      </div>
+      <div class="row">
+        <div class="form-group"><label>年最低销售额 ¥</label><input id="agtMinSales" type="number" value="${a.min_sales||0}"></div>
+        <div class="form-group"><label>试用期 (月)</label><input id="agtTrial" type="number" value="${a.trial_months||3}" min="1" max="12"></div>
       </div>
       ${isEdit?`<div class="form-group"><label>状态</label><select id="agtStatus"><option value="active" ${a.status==='active'?'selected':''}>正常</option><option value="paused" ${a.status==='paused'?'selected':''}>暂停</option></select></div>`:''}
       <div style="display:flex;gap:8px;margin-top:1rem">
@@ -285,6 +310,26 @@ function showAgentModal(id){
       </div></div>`;
     document.body.appendChild(overlay);
     overlay.onclick=function(e){if(e.target===overlay)overlay.remove();};
+    // Auto-fill discount based on level
+    const LEVEL_DEFAULTS = {
+      city: {discount:0.60, deposit:20000, bulk:10, min_sales:100000, name:'城市总代'},
+      regional: {discount:0.80, deposit:8000, bulk:4, min_sales:40000, name:'区域代理'},
+      ambassador: {discount:0.85, deposit:2000, bulk:1, min_sales:10000, name:'推广大使'},
+    };
+    function fillLevelDefaults(){
+      const lv = document.getElementById('agtLevel').value;
+      const def = LEVEL_DEFAULTS[lv]||LEVEL_DEFAULTS.ambassador;
+      document.getElementById('agtDiscount').value = def.discount;
+      document.getElementById('agtDeposit').value = document.getElementById('agtDeposit').value||def.deposit;
+      document.getElementById('agtBulk').value = document.getElementById('agtBulk').value||def.bulk;
+      document.getElementById('agtMinSales').value = document.getElementById('agtMinSales').value||def.min_sales;
+      document.getElementById('levelInfo').textContent = def.name;
+      document.getElementById('depositShow').textContent = '¥' + def.deposit.toLocaleString();
+      document.getElementById('bulkShow').textContent = def.bulk;
+      document.getElementById('minSalesShow').textContent = '¥' + def.min_sales.toLocaleString();
+    }
+    window.onLevelChange = fillLevelDefaults;
+    fillLevelDefaults();
     document.getElementById('btnSaveAgent').onclick = async ()=>{
       const data = {
         name: document.getElementById('agtName').value,
@@ -293,6 +338,10 @@ function showAgentModal(id){
         wechat: document.getElementById('agtWechat').value,
         level: document.getElementById('agtLevel').value,
         discount: parseFloat(document.getElementById('agtDiscount').value)||0.85,
+        deposit: parseInt(document.getElementById('agtDeposit').value)||0,
+        bulk_count: parseInt(document.getElementById('agtBulk').value)||0,
+        min_sales: parseInt(document.getElementById('agtMinSales').value)||0,
+        trial_months: parseInt(document.getElementById('agtTrial').value)||3,
       };
       if(isEdit) data.status = document.getElementById('agtStatus').value;
       try{
@@ -316,35 +365,71 @@ async function deleteAgent(id){
   }catch(e){ toast('删除失败','err'); }
 }
 
+// ═══ 订单管理 ═══
+async function loadOrders(){
+  try{
+    const r = await fetch(API+'/api/admin/orders',{headers:{'Authorization':'Bearer '+TOKEN}});
+    const d = await r.json();
+    if(!d.ok) return toast('加载失败','err');
+    const orders = d.orders||[];
+    const paid = orders.filter(o=>o.status==='paid');
+    const totalRev = paid.reduce((s,o)=>s+(o.amount||0),0);
+    document.getElementById('orderStats').innerHTML =
+      `<div class="stat-card"><div class="num">${orders.length}</div><div class="label">总订单</div></div>
+       <div class="stat-card"><div class="num">${paid.length}</div><div class="label">已付款</div></div>
+       <div class="stat-card"><div class="num">¥${totalRev.toLocaleString()}</div><div class="label">已收款</div></div>`;
+    let rows = '';
+    orders.forEach(o=>{
+      const statusBadge = o.status==='paid'?'badge-active':'badge-free';
+      const statusText = o.status==='paid'?'已付':o.status==='pending'?'待付':o.status||'-';
+      rows += `<tr>
+        <td style="font-size:.7rem;color:var(--dim)">${o.id}</td>
+        <td>${o.user_email||'-'}</td>
+        <td>${o.item_name||(o.plan_type+':'+o.plan)}</td>
+        <td>¥${(o.amount||0).toLocaleString()}</td>
+        <td>${o.period==='year'?'年付':'月付'}</td>
+        <td><span class="badge ${statusBadge}">${statusText}</span></td>
+        <td style="font-size:.7rem;color:var(--dim)">${(o.created_at||'').slice(0,10)}</td></tr>`;
+    });
+    document.getElementById('orderTable').innerHTML = rows || '<tr><td colspan="7" class="empty">暂无订单</td></tr>';
+  }catch(e){ toast('加载订单失败','err'); }
+}
+
 // ═══ 模型配置 ═══
 async function loadModels(){
   try{
-    const r = await fetch(API+'/api/admin/models',{headers:{'Authorization':'Bearer '+TOKEN}});
-    const d = await r.json();
-    const config = d.config||{};
-    const tiers = [
-      {key:'free',name:'🆓 免费试用',desc:'注册即用'},
-      {key:'basic',name:'🥉 入门',desc:'¥998/月'},
-      {key:'standard',name:'🥈 标准',desc:'¥2,980/月'},
-      {key:'pro',name:'🥇 专业',desc:'¥5,980/月'},
-    ];
+    const [mr, pr] = await Promise.all([
+      fetch(API+'/api/admin/models',{headers:{'Authorization':'Bearer '+TOKEN}}),
+      fetch(API+'/api/admin/plans')
+    ]);
+    const md = await mr.json();
+    const pd = await pr.json();
+    const config = md.config||{};
+    const plans = pd.plans||{};
+    const allTiers = {};
+    ['quoter','developer'].forEach(type=>{
+      Object.entries(plans[type]||{}).forEach(([k,v])=>{
+        if(!allTiers[k]) allTiers[k] = {key:k, name:v.name, price:v.price_month, type};
+      });
+    });
+    const tiers = Object.values(allTiers);
     let h = '';
     tiers.forEach(t=>{
       const c = config[t.key]||{};
+      const priceLabel = t.price ? '¥'+t.price.toLocaleString()+'/月' : '免费';
       h += `<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1rem;margin-bottom:.75rem">
-        <div style="font-weight:700;margin-bottom:.5rem">${t.name} <span style="font-weight:400;color:var(--muted);font-size:.8rem">${t.desc}</span></div>
+        <div style="font-weight:700;margin-bottom:.5rem">${t.name} <span style="font-weight:400;color:var(--muted);font-size:.8rem">${priceLabel} · ${t.type==='quoter'?'报价员':'开发员'}</span></div>
         <div class="row">
-          <div class="form-group"><label>模型</label><select id="model_${t.key}"><option value="deepseek-chat" ${c.model==='deepseek-chat'?'selected':''}>DeepSeek V3 (deepseek-chat)</option><option value="deepseek-v4-pro" ${c.model==='deepseek-v4-pro'?'selected':''}>DeepSeek V4 Pro</option></select></div>
+          <div class="form-group"><label>模型</label><select id="model_${t.key}"><option value="deepseek-chat" ${c.model==='deepseek-chat'?'selected':''}>DeepSeek V3</option><option value="deepseek-v4-pro" ${c.model==='deepseek-v4-pro'?'selected':''}>DeepSeek V4 Pro</option></select></div>
           <div class="form-group"><label>Temperature</label><input id="temp_${t.key}" type="number" step="0.1" min="0" max="2" value="${c.temperature||0.7}"></div>
           <div class="form-group"><label>Max Tokens</label><input id="tokens_${t.key}" type="number" step="100" min="500" max="8000" value="${c.max_tokens||1500}"></div>
         </div>
         <button class="btn-sm green" style="margin-top:.5rem" onclick="saveModelConfig('${t.key}')">💾 保存 ${t.name}</button>
       </div>`;
     });
-    document.getElementById('modelConfigs').innerHTML = h;
+    document.getElementById('modelConfigs').innerHTML = h || '<div class="empty">暂无套餐档位</div>';
   }catch(e){ toast('加载模型配置失败','err'); }
 }
-
 async function saveModelConfig(tier){
   const cfg = {
     model: document.getElementById('model_'+tier).value,
@@ -358,26 +443,98 @@ async function saveModelConfig(tier){
   }catch(e){ toast('网络错误','err'); }
 }
 
-// ═══ 套餐配置 ═══
-function loadPlans(){
-  const PLANS = {
-    quoter:{free:{name:'免费试用',price:0,quota:1},basic:{name:'入门',price:998,quota:50},standard:{name:'标准',price:2980,quota:200},pro:{name:'专业',price:5980,quota:500}},
-    developer:{free:{name:'免费试用',price:0,quota:1},basic:{name:'入门',price:998,quota:100},standard:{name:'标准',price:2980,quota:200},pro:{name:'专业',price:5980,quota:500}}
-  };
-  let h = '<h3 style="margin-bottom:1rem">📦 当前套餐配置</h3>';
-  ['quoter','developer'].forEach(type=>{
-    const name = type==='quoter'?'报价员':'客户开发员';
-    h += `<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1rem;margin-bottom:1rem">
-      <div style="font-weight:700;margin-bottom:.5rem">${name==='报价员'?'📜':'🎯'} ${name}</div>
-      <table><thead><tr><th>套餐</th><th>价格/月</th><th>配额</th><th>通道</th><th>年付价格</th></tr></thead><tbody>`;
-    Object.entries(PLANS[type]).forEach(([k,v])=>{
-      const ch = {free:0,basic:1,standard:2,pro:3}[k]||0;
-      h += `<tr><td><b>${v.name}</b></td><td>¥${v.price.toLocaleString()}</td><td>${v.quota}次</td><td>${ch}通道</td><td>¥${Math.round(v.price*10.2).toLocaleString()}</td></tr>`;
+// ═══ 套餐配置（可编辑）═══
+async function loadPlans(){
+  try{
+    const r = await fetch(API+'/api/admin/plans');
+    const d = await r.json();
+    const plans = d.plans||{};
+    let h = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem"><h3 style="margin:0">📦 套餐配置</h3><button class="btn-sm" style="border-color:var(--dim);color:var(--dim)" onclick="resetPlans()">🔄 恢复默认</button></div>';
+    ['quoter','developer'].forEach(type=>{
+      const typePlans = plans[type]||{};
+      const name = type==='quoter'?'报价员':'客户开发员';
+      h += `<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1rem;margin-bottom:1rem" data-type="${type}">
+        <div style="font-weight:700;margin-bottom:.75rem">${name==='报价员'?'📜':'🎯'} ${name}<button class="btn-sm green" style="margin-left:8px" onclick="showAddPlanModal('${type}')">➕ 添加档位</button></div>
+        <table><thead><tr><th>档位Key</th><th>名称</th><th>月价¥</th><th>年价¥</th><th>配额</th><th>通道</th><th>操作</th></tr></thead><tbody>`;
+      Object.entries(typePlans).forEach(([k,v])=>{
+        h += `<tr>
+          <td><code style="font-size:.72rem">${k}</code></td>
+          <td><input value="${v.name||''}" onchange="updatePlanField('${type}','${k}','name',this.value)" style="width:90px;padding:3px 6px;border:1px solid var(--border);border-radius:4px;font-size:.78rem"></td>
+          <td><input type="number" value="${v.price_month||0}" onchange="updatePlanField('${type}','${k}','price_month',this.value)" style="width:70px;padding:3px 6px;border:1px solid var(--border);border-radius:4px;font-size:.78rem"></td>
+          <td><input type="number" value="${v.price_year||0}" onchange="updatePlanField('${type}','${k}','price_year',this.value)" style="width:70px;padding:3px 6px;border:1px solid var(--border);border-radius:4px;font-size:.78rem"></td>
+          <td><input type="number" value="${v.quota||0}" onchange="updatePlanField('${type}','${k}','quota',this.value)" style="width:55px;padding:3px 6px;border:1px solid var(--border);border-radius:4px;font-size:.78rem"></td>
+          <td><input type="number" value="${v.max_channels||0}" onchange="updatePlanField('${type}','${k}','max_channels',this.value)" style="width:45px;padding:3px 6px;border:1px solid var(--border);border-radius:4px;font-size:.78rem"></td>
+          <td><button class="btn-sm red" onclick="deletePlanTier('${type}','${k}')">删除</button></td></tr>`;
+      });
+      h += `</tbody></table></div>`;
     });
-    h += `</tbody></table></div>`;
-  });
-  h += '<p style="font-size:.78rem;color:var(--muted)">套餐价格和配额定义在 <code>store.js → PLANS</code>，修改后需重启服务生效。</p>';
-  document.getElementById('planConfigs').innerHTML = h;
+    document.getElementById('planConfigs').innerHTML = h;
+  }catch(e){ toast('加载套餐配置失败','err'); }
+}
+
+async function updatePlanField(type, tierKey, field, value){
+  const data = {};
+  data[field] = field.includes('price')||field==='quota'||field==='max_channels' ? parseInt(value)||0 : value;
+  try{
+    await fetch(API+'/api/admin/plan/'+type+'/'+tierKey,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+TOKEN},body:JSON.stringify(data)});
+  }catch(e){}
+}
+
+async function deletePlanTier(type, tierKey){
+  if(!confirm('删除 '+tierKey+' 档位？')) return;
+  try{
+    await fetch(API+'/api/admin/plan-delete/'+type+'/'+tierKey,{method:'POST',headers:{'Authorization':'Bearer '+TOKEN}});
+    toast('已删除','ok');
+    loadPlans();
+  }catch(e){ toast('删除失败','err'); }
+}
+
+function showAddPlanModal(type){
+  const overlay = document.createElement('div'); overlay.className='modal-overlay';
+  overlay.innerHTML = `<div class="modal-card">
+    <h3>添加套餐档位 — ${type==='quoter'?'报价员':'客户开发员'}</h3>
+    <div class="row">
+      <div class="form-group"><label>档位Key</label><input id="newTierKey" placeholder="enterprise"></div>
+      <div class="form-group"><label>名称</label><input id="newName" placeholder="企业版"></div>
+    </div>
+    <div class="row">
+      <div class="form-group"><label>月价 ¥</label><input id="newPriceM" type="number" value="0"></div>
+      <div class="form-group"><label>年价 ¥</label><input id="newPriceY" type="number" value="0"></div>
+    </div>
+    <div class="row">
+      <div class="form-group"><label>配额</label><input id="newQuota" type="number" value="100"></div>
+      <div class="form-group"><label>通道数</label><input id="newChannels" type="number" value="3"></div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:1rem">
+      <button class="btn-primary" id="btnAddPlan" style="flex:1">添加</button>
+      <button class="btn-secondary" onclick="this.closest('.modal-overlay').remove()">取消</button>
+    </div></div>`;
+  document.body.appendChild(overlay);
+  overlay.onclick=function(e){if(e.target===overlay)overlay.remove();};
+  document.getElementById('btnAddPlan').onclick = async ()=>{
+    const data = {
+      type, tierKey: document.getElementById('newTierKey').value,
+      name: document.getElementById('newName').value,
+      price_month: parseInt(document.getElementById('newPriceM').value)||0,
+      price_year: parseInt(document.getElementById('newPriceY').value)||0,
+      quota: parseInt(document.getElementById('newQuota').value)||100,
+      max_channels: parseInt(document.getElementById('newChannels').value)||0,
+    };
+    if(!data.tierKey||!data.name) return toast('请填写档位Key和名称','err');
+    try{
+      const r = await fetch(API+'/api/admin/plan-add',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+TOKEN},body:JSON.stringify(data)});
+      const d = await r.json();
+      toast(d.ok?'添加成功':'添加失败',d.ok?'ok':'err');
+      overlay.remove();
+      loadPlans();
+    }catch(e){ toast('网络错误','err'); }
+  };
+}
+
+async function resetPlans(){
+  if(!confirm('恢复默认套餐？所有修改将丢失。')) return;
+  try{ await fetch(API+'/api/admin/plans-reset',{method:'POST',headers:{'Authorization':'Bearer '+TOKEN}}); toast('已恢复默认','ok'); loadPlans(); }
+  catch(e){ toast('恢复失败','err'); }
 }
 
 // ═══ 工具 ═══

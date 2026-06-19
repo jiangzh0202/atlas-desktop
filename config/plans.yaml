@@ -1,0 +1,69 @@
+# ═══════════════════════════════════════════════════════════
+# 元策·擎天 订阅套餐定义
+# 修改后重启服务即刻生效。报价配额+采购配额共享同一套餐。
+# ═══════════════════════════════════════════════════════════
+
+plans:
+  starter:
+    id: "starter"
+    name: "微光"
+    monthly_price: 1500
+    yearly_price: 13500
+    quota: 300          # 报价份数/月
+    procurement_units: 30   # 采购单元/月（每单元=20 SKU，实际600 SKU）
+    overage_price: 8    # 超额单价（元/份）
+    features:
+      - "AI报价引擎"
+      - "配件匹配"
+      - "报价单导出"
+      - "邮件支持"
+
+  standard:
+    id: "standard"
+    name: "标准"
+    monthly_price: 4800
+    yearly_price: 43200
+    quota: 1000
+    procurement_units: 100   # 实际2000 SKU
+    overage_price: 6
+    features:
+      - "AI报价引擎"
+      - "配件匹配"
+      - "报价单导出"
+      - "采购建议"
+      - "库存预警"
+      - "电话支持"
+
+  unlimited:
+    id: "unlimited"
+    name: "无界"
+    monthly_price: 9800
+    yearly_price: 88200
+    quota: 3000
+    procurement_units: 300   # 实际6000 SKU
+    overage_price: 4
+    features:
+      - "AI报价引擎"
+      - "配件匹配"
+      - "报价单导出"
+      - "采购建议"
+      - "库存预警"
+      - "外贸翻译"
+      - "PI生成"
+      - "优先支持"
+
+  enterprise:
+    id: "enterprise"
+    name: "企业"
+    monthly_price: 0
+    yearly_price: 120000
+    quota: 999999
+    procurement_units: 999999
+    overage_price: 0
+    features:
+      - "全部功能"
+      - "私有部署"
+      - "不限调用"
+      - "数据不出门"
+      - "专属运维"
+      - "定制开发"

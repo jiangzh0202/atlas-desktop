@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>外贸工具 · 元策擎天</title>
+<title>外贸工具 · 擎天擎天</title>
 <style>
 :root{--bg:#f2f2f4;--card:#fff;--green:#7ecf5e;--text:#1a1a2e;--muted:#888;--red:#e94560;--amber:#f59e0b;--blue:#3b82f6}
 *{margin:0;padding:0;box-sizing:border-box}
@@ -51,12 +51,8 @@ td{padding:8px 10px;border-bottom:1px solid #f0f0f0}
 </style>
 </head>
 <body>
+<script src="/atlas.js"></script>
 
-<div class="topbar">
-  <div class="logo"><a href="/"><span>元策</span>·擎天</a></div>
-  <nav>
-    <a href="/">首页</a><a href="/quotation">报价</a><a href="/parts">配件</a><a href="/customers">客户</a><a href="/rules">规则</a><a href="/history">历史</a><a href="/stock">📦库存</a><a href="/agents">🤖智能体</a><a href="/trade">🌍贸易</a><a href="#" onclick="logout()">退出</a>
-  </nav>
 </div>
 
 <div class="container">
@@ -122,7 +118,7 @@ td{padding:8px 10px;border-bottom:1px solid #f0f0f0}
 <div class="toast" id="toast"></div>
 
 <script>
-const token = localStorage.getItem('atlas_token');
+const token = getToken();
 if (!token) location = '/login';
 function auth() { return { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' }; }
 function logout() { localStorage.removeItem('atlas_token'); location = '/login'; }
@@ -158,7 +154,7 @@ async function translateInquiry() {
   document.getElementById('translatedText').textContent = '';
   setStep(2);
   try {
-    const r = await fetch('/api/translate', {
+    const r = await api('POST', '/api/translate', 
       method: 'POST', headers: auth(),
       body: JSON.stringify({ text: inquiryText, source_lang: sourceLang, target_lang: 'zh' })
     });
@@ -186,7 +182,7 @@ async function extractItems() {
   document.getElementById('itemsTable').innerHTML = '';
   setStep(3);
   try {
-    const r = await fetch('/api/inquiry/process', {
+    const r = await api('POST', '/api/inquiry/process', 
       method: 'POST', headers: auth(),
       body: JSON.stringify({ text: inquiryText, language: sourceLang, customer: '' })
     });
@@ -244,7 +240,7 @@ async function generatePIDraft() {
   document.getElementById('piContent').textContent = '';
   setStep(4);
   try {
-    const r = await fetch('/api/pi/generate', {
+    const r = await api('POST', '/api/pi/generate', 
       method: 'POST', headers: auth(),
       body: JSON.stringify({ inquiry_text: inquiryText, items: extractedItems, customer_name: '', trade_term: 'FOB', payment_term: 'prepaid', currency: 'USD' })
     });
@@ -297,7 +293,7 @@ async function processAll() {
   document.getElementById('piLoading').style.display = '';
   document.getElementById('piContent').textContent = '';
   try {
-    const r = await fetch('/api/inquiry/process', {
+    const r = await api('POST', '/api/inquiry/process', 
       method: 'POST', headers: auth(),
       body: JSON.stringify({ text: inquiryText, language: sourceLang, customer: '' })
     });
@@ -345,5 +341,7 @@ function esc(s) {
   return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 </script>
+
+<script>initAtlas("trade")</script>
 </body>
 </html>

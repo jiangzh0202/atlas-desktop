@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>配件查询 · 元策擎天</title>
+<title>配件查询 · 擎天擎天</title>
 <style>
 :root{--bg:#f2f2f4;--card:#fff;--green:#7ecf5e;--green-soft:#e8f7e0;--text:#1a1a2e;--muted:#888;--red:#e94560;--amber:#f59e0b;--blue:#3b82f6;--line:rgba(0,0,0,0.06)}
 *{margin:0;padding:0;box-sizing:border-box}
@@ -50,20 +50,10 @@ tr:hover td{background:#fafafa}
 .meta-item .val{font-weight:500}
 </style></head>
 <body>
+<script src="/atlas.js"></script>
 <div class="topbar">
-  <div class="logo"><span>元策</span>·擎天</div>
-  <nav>
-    <a href="/">📊 首页</a>
-    <a href="/quotation">📋 报价</a>
-    <a href="/parts" class="active">🔧 配件</a>
-    <a href="/customers">👥 客户</a>
-    <a href="/rules">📐 规则</a>
-    <a href="/history">📜 历史</a>
-    <a href="/stock">📦 库存</a>
-    <a href="/agents">🤖 智能体</a>
-    <a href="/trade">🌍 贸易</a>
-    <a href="#" onclick="logout()" style="color:var(--red)">退出</a>
-  </nav>
+  <div class="logo"><span>擎天</span>·擎天</div>
+  
 </div>
 
 <div class="container">
@@ -88,7 +78,7 @@ tr:hover td{background:#fafafa}
 </div>
 
 <script>
-if(!localStorage.getItem('atlas_token'))location='/login';
+if(!getToken())location='/login';
 function logout(){localStorage.removeItem('atlas_token');location='/login'}
 
 let allData=[], page=1, pageSize=15, searchTimer;
@@ -96,7 +86,7 @@ let allData=[], page=1, pageSize=15, searchTimer;
 // Load brands for filter
 async function loadBrands(){
   try{
-    const r=await fetch('/api/parts?q=ALL&limit=200');
+    const r=await api('GET', '/api/parts?q=ALL&limit=200');
     const d=await r.json();
     if(!d.ok)return;
     // Extract unique brands from results
@@ -201,4 +191,6 @@ function debounceSearch(){clearTimeout(searchTimer);searchTimer=setTimeout(searc
 function clearSearch(){document.getElementById('searchQ').value='';document.getElementById('brandFilter').value='';document.getElementById('modeFilter').value='';allData=[];document.getElementById('resultTable').innerHTML='<div class="empty">输入条件开始搜索</div>';document.getElementById('pagination').innerHTML='';document.getElementById('totalCount').textContent=''}
 
 loadBrands();
-</script></body></html>
+</script>
+<script>initAtlas("parts")</script>
+</body></html>

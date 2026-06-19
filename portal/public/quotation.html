@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>报价工作台 · 元策擎天</title>
+<title>报价工作台 · 擎天擎天</title>
 <style>
 :root{--bg:#f2f2f4;--card:#fff;--green:#7ecf5e;--text:#1a1a2e;--muted:#888;--red:#e94560;--amber:#f59e0b}
 *{margin:0;padding:0;box-sizing:border-box}
@@ -36,9 +36,8 @@ td{padding:8px 10px;border-bottom:1px solid #f0f0f0}
 </style>
 </head>
 <body>
-<div class="topbar">
-  <div class="logo"><a href="/" style="text-decoration:none;color:inherit"><span>元策</span>·擎天</a></div>
-  <div><a href="/">首页</a><a href="/quotation">报价</a><a href="/parts">配件</a><a href="/customers">客户</a><a href="/rules">规则</a><a href="/history">历史</a><a href="/stock">📦库存</a><a href="/agents">🤖智能体</a><a href="/trade">🌍贸易</a><a href="#" onclick="logout()">退出</a></div>
+<script src="/atlas.js"></script>
+<div><a href="/">首页</a><a href="/quotation">报价</a><a href="/parts">配件</a><a href="/customers">客户</a><a href="/rules">规则</a><a href="/history">历史</a><a href="/stock">📦库存</a><a href="/agents">🤖智能体</a><a href="/trade">🌍贸易</a><a href="#" onclick="logout()">退出</a></div>
 </div>
 <div class="container">
 
@@ -106,7 +105,7 @@ td{padding:8px 10px;border-bottom:1px solid #f0f0f0}
 <div class="toast" id="toast"></div>
 
 <script>
-const token=localStorage.getItem('atlas_token');
+const token=getToken();
 if(!token) location='/login';
 function auth(){ return {'Authorization':'Bearer '+token} }
 
@@ -117,7 +116,7 @@ async function uploadFile(file){
   if(!file) return;
   showToast('解析中...','ok');
   const fd=new FormData(); fd.append('file',file);
-  const r=await fetch('/api/parse',{method:'POST',body:fd});
+  const r=await api('POST', '/api/parse', method:'POST',body:fd});
   const d=await r.json();
   if(!d.ok){ showToast('解析失败: '+d.error,'err'); return; }
   
@@ -152,7 +151,7 @@ function renderPreview(items){
 // ─── Generate Quote ───
 async function generateQuote(){
   showToast('算价中...','ok');
-  const r=await fetch('/api/quote',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({items:parsedItems,customer_id:'',trade_term:'FOB',payment_term:'prepaid'})});
+  const r=await api('POST', '/api/quote', method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({items:parsedItems,customer_id:'',trade_term:'FOB',payment_term:'prepaid'})});
   const d=await r.json();
   if(!d.ok){ showToast('报价失败: '+d.error,'err'); return }
   
@@ -238,4 +237,6 @@ dropZone.addEventListener('dragover',e=>{e.preventDefault();dropZone.classList.a
 dropZone.addEventListener('dragleave',()=>dropZone.classList.remove('dragover'));
 dropZone.addEventListener('drop',e=>{e.preventDefault();dropZone.classList.remove('dragover');uploadFile(e.dataTransfer.files[0])});
 </script>
+
+<script>initAtlas("quotation")</script>
 </body></html>

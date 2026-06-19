@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>采购管理 · 擎天·擎天</title>
+<link rel="stylesheet" href="style.css">
+<style>
+.procure-layout{display:grid;grid-template-columns:1fr 360px;gap:20px;max-width:1400px;margin:0 auto}
+.procure-main{display:flex;flex-direction:column;gap:16px}
+.procure-side{display:flex;flex-direction:column;gap:16px}
+.card{padding:20px;border-radius:14px}
+.order-table{width:100%;border-collapse:collapse}
+.order-table th{text-align:left;padding:10px 8px;font-size:13px;color:var(--text-secondary);border-bottom:1px solid var(--border)}
+.order-table td{padding:10px 8px;font-size:14px;border-bottom:1px solid var(--border-light)}
+.order-table tr:hover{background:rgba(126,207,94,0.04)}
+.btn{padding:8px 16px;border-radius:8px;border:none;cursor:pointer;font-size:13px;font-weight:500;transition:all .2s}
+.btn-primary{background:linear-gradient(135deg,#7ecf5e,#5cb85c);color:#fff}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(126,207,94,.3)}
+.btn-ghost{border:1px solid var(--border);background:transparent;color:var(--text)}
+.btn-ghost:hover{background:var(--bg)}
+.btn-danger{background:#e74c3c;color:#fff}
+.badge{display:inline-block;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:600}
+.badge-draft{background:#f0f0f0;color:#888}
+.badge-pending{background:#fff3cd;color:#856404}
+.badge-approved{background:#d4edda;color:#155724}
+.badge-ordered{background:#cce5ff;color:#004085}
+.status-bar{display:flex;gap:12px;flex-wrap:wrap}
+.stat-card{flex:1;min-width:90px;padding:14px;border-radius:12px;text-align:center;background:var(--card);border:1px solid var(--border)}
+.stat-card .num{font-size:24px;font-weight:700;color:var(--primary)}
+.stat-card .lbl{font-size:12px;color:var(--text-secondary);margin-top:4px}
+input,select,textarea{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px;background:var(--bg);color:var(--text);box-sizing:border-box}
+input:focus,select:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(126,207,94,.1)}
+label{font-size:13px;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:4px}
+.form-row{display:flex;gap:12px}
+.form-row>*{flex:1}
+.item-row{display:flex;gap:8px;align-items:flex-end;margin-bottom:8px;padding:8px;background:var(--bg);border-radius:8px}
+.item-row input{flex:1}
+.item-row .qty{max-width:80px}
+.item-row .price{max-width:100px}
+.toast{position:fixed;top:20px;right:20px;padding:12px 20px;border-radius:10px;color:#fff;font-size:14px;z-index:999;animation:slideIn .3s ease}
+.toast-ok{background:#7ecf5e}
+.toast-err{background:#e74c3c}
+@keyframes slideIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
+.nav{display:flex;align-items:center;gap:4px;padding:12px 20px;margin-bottom:16px}
+.nav a{padding:8px 16px;border-radius:8px;text-decoration:none;font-size:14px;color:var(--text);transition:all .2s}
+.nav a:hover,.nav a.active{background:rgba(126,207,94,.12);color:var(--primary)}
+.nav .right{margin-left:auto;display:flex;align-items:center;gap:12px}
+.quota-bar{height:8px;border-radius:4px;background:var(--border);overflow:hidden;margin-top:8px}
+.quota-bar .fill{height:100%;background:var(--primary);border-radius:4px;transition:width .3s}
+.empty-state{text-align:center;padding:40px 20px;color:var(--text-secondary)}
+.empty-state .icon{font-size:48px;margin-bottom:12px}
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+<script src="/atlas.js"></script>
+<div id="app">
+  <!-- 导航 -->
+  
+
+  <!-- 状态栏 -->
+  <div class="status-bar" style="max-width:1400px;margin:0 auto 16px">
+    <div class="stat-card"><div class="num" id="statOrders">0</div><div class="lbl">本月采购单</div></div>
+    <div class="stat-card"><div class="num" id="statSKU">0</div><div class="lbl">SKU 数</div></div>
+    <div class="stat-card"><div class="num" id="statUnits">0</div><div class="lbl">采购单元</div></div>
+    <div class="stat-card"><div class="num" id="statPending">0</div><div class="lbl">待审批</div></div>
+    <div class="stat-card">
+      <div class="lbl" style="margin-bottom:4px">采购配额</div>
+      <div class="quota-bar"><div class="fill" id="quotaFill" style="width:0%"></div></div>
+      <div style="font-size:11px;margin-top:4px"><span id="quotaText">0/0</span> 单元 (1单元=20 SKU)</div>
+    </div>
+  </div>
+
+  <div class="procure-layout">
+    <!-- 左侧：订单列表 -->
+    <div class="procure-main">
+      <div class="card" style="display:flex;justify-content:space-between;align-items:center">
+        <h2 style="margin:0;font-size:18px">📦 采购订单</h2>
+        <button class="btn btn-primary" onclick="showCreate()">+ 新建采购单</button>
+      </div>
+      <div class="card" id="orderList">
+        <div class="empty-state"><div class="icon">📦</div><p>暂无采购订单</p><p style="font-size:13px">点击「新建采购单」开始</p></div>
+      </div>
+    </div>
+
+    <!-- 右侧：新建/详情面板 -->
+    <div class="procure-side">
+      <!-- 新建表单 -->
+      <div class="card" id="createForm" style="display:none">
+        <h3 style="margin:0 0 16px">新建采购单</h3>
+        <label>供应商</label>
+        <input id="supplier" placeholder="供应商名称">
+        <label style="margin-top:12px">采购明细 (每行一个配件)</label>
+        <div id="itemsContainer">
+          <div class="item-row">
+            <input placeholder="OE号" class="oe">
+            <input placeholder="品名" class="name">
+            <input type="number" value="1" min="1" class="qty" placeholder="数量">
+            <input type="number" step="0.01" class="price" placeholder="单价">
+            <button class="btn btn-ghost" onclick="this.parentElement.remove()" style="padding:6px 8px">✕</button>
+          </div>
+        </div>
+        <button class="btn btn-ghost" onclick="addItemRow()" style="width:100%;margin-top:8px">+ 添加配件</button>
+        <div style="margin-top:12px;font-size:13px;color:var(--text-secondary)">
+          SKU 数: <strong id="skuCount">1</strong> → 采购单元: <strong id="unitCalc">1</strong>
+        </div>
+        <div style="margin-top:16px;display:flex;gap:8px">
+          <button class="btn btn-primary" style="flex:1" onclick="createOrder()">提交采购单</button>
+          <button class="btn btn-ghost" onclick="hideCreate()">取消</button>
+        </div>
+      </div>
+
+      <!-- 订单详情 -->
+      <div class="card" id="detailPanel" style="display:none">
+        <h3 style="margin:0 0 4px" id="detailTitle">采购单详情</h3>
+        <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px" id="detailMeta"></div>
+        <div id="detailLines"></div>
+        <div style="margin-top:12px;font-size:14px;font-weight:600">
+          合计: ¥<span id="detailTotal">0</span> | SKU: <span id="detailSKU">0</span> | 单元: <span id="detailUnits">0</span>
+        </div>
+        <div id="detailActions" style="margin-top:12px;display:flex;gap:8px"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = '/api';
+let token = getToken() || '';
+let user = null;
+
+// ─── Init ───
+async function init() {
+  if (!token) { window.location.href = '/login'; return; }
+  try {
+    const r = await fetch(API + '/me', { headers: { Authorization: 'Bearer ' + token } });
+    const d = await r.json();
+    if (!d.ok) throw new Error('auth');
+    user = d.data;
+    document.getElementById('userInfo').textContent = (user.name || user.email) + ' [' + (user.role_label || user.role) + ']';
+
+    // 按角色显示导航
+    const role = user.role;
+    document.querySelector('.nav-quotation').classList.toggle('hidden', !['quoter','manager','boss'].includes(role));
+    document.querySelector('.nav-procurement').classList.toggle('hidden', !['purchaser','manager','boss'].includes(role));
+    document.querySelector('.nav-admin').classList.toggle('hidden', !['manager','boss','admin'].includes(role));
+
+    await loadOrders();
+  } catch(e) {
+    localStorage.removeItem('atlas_token');
+    window.location.href = '/login';
+  }
+}
+
+// ─── API Helper ───
+}
+
+// ─── Create Form ───
+function showCreate() {
+  document.getElementById('createForm').style.display = 'block';
+  document.getElementById('detailPanel').style.display = 'none';
+  updateSKUCount();
+}
+
+function hideCreate() {
+  document.getElementById('createForm').style.display = 'none';
+}
+
+function addItemRow() {
+  const container = document.getElementById('itemsContainer');
+  const row = document.createElement('div');
+  row.className = 'item-row';
+  row.innerHTML = `
+    <input placeholder="OE号" class="oe">
+    <input placeholder="品名" class="name">
+    <input type="number" value="1" min="1" class="qty" placeholder="数量">
+    <input type="number" step="0.01" class="price" placeholder="单价">
+    <button class="btn btn-ghost" onclick="this.parentElement.remove();updateSKUCount()" style="padding:6px 8px">✕</button>
+  `;
+  container.appendChild(row);
+  updateSKUCount();
+  // Attach listeners
+  row.querySelectorAll('input').forEach(inp => inp.addEventListener('input', updateSKUCount));
+}
+
+function updateSKUCount() {
+  const rows = document.querySelectorAll('#itemsContainer .item-row');
+  const count = rows.length;
+  document.getElementById('skuCount').textContent = count;
+  document.getElementById('unitCalc').textContent = Math.ceil(count / 20);
+}
+
+async function createOrder() {
+  const rows = document.querySelectorAll('#itemsContainer .item-row');
+  const items = [];
+  rows.forEach(r => {
+    const oe = r.querySelector('.oe').value.trim();
+    const name = r.querySelector('.name').value.trim();
+    const qty = parseInt(r.querySelector('.qty').value) || 1;
+    const price = parseFloat(r.querySelector('.price').value) || 0;
+    if (oe || name) items.push({ oe_number: oe, name_cn: name, quantity: qty, unit_price: price });
+  });
+
+  if (!items.length) return toast('请添加至少一个配件', false);
+
+  const supplier = document.getElementById('supplier').value.trim();
+
+  const d = await api('POST', '/procurement/orders', { supplier, items });
+  if (d.ok) {
+    toast(`采购单已创建 (${d.data.sku_count} SKU, ${d.data.units} 单元)`);
+    hideCreate();
+    // Reset form
+    document.getElementById('supplier').value = '';
+    document.getElementById('itemsContainer').innerHTML = `
+      <div class="item-row">
+        <input placeholder="OE号" class="oe">
+        <input placeholder="品名" class="name">
+        <input type="number" value="1" min="1" class="qty" placeholder="数量">
+        <input type="number" step="0.01" class="price" placeholder="单价">
+        <button class="btn btn-ghost" onclick="this.parentElement.remove();updateSKUCount()" style="padding:6px 8px">✕</button>
+      </div>`;
+    loadOrders();
+  } else {
+    toast(d.error || '创建失败', false);
+  }
+}
+
+// ─── Detail ───
+async function showDetail(orderId) {
+  document.getElementById('createForm').style.display = 'none';
+  const panel = document.getElementById('detailPanel');
+  panel.style.display = 'block';
+
+  const d = await api('GET', '/procurement/orders/' + orderId);
+  if (!d.ok) return toast('加载失败', false);
+
+  const o = d.data.order;
+  const lines = d.data.lines || [];
+
+  document.getElementById('detailTitle').textContent = o.id;
+  document.getElementById('detailMeta').textContent = `供应商: ${o.supplier||'-'} | 状态: ${o.status} | ${(o.created_at||'').slice(0,16)}`;
+  document.getElementById('detailSKU').textContent = o.sku_count;
+  document.getElementById('detailUnits').textContent = o.units || 0;
+
+  let total = 0;
+  let lineHTML = '<table class="order-table"><thead><tr><th>OE号</th><th>品名</th><th>数量</th><th>单价</th><th>小计</th></tr></thead><tbody>';
+  lines.forEach(l => {
+    const sub = (l.quantity||1) * (l.unit_price||0);
+    total += sub;
+    lineHTML += `<tr><td>${l.oe_number||'-'}</td><td>${l.name_cn||'-'}</td><td>${l.quantity||1}</td><td>¥${(l.unit_price||0).toFixed(2)}</td><td>¥${sub.toFixed(2)}</td></tr>`;
+  });
+  lineHTML += '</tbody></table>';
+  document.getElementById('detailLines').innerHTML = lineHTML;
+  document.getElementById('detailTotal').textContent = total.toLocaleString();
+
+  // Actions
+  let actions = '';
+  if (o.status === 'draft') {
+    actions += '<button class="btn btn-primary" onclick="updateStatus(\''+orderId+'\',\'pending_approval\')">提交审批</button>';
+  }
+  if (o.status === 'pending_approval' && ['manager','boss'].includes(user.role)) {
+    actions += '<button class="btn btn-primary" onclick="updateStatus(\''+orderId+'\',\'approved\')">✅ 批准</button>';
+    actions += '<button class="btn btn-danger" onclick="updateStatus(\''+orderId+'\',\'cancelled\')">❌ 拒绝</button>';
+  }
+  if (o.status === 'approved' && ['purchaser','manager','boss'].includes(user.role)) {
+    actions += '<button class="btn btn-primary" onclick="updateStatus(\''+orderId+'\',\'ordered\')">📤 已下单</button>';
+  }
+  if (o.status === 'ordered') {
+    actions += '<button class="btn btn-primary" onclick="updateStatus(\''+orderId+'\',\'received\')">📥 确认收货</button>';
+  }
+  document.getElementById('detailActions').innerHTML = actions;
+}
+
+async function updateStatus(orderId, status) {
+  const d = await api('PATCH', '/procurement/orders/' + orderId, { status });
+  if (d.ok) {
+    toast('状态已更新: ' + status);
+    showDetail(orderId);
+    loadOrders();
+  } else {
+    toast(d.error || '更新失败', false);
+  }
+}
+
+// ─── Logout ───
+function logout() {
+  localStorage.removeItem('atlas_token');
+  window.location.href = '/login';
+}
+
+document.addEventListener('DOMContentLoaded', init);
+document.querySelectorAll('#itemsContainer .item-row input').forEach(inp => {
+  inp.addEventListener('input', updateSKUCount);
+});
+</script>
+
+<script>initAtlas("procurement")</script>
+</body>
+</html>

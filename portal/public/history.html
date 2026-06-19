@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>报价历史 · 元策擎天</title>
+<title>报价历史 · 擎天擎天</title>
 <style>
 :root{--bg:#f2f2f4;--card:#fff;--green:#7ecf5e;--green-soft:#e8f7e0;--text:#1a1a2e;--muted:#888;--red:#e94560;--amber:#f59e0b;--blue:#3b82f6;--line:rgba(0,0,0,0.06)}
 *{margin:0;padding:0;box-sizing:border-box}
@@ -61,20 +61,10 @@ tr:hover td{background:#fafafa}
 @keyframes spin{to{transform:rotate(360deg)}}
 </style></head>
 <body>
+<script src="/atlas.js"></script>
 <div class="topbar">
-  <div class="logo"><span>元策</span>·擎天</div>
-  <nav>
-    <a href="/">📊 首页</a>
-    <a href="/quotation">📋 报价</a>
-    <a href="/parts">🔧 配件</a>
-    <a href="/customers">👥 客户</a>
-    <a href="/rules">📐 规则</a>
-    <a href="/history" class="active">📜 历史</a>
-    <a href="/stock">📦 库存</a>
-    <a href="/agents">🤖 智能体</a>
-    <a href="/trade">🌍 贸易</a>
-    <a href="#" onclick="logout()" style="color:var(--red)">退出</a>
-  </nav>
+  <div class="logo"><span>擎天</span>·擎天</div>
+  
 </div>
 
 <div class="container">
@@ -106,7 +96,7 @@ tr:hover td{background:#fafafa}
 </div>
 
 <script>
-if(!localStorage.getItem('atlas_token'))location='/login';
+if(!getToken())location='/login';
 function logout(){localStorage.removeItem('atlas_token');location='/login'}
 
 let allData=[], page=1, pageSize=15;
@@ -116,7 +106,7 @@ async function loadHistory(){
   const el=document.getElementById('historyTable');
   el.innerHTML='<div class="empty"><span class="spinner"></span>加载中...</div>';
   try{
-    const r=await fetch('/api/history');
+    const r=await api('GET', '/api/history');
     const d=await r.json();
     if(!d.ok){el.innerHTML='<div class="empty">加载失败: '+d.error+'</div>';return}
 
@@ -210,4 +200,6 @@ function closeTrace(){document.getElementById('traceModal').classList.remove('sh
 document.getElementById('traceModal').addEventListener('click',function(e){if(e.target===this)closeTrace()});
 
 loadHistory();
-</script></body></html>
+</script>
+<script>initAtlas("history")</script>
+</body></html>

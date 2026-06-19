@@ -1,0 +1,51 @@
+# ═══════════════════════════════════════════════════════════
+# 元策·擎天 应用配置
+# 唯一配置源。修改此文件后重启服务即刻生效。
+# ═══════════════════════════════════════════════════════════
+
+name: "元策·擎天"
+version: "3.1.0"
+debug: false
+
+# ─── 服务端口 ───
+server:
+  api_port: 3095
+  portal_port: 3093
+  ws_port: 3096
+  bridge_port: 3098
+
+# ─── JWT ───
+jwt:
+  secret: "atlas-v3-modular-2026"
+  algorithm: "HS256"
+  expiry_hours: 168
+
+# ─── 数据库 ───
+db:
+  path: "data/atlas.db"
+  pool_size: 5
+
+# ─── 分页默认值 ───
+pagination:
+  parts_limit: 20
+  aliases_limit: 5
+  history_limit: 50
+  orders_limit: 20
+  customers_limit: 100
+  stock_limit: 100
+
+# ─── 采购计费 ───
+procurement:
+  sku_per_unit: 20
+
+# ─── 初始管理员 ───
+admin:
+  email: "admin"
+  password: "admin123"
+  name: "系统管理员"
+  role: "boss"
+
+# ─── 日志 ───
+logging:
+  level: "INFO"
+  dir: "logs/"

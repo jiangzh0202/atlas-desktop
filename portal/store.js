@@ -21,6 +21,7 @@ function loadState() {
       const parsed = JSON.parse(raw);
       state.users = parsed.users || {};
       state.agents = parsed.agents || [];
+      state.plans_config = parsed.plans_config || null;
       state.model_config = parsed.model_config || {
         free:     { model: "deepseek-chat",   temperature: 0.7, max_tokens: 1200 },
         basic:    { model: "deepseek-chat",   temperature: 0.5, max_tokens: 1500 },
@@ -116,15 +117,15 @@ function sanitizeUser(user) {
 const PLANS = {
   quoter: {
     free:   { name: "免费试用", price_month: 0, price_year: 0, quota: 1, unit_price: "-", max_channels: 0 },
-    basic:  { name: "入门", price_month: 998, price_year: 10180, quota: 50, unit_price: "20.0", max_channels: 1 },
-    standard: { name: "标准", price_month: 2980, price_year: 29800, quota: 200, unit_price: "14.9", max_channels: 2 },
-    pro:    { name: "专业", price_month: 5980, price_year: 59800, quota: 500, unit_price: "12.0", max_channels: 3 }
+    basic:  { name: "入门", price_month: 998, price_year: 10778, quota: 50, unit_price: "20.0", max_channels: 1 },
+    standard: { name: "标准", price_month: 2980, price_year: 32184, quota: 200, unit_price: "14.9", max_channels: 2 },
+    pro:    { name: "专业", price_month: 5980, price_year: 64584, quota: 500, unit_price: "12.0", max_channels: 3 }
   },
   developer: {
     free:   { name: "免费试用", price_month: 0, price_year: 0, quota: 1, unit_price: "-", max_channels: 0 },
-    standard: { name: "标准", price_month: 998, price_year: 10180, quota: 100, unit_price: "9.98", max_channels: 2 },
-    pro:    { name: "专业", price_month: 3980, price_year: 40600, quota: 500, unit_price: "7.96", max_channels: 3 },
-    enterprise: { name: "企业", price_month: 7900, price_year: 78000, quota: 1000, unit_price: "7.90", max_channels: 3 }
+    standard: { name: "标准", price_month: 998, price_year: 10778, quota: 100, unit_price: "9.98", max_channels: 2 },
+    pro:    { name: "专业", price_month: 3980, price_year: 42984, quota: 500, unit_price: "7.96", max_channels: 3 },
+    enterprise: { name: "企业", price_month: 7900, price_year: 85320, quota: 1000, unit_price: "7.90", max_channels: 3 }
   }
 };
 
@@ -225,6 +226,14 @@ function getOrder(id) {
 
 function getUserOrders(userId) {
   return state.orders.filter(o => o.user_id === userId).sort((a, b) => b.created_at.localeCompare(a.created_at));
+}
+
+function listAllOrders() {
+  const enriched = state.orders.map(o => {
+    const user = state.users[o.user_id];
+    return { ...o, user_email: user ? user.email : o.user_id, user_company: user ? user.company : '' };
+  });
+  return enriched.sort((a, b) => b.created_at.localeCompare(a.created_at));
 }
 
 function markOrderPaid(trade_no) {
@@ -374,14 +383,121 @@ function updateModelConfig(tier, config) {
   return state.model_config[tier];
 }
 
+// ─── 套餐管理 ───
+function getPlansConfig() {
+  if (state.plans_config) return state.plans_config;
+  // Default: return hardcoded PLANS
+  return JSON.parse(JSON.stringify(PLANS));
+}
+
+function updatePlansConfig(type, tierKey, updates) {
+  if (!state.plans_config) {
+    state.plans_config = JSON.parse(JSON.stringify(PLANS));
+  }
+  if (!state.plans_config[type]) state.plans_config[type] = {};
+  state.plans_config[type][tierKey] = { ...state.plans_config[type][tierKey], ...updates };
+  saveState();
+  return state.plans_config[type][tierKey];
+}
+
+function addPlanTier(type, tierKey, planData) {
+  if (!state.plans_config) {
+    state.plans_config = JSON.parse(JSON.stringify(PLANS));
+  }
+  if (!state.plans_config[type]) state.plans_config[type] = {};
+  state.plans_config[type][tierKey] = {
+    name: planData.name || tierKey,
+    price_month: parseInt(planData.price_month) || 0,
+    price_year: parseInt(planData.price_year) || 0,
+    quota: parseInt(planData.quota) || 10,
+    max_channels: parseInt(planData.max_channels) || 0,
+    unit_price: planData.unit_price || "0"
+  };
+  saveState();
+  return state.plans_config[type][tierKey];
+}
+
+function deletePlanTier(type, tierKey) {
+  if (!state.plans_config || !state.plans_config[type]) return false;
+  delete state.plans_config[type][tierKey];
+  saveState();
+  return true;
+}
+
+function resetPlansToDefault() {
+  state.plans_config = null;
+  saveState();
+  return PLANS;
+}
+
+// ─── 自动代理升级：客户买年付套餐 → 自动成为代理 ───
+const AGENT_AUTO_UPGRADE = {
+  standard:   { level: "ambassador", discount: 0.85, name: "推广大使" },
+  pro:        { level: "regional",   discount: 0.80, name: "区域代理" },
+  enterprise: { level: "city",       discount: 0.75, name: "城市总代" },
+};
+
+function autoUpgradeToAgent(userId, planKey) {
+  const user = state.users[userId];
+  if (!user) return null;
+
+  const upgrade = AGENT_AUTO_UPGRADE[planKey];
+  if (!upgrade) return null;
+
+  // 检查是否已经是代理
+  const existing = (state.agents || []).find(a => a.user_id === userId);
+  if (existing) {
+    // 如果已有代理但等级更低，升级
+    const levelOrder = { ambassador: 1, regional: 2, city: 3 };
+    if (levelOrder[existing.level] < levelOrder[upgrade.level]) {
+      existing.level = upgrade.level;
+      existing.discount = upgrade.discount;
+      existing.updated_at = new Date().toISOString();
+      saveState();
+      return existing;
+    }
+    return null; // 已是最优等级，不变
+  }
+
+  // 新建代理记录
+  const now = new Date().toISOString();
+  const agent = {
+    id: "agt_" + Date.now().toString(36),
+    user_id: userId,
+    name: user.company || user.email,
+    city: "",
+    phone: "",
+    wechat: "",
+    discount: upgrade.discount,
+    commission: 0.10,
+    level: upgrade.level,
+    deposit: 0,
+    bulk_count: 0,
+    min_sales: upgrade.level === "city" ? 100000 : (upgrade.level === "regional" ? 40000 : 10000),
+    trial_months: 0,
+    customers: [],
+    total_sales: 0,
+    total_commission: 0,
+    status: "active",
+    source: "auto_upgrade",  // 标记：自动从客户升级
+    created_at: now,
+    updated_at: now
+  };
+  state.agents.push(agent);
+  saveState();
+  return agent;
+}
+
 module.exports = {
   loadState, saveState, hashPassword,
   createUser, findByEmail, getUser, listAllUsers, verifyLogin, sanitizeUser,
   getPlans, updateUserPlan, getUserQuota, useQuota,
-  createOrder, getOrder, getUserOrders, markOrderPaid,
+  createOrder, getOrder, getUserOrders, markOrderPaid, listAllOrders,
   requestInvoice, getUserInvoices,
   getMaxChannels, getBoundChannels, bindChannel, getUserByChannelAppId, useChannelQuota,
   createAgent, getAgents, getAgent, updateAgent, deleteAgent, getAgentsByCity,
+  autoUpgradeToAgent, AGENT_AUTO_UPGRADE,
+  getPlansConfig, updatePlansConfig, addPlanTier, deletePlanTier, resetPlansToDefault,
   getModelConfig, updateModelConfig,
   PLANS
 };

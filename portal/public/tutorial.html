@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>通道配置教程 — 擎天 Atlas</title>
+<style>
+:root{--bg:#0a0a0a;--card:#141414;--border:#2a2a2a;--text:#f0f0f0;--muted:#888;--accent:#fff;--green:#00ff88;--green-bg:rgba(0,255,136,0.08);--red:#ff4d4f}
+[data-theme="light"]{--bg:#f2f2f4;--card:#ffffff;--border:#d0d0d5;--text:#1a1a1e;--muted:#666;--accent:#1a1a1e;--green:#00cc66;--green-bg:rgba(0,204,102,0.08);--red:#e03a3a}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--text);min-height:100vh;line-height:1.6;transition:background .3s,color .3s}
+a{color:var(--green);text-decoration:none}
+a:hover{text-decoration:underline}
+
+/* Nav */
+.nav{display:flex;justify-content:space-between;align-items:center;padding:16px 40px;border-bottom:1px solid var(--border);position:sticky;top:0;background:rgba(10,10,10,0.9);backdrop-filter:blur(12px);z-index:100}
+[data-theme="light"] .nav{background:rgba(242,242,244,0.9)}
+.nav .logo{font-size:1.1rem;font-weight:700}
+.nav .logo span{color:var(--green)}
+.nav .back{font-size:.88rem;color:var(--muted)}
+.nav .back:hover{color:var(--text)}
+.th-btn{width:34px;height:34px;display:flex;align-items:center;justify-content:center;border-radius:50%;border:1px solid var(--border);background:transparent;cursor:pointer;font-size:1rem;color:var(--muted);transition:all .15s;flex-shrink:0;line-height:1}
+.th-btn:hover{color:var(--text);border-color:var(--muted)}
+
+/* Page */
+.page{max-width:860px;margin:0 auto;padding:40px 24px 80px}
+.page h1{font-size:2rem;font-weight:800;margin-bottom:8px;letter-spacing:-0.5px}
+.page .subtitle{color:var(--muted);font-size:.95rem;margin-bottom:40px}
+
+/* Channel Tabs */
+.tabs{display:flex;gap:8px;margin-bottom:32px;flex-wrap:wrap}
+.tab{padding:8px 20px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;font-size:.88rem;transition:all .15s}
+.tab:hover{color:var(--text);border-color:var(--muted)}
+.tab.active{background:var(--green);color:var(--bg);border-color:var(--green);font-weight:600}
+
+/* Channel Content */
+.channel-content{display:none}
+.channel-content.active{display:block}
+
+/* Step */
+.step{margin-bottom:24px;padding:20px 24px;background:var(--card);border:1px solid var(--border);border-radius:12px;display:flex;gap:16px;align-items:flex-start}
+.step .num{flex-shrink:0;width:32px;height:32px;border-radius:50%;background:var(--green);color:var(--bg);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.88rem}
+.step .body{flex:1;font-size:.92rem;line-height:1.7}
+.step .body b{color:var(--accent)}
+.step .body .code{display:inline-block;background:var(--bg);border:1px solid var(--border);padding:2px 8px;border-radius:4px;font-family:"SF Mono","Cascadia Code","Consolas",monospace;font-size:.84rem;color:var(--green);word-break:break-all}
+.step .body .warn{display:block;margin-top:8px;padding:8px 12px;border-radius:6px;background:rgba(255,77,79,0.1);border-left:3px solid var(--red);color:var(--red);font-size:.84rem}
+
+/* Buttons */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:8px;font-size:.84rem;font-weight:600;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--text);transition:all .15s;text-decoration:none;margin-top:8px}
+.btn:hover{background:var(--card);border-color:var(--muted)}
+.btn-green{background:var(--green);color:var(--bg);border-color:var(--green);font-weight:600}
+.btn-green:hover{opacity:.9;background:var(--green)}
+.btn-copy{background:var(--green-bg);border-color:var(--green);color:var(--green)}
+.btn-copy:hover{background:var(--green);color:var(--bg)}
+.btn-copy.copied{background:var(--green);color:var(--bg)}
+
+/* Config Fields Table */
+.fields-table{width:100%;border-collapse:collapse;margin-top:8px}
+.fields-table td{padding:8px 12px;font-size:.86rem;border-bottom:1px solid var(--border)}
+.fields-table td:first-child{color:var(--muted);width:140px;font-weight:500}
+.fields-table .val{font-family:"SF Mono","Cascadia Code","Consolas",monospace;font-size:.82rem;color:var(--green)}
+
+/* Links */
+.links{margin-top:32px;padding:16px 24px;background:var(--card);border:1px solid var(--border);border-radius:12px}
+.links h3{font-size:.95rem;margin-bottom:12px}
+.links a{display:inline-block;margin-right:20px;margin-bottom:6px}
+
+/* Footer */
+.footer{text-align:center;padding:40px 0;color:var(--muted);font-size:.82rem;border-top:1px solid var(--border)}
+
+@media (max-width:640px){
+  .nav{padding:16px 20px}
+  .page{padding:24px 16px 60px}
+  .step{flex-direction:column;gap:10px}
+}
+</style>
+</head>
+<body>
+<nav class="nav">
+  <div class="logo">擎天<span>Atlas</span> · 通道配置教程</div>
+  <div style="display:flex;align-items:center;gap:12px">
+    <button class="th-btn" onclick="toggleTheme()" id="thBtn" title="切换主题">🌓</button>
+    <a href="/desktop" class="back">← 返回控制台</a>
+  </div>
+</nav>
+
+<div class="page">
+  <h1>📡 通道配置教程</h1>
+  <p class="subtitle">将 AI 员工接入飞书、企业微信、邮件，让你的团队直接对话 AI。</p>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('feishu')">📱 飞书</button>
+    <button class="tab" onclick="switchTab('wecom')">💬 企业微信</button>
+    <button class="tab" onclick="switchTab('email')">📧 邮件</button>
+    <button class="tab" onclick="switchTab('mcp')">🔌 MCP</button>
+  </div>
+
+  <!-- ═══════════ 飞书 ═══════════ -->
+  <div class="channel-content active" id="tab-feishu">
+    <div class="step">
+      <div class="num">1</div>
+      <div class="body">
+        <b>创建飞书应用</b><br>
+        打开 <a href="https://open.feishu.cn" target="_blank">飞书开放平台</a>，点击「创建企业自建应用」。<br>
+        记下 <b>App ID</b>（类似 <span class="code">cli_a...</span>）和 <b>App Secret</b>。
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="num">2</div>
+      <div class="body">
+        <b>添加机器人能力</b><br>
+        进入应用详情 → 左侧「添加应用能力」→ 添加「<b>机器人</b>」。<br>
+        配置机器人的名称、头像、描述。保存后，上方导航栏才会出现「事件订阅」等菜单。
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="num">3</div>
+      <div class="body">
+        <b>配置权限（批量导入）</b><br>
+        左侧「权限管理」→ 右上角「<b>批量添加</b>」。<br><br>
+        <details style="margin:8px 0">
+          <summary style="cursor:pointer;padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:.86rem;font-weight:600;color:var(--text);background:var(--card);user-select:none">
+            📋 点击展开查看权限 JSON（共 27 项）
+          </summary>
+          <pre id="feishuPermsDisplay" style="margin:0;margin-top:8px;padding:12px;border:1px solid var(--border);border-radius:6px;background:var(--bg);font-family:SF Mono,Cascadia Code,Consolas,monospace;font-size:.78rem;line-height:1.5;color:var(--green);overflow-x:auto;max-height:400px;overflow-y:auto;white-space:pre-wrap;word-break:break-all"></pre>
+        </details>
+        <button class="btn btn-copy" id="copyFeishuBtn" onclick="copyFeishuPerms()">📋 复制到剪贴板</button>
+        <span id="copyFeishuOk" style="display:none;color:var(--green);margin-left:8px;font-size:.84rem">✅ 已复制</span>
+        <br>
+        <small style="color:var(--muted);margin-top:8px;display:inline-block">
+          展开确认格式无误后点击复制 → 粘贴到飞书弹窗。也可下载 <a href="/feishu_permissions.json" download>feishu_permissions.json</a> 上传。
+        </small>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="num">4</div>
+      <div class="body">
+        <b>配置事件订阅</b><br>
+        左侧「事件订阅」→ 请求网址填：
+        <span class="code" style="display:block;margin:6px 0;padding:8px 12px;font-size:.88rem">https://atlas.traceclaw.cn/api/feishu/callback</span>
+        添加事件：<b>接收消息</b> → 搜索 <b>im.message.receive_v1</b> 并添加。<br>
+        保存后，系统会发验证请求（Atlas 自动应答）。<br>
+        获取页面上的 <b>Verification Token</b>，填入 Atlas 控制台中。
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="num">5</div>
+      <div class="body">
+        <b>发布应用</b><br>
+        左侧「版本管理」→ 创建版本 → 提交发布。<br>
+        <span class="warn">⚠️ 必须发布后，回调地址才会在正式环境生效！发布前，机器人只响应应用创建者。</span>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="num">6</div>
+      <div class="body">
+        <b>填入 Atlas 控制台并测试</b><br>
+        返回 <a href="/desktop">Atlas 控制台</a> → 设置 → 通道 → 飞书。<br>
+        填入以下三个字段：
+        <table class="fields-table">
+          <tr><td>App ID</td><td class="val">cli_a...（步骤1获取）</td></tr>
+          <tr><td>App Secret</td><td class="val">步骤1获取</td></tr>
+          <tr><td>Verification Token</td><td class="val">步骤4获取</td></tr>
+        </table>
+        点击「🔗 测试连接」，看到绿色提示即表示配置成功。
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ 企业微信 ═══════════ -->
+  <div class="channel-content" id="tab-wecom">
+    <div class="step">
+      <div class="num">1</div>
+      <div class="body">
+        <b>创建企业微信应用</b><br>
+        打开 <a href="https://work.weixin.qq.com" target="_blank">企业微信管理后台</a> →「应用管理」→ 创建自建应用。
+      </div>
+    </div>
+    <div class="step">
+      <div class="num">2</div>
+      <div class="body">
+        <b>获取认证信息</b><br>
+        在应用详情页获取 <b>Corp ID</b>（企业ID）、<b>Agent ID</b> 和 <b>Secret</b>。
+      </div>
+    </div>
+    <div class="step">
+      <div class="num">3</div>
+      <div class="body">
+        <b>配置接收消息</b><br>
+        「接收消息」→ 设置回调 URL，填入：
+        <span class="code" style="display:block;margin:6px 0;padding:8px 12px;font-size:.88rem">https://atlas.traceclaw.cn/api/wecom/callback</span>
+        随机生成 <b>Token</b> 和 <b>EncodingAESKey</b>（43位），保存并填入 Atlas 控制台。
+      </div>
+    </div>
+    <div class="step">
+      <div class="num">4</div>
+      <div class="body">
+        <b>设置可信域名</b><br>
+        「网页授权及JS-SDK」→ 设置可信域名为 <b>atlas.traceclaw.cn</b>。
+      </div>
+    </div>
+    <div class="step">
+      <div class="num">5</div>
+      <div class="body">
+        <b>填入 Atlas 控制台并测试</b><br>
+        返回 <a href="/desktop">Atlas 控制台</a> → 设置 → 通道 → 企业微信。
+        <table class="fields-table">
+          <tr><td>Corp ID</td><td class="val">ww...（企业ID）</td></tr>
+          <tr><td>Agent ID</td><td class="val">1000001</td></tr>
+          <tr><td>App Secret</td><td class="val">步骤2获取</td></tr>
+          <tr><td>Token</td><td class="val">步骤3随机生成</td></tr>
+          <tr><td>EncodingAESKey</td><td class="val">步骤3随机生成（43位）</td></tr>
+        </table>
+        点击「🔗 测试连接」。
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ 邮件 ═══════════ -->
+  <div class="channel-content" id="tab-email">
+    <div class="step">
+      <div class="num">1</div>
+      <div class="body">
+        <b>准备 SMTP 信息</b><br>
+        Atlas 通过 SMTP 发送邮件。你需要一个支持 SMTP 的邮箱账号（如企业邮箱、QQ邮箱、163邮箱等）。
+      </div>
+    </div>
+    <div class="step">
+      <div class="num">2</div>
+      <div class="body">
+        <b>获取授权码（如需要）</b><br>
+        QQ邮箱：设置 → 账户 → POP3/SMTP服务 → 开启并获取授权码。<br>
+        163邮箱：设置 → POP3/SMTP/IMAP → 开启并获取授权码。
+      </div>
+    </div>
+    <div class="step">
+      <div class="num">3</div>
+      <div class="body">
+        <b>填入 Atlas 控制台并测试</b><br>
+        返回 <a href="/desktop">Atlas 控制台</a> → 设置 → 通道 → 邮件。
+        <table class="fields-table">
+          <tr><td>SMTP 服务器</td><td class="val">smtp.qq.com 或 smtp.163.com 等</td></tr>
+          <tr><td>SMTP 端口</td><td class="val">465（SSL）或 587（STARTTLS）</td></tr>
+          <tr><td>邮箱账号</td><td class="val">你的完整邮箱地址</td></tr>
+          <tr><td>邮箱密码/授权码</td><td class="val">邮箱密码或 SMTP 授权码</td></tr>
+        </table>
+        点击「🔗 测试连接」。
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ═══════════ MCP ═══════════ -->
+  <div class="channel-content" id="tab-mcp">
+    <div style="background:var(--green-bg);border:1px solid var(--green);border-radius:8px;padding:12px 16px;margin-bottom:24px;font-size:.84rem">
+      <b>MCP (Model Context Protocol)</b> 是 AI 与外部系统通信的标准协议。<br>
+      Atlas 通过 MCP 让你的数字员工直接操作 ERP、CRM、邮件、物流等系统——不是看数据，是替你干活。
+    </div>
+
+    <div class="step">
+      <div class="num">1</div>
+      <div class="body">
+        <b>准备 MCP 服务器</b><br>
+        MCP 服务器可以是你自己部署的，也可以使用开源方案。<br><br>
+        <b>已适配的开源 MCP：</b>
+        <table class="fields-table">
+          <tr><td>🏭 ERP</td><td class="val">npm: atlas-mcp-erp</td><td>用友/金蝶库存、采购、财务</td></tr>
+          <tr><td>👥 CRM</td><td class="val">npm: mcp-hubspot</td><td>客户画像、商机、跟进</td></tr>
+          <tr><td>📧 邮箱</td><td class="val">npm: mcp-server-email</td><td>邮件搜索、发送、附件</td></tr>
+          <tr><td>⚙️ MaaS</td><td class="val">npm: atlas-mcp-maas</td><td>工单、质检、排产</td></tr>
+          <tr><td>🚚 物流</td><td class="val">npm: atlas-mcp-logistics</td><td>运单查询、轨迹追踪</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="num">2</div>
+      <div class="body">
+        <b>部署 MCP 服务器</b><br>
+        Atlas 支持 HTTP 传输模式的 MCP 服务器。你需要：
+        <br><br>
+        <b>方式一：使用 Atlas 官方包</b><br>
+        <span class="code" style="display:block;margin:6px 0;padding:8px 12px">npx atlas-mcp-erp --port 3456 --api-key YOUR_KEY</span>
+        <br>
+        <b>方式二：自建 MCP 服务器</b><br>
+        任何符合 <a href="https://spec.modelcontextprotocol.io" target="_blank">MCP 规范</a> 的 HTTP 服务器，暴露 <code>/</code> 端点接收 JSON-RPC 请求即可。
+        <br><br>
+        <span class="warn">⚠️ 建议使用 HTTPS 和 API Key 保护你的 MCP 端点。API Key 会通过 Authorization: Bearer 头发送。</span>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="num">3</div>
+      <div class="body">
+        <b>在 Atlas 中接入</b><br>
+        打开 <a href="/desktop">Atlas 控制台</a> → 设置 → 🔌 MCP → 选择要接入的系统 → 点击「<b>接入</b>」。<br><br>
+        弹出窗口中填写：
+        <table class="fields-table">
+          <tr><td>MCP 服务器地址</td><td class="val">https://your-server.com:3456</td></tr>
+          <tr><td>API 密钥</td><td class="val">部署时设置的密钥（可选但推荐）</td></tr>
+        </table>
+        先点「<b>🔍 测试连接</b>」验证，再点「<b>💾 保存并接入</b>」。
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="num">4</div>
+      <div class="body">
+        <b>验证接入成功</b><br>
+        保存后，已连接的 MCP 服务器会出现在列表中。数字员工在对话中会自动调用对应的工具。<br><br>
+        <b>示例对话：</b><br>
+        <span style="color:var(--muted);font-size:.84rem">
+          你：「查一下康明斯 ISF3.8 发动机的库存和最新采购价」<br>
+          AI：「正在查询 ERP 系统… ISF3.8 当前库存 126 台，最新采购价 ¥3,850/台（供应商：东风康明斯，更新于 6月18日）。」
+        </span>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="num">5</div>
+      <div class="body">
+        <b>MCP 与通道的区别</b><br>
+        <table class="fields-table">
+          <tr><td><b>通道</b></td><td>AI 通过飞书/企微/邮件与你沟通</td></tr>
+          <tr><td><b>MCP</b></td><td>AI 连接到你的业务系统（ERP/CRM 等）执行操作</td></tr>
+        </table>
+        通道处理「人→AI→人」的对话，MCP 处理「AI→系统→AI」的数据操作。两者结合，数字员工才能真正替你干活。
+      </div>
+    </div>
+  </div>
+
+
+  <!-- Links -->
+  <div class="links">
+    <h3>📚 相关链接</h3>
+    <a href="https://open.feishu.cn" target="_blank">飞书开放平台</a>
+    <a href="https://open.feishu.cn/document/home/index" target="_blank">飞书开发文档</a>
+    <a href="https://work.weixin.qq.com" target="_blank">企业微信管理后台</a>
+    <a href="https://developer.work.weixin.qq.com/document" target="_blank">企业微信开发文档</a>
+    <a href="https://spec.modelcontextprotocol.io" target="_blank">MCP 协议规范</a>
+    <a href="https://github.com/modelcontextprotocol" target="_blank">MCP GitHub</a>
+  </div>
+</div>
+
+<div class="footer">擎天 Atlas · AI 报价引擎 · atlas.traceclaw.cn</div>
+
+<script>
+// Theme
+(function(){
+  const saved = localStorage.getItem('atlas-theme');
+  if (saved === 'light') document.documentElement.setAttribute('data-theme','light');
+})();
+function toggleTheme(){
+  const el = document.documentElement;
+  const isDark = !el.getAttribute('data-theme');
+  el.setAttribute('data-theme', isDark ? 'light' : '');
+  localStorage.setItem('atlas-theme', isDark ? 'light' : '');
+}
+
+// Render pretty-printed permissions JSON
+(function(){
+  const pre = document.getElementById('feishuPermsDisplay');
+  if (pre) pre.textContent = JSON.stringify(FEISHU_PERMISSIONS, null, 2);
+})();
+
+function switchTab(id){
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.channel-content').forEach(c => c.classList.remove('active'));
+  document.querySelector(`.tab[onclick*="${id}"]`).classList.add('active');
+  document.getElementById('tab-'+id).classList.add('active');
+}
+
+// Feishu permissions JSON — 27 scopes (23 tenant + 4 user)
+const FEISHU_PERMISSIONS = {
+  "scopes": {
+    "tenant": [
+      "aily:file:read","aily:file:write",
+      "application:application.app_message_stats.overview:readonly",
+      "application:application:self_manage","application:bot.menu:write",
+      "cardkit:card:write","contact:contact.base:readonly",
+      "contact:user.employee_id:readonly","corehr:file:download",
+      "docs:document.content:read","event:ip_list","im:chat",
+      "im:chat.access_event.bot_p2p_chat:read","im:chat.members:bot_access",
+      "im:message","im:message.group_at_msg:readonly","im:message.group_msg",
+      "im:message.p2p_msg:readonly","im:message:readonly","im:message:send_as_bot",
+      "im:resource","sheets:spreadsheet","wiki:wiki:readonly"
+    ],
+    "user": [
+      "aily:file:read","aily:file:write","contact:contact.base:readonly",
+      "im:chat.access_event.bot_p2p_chat:read"
+    ]
+  }
+};
+
+async function copyFeishuPerms(){
+  const text = JSON.stringify(FEISHU_PERMISSIONS, null, 2);
+  try {
+    await navigator.clipboard.writeText(text);
+    const btn = document.getElementById('copyFeishuBtn');
+    const ok = document.getElementById('copyFeishuOk');
+    btn.classList.add('copied');
+    btn.textContent = '✅ 已复制！';
+    ok.style.display = 'inline';
+    setTimeout(() => {
+      btn.classList.remove('copied');
+      btn.textContent = '📋 复制权限 JSON（27 项）';
+      ok.style.display = 'none';
+    }, 2000);
+  } catch(e) {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    const btn = document.getElementById('copyFeishuBtn');
+    btn.textContent = '✅ 已复制！';
+    setTimeout(() => { btn.textContent = '📋 复制权限 JSON（27 项）'; }, 2000);
+  }
+}
+</script>
+</body>
+</html>

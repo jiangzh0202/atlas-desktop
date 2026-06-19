@@ -8,3 +8,7 @@ data/uploads/*.xlsx
 .env
 .DS_Store
 bridge/config.json
+data/channel_feishu.json
+portal/public/feishu_permissions.*
+data/channel_feishu.json
+portal/public/feishu_permissions.*

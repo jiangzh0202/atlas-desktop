@@ -1,0 +1,84 @@
+{
+  "users": {
+    "u_mql1x18b_tm0hhi": {
+      "id": "u_mql1x18b_tm0hhi",
+      "email": "admin",
+      "password_hash": "1ab4e6dca234ce20e0a7b647b12ac8b0d5fdd69393da01af4716743570e337df",
+      "company": "Atlas HQ",
+      "company_type": "平台运营",
+      "plan_quoter": "free",
+      "plan_developer": "free",
+      "quota_quoter_limit": 1,
+      "quota_quoter_used": 0,
+      "quota_developer_limit": 1,
+      "quota_developer_used": 0,
+      "balance": 0,
+      "created_at": "2026-06-19T14:56:01.403Z",
+      "updated_at": "2026-06-19T14:56:01.403Z"
+    },
+    "u_mql54lqv_5gyuhz": {
+      "id": "u_mql54lqv_5gyuhz",
+      "email": "914799129@qq.com",
+      "password_hash": "1ab4e6dca234ce20e0a7b647b12ac8b0d5fdd69393da01af4716743570e337df",
+      "company": "测试公司",
+      "company_type": "外贸公司",
+      "plan_quoter": "free",
+      "plan_developer": "free",
+      "quota_quoter_limit": 1,
+      "quota_quoter_used": 0,
+      "quota_developer_limit": 1,
+      "quota_developer_used": 0,
+      "balance": 0,
+      "created_at": "2026-06-19T16:25:53.431Z",
+      "updated_at": "2026-06-19T16:25:53.431Z"
+    }
+  },
+  "orders": [],
+  "invoices": [],
+  "agents": [
+    {
+      "id": "agt_mql3k1jw",
+      "name": "张经理",
+      "city": "广州",
+      "phone": "13800001111",
+      "wechat": "",
+      "discount": 0.6,
+      "commission": 0.1,
+      "level": "city",
+      "customers": [],
+      "total_sales": 0,
+      "total_commission": 0,
+      "status": "active",
+      "created_at": "2026-06-19T15:41:54.524Z",
+      "updated_at": "2026-06-19T15:41:54.524Z"
+    }
+  ],
+  "plans_config": null,
+  "model_config": {
+    "free": {
+      "model": "deepseek-v4-pro",
+      "temperature": 0.7,
+      "max_tokens": 1200
+    },
+    "basic": {
+      "model": "deepseek-v4-pro",
+      "temperature": 0.5,
+      "max_tokens": 1500
+    },
+    "standard": {
+      "model": "deepseek-v4-pro",
+      "temperature": 0.3,
+      "max_tokens": 2000
+    },
+    "pro": {
+      "model": "deepseek-v4-pro",
+      "temperature": 0.2,
+      "max_tokens": 3000
+    },
+    "enterprise": {
+      "model": "deepseek-v4-pro",
+      "temperature": 0.7,
+      "max_tokens": 1500
+    }
+  }
+}
