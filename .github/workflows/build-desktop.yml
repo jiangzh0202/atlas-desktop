@@ -13,15 +13,12 @@ jobs:
         include:
           - platform: macos-latest
             target: aarch64-apple-darwin
-            ext: dmg
             label: macOS-ARM
           - platform: macos-latest
             target: x86_64-apple-darwin
-            ext: dmg
             label: macOS-Intel
           - platform: windows-latest
             target: x86_64-pc-windows-msvc
-            ext: exe
             label: Windows-x64
 
     runs-on: ${{ matrix.platform }}
@@ -30,7 +27,8 @@ jobs:
 
       - name: Setup Node
         uses: actions/setup-node@v4
-        with: { node-version: "22" }
+        with:
+          node-version: "22"
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
@@ -42,8 +40,6 @@ jobs:
         run: |
           mkdir -p html-dist
           cp portal/public/desktop.html html-dist/index.html
-          # Copy tauri config
-          cp -r src-tauri html-dist/ 2>/dev/null || true
 
       - name: Build Tauri
         run: |
@@ -59,7 +55,7 @@ jobs:
   create-release:
     needs: build-tauri
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, "refs/tags/v")
+    if: startsWith(github.ref, 'refs/tags/v')
     steps:
       - uses: actions/download-artifact@v4
       
