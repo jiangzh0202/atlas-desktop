@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>下载 — 擎天 Atlas</title>
+<style>
+:root{--bg:#0a0a0a;--card:#141414;--border:#2a2a2a;--text:#f0f0f0;--muted:#888;--accent:#fff;--green:#00ff88}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+.nav{display:flex;justify-content:space-between;align-items:center;padding:20px 40px;border-bottom:1px solid var(--border)}
+.nav .logo{font-size:1.1rem;font-weight:700}
+.nav .logo span{color:var(--green)}
+.nav a{color:var(--muted);text-decoration:none;font-size:.85rem;transition:color .2s}
+.nav a:hover{color:var(--text)}
+.container{max-width:800px;margin:0 auto;padding:60px 20px}
+h1{font-size:2.2rem;font-weight:700;margin-bottom:8px}
+.sub{color:var(--muted);font-size:1rem;margin-bottom:40px;line-height:1.6}
+.download-grid{display:flex;flex-direction:column;gap:14px}
+.dl-card{display:flex;align-items:center;gap:20px;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:24px 28px;text-decoration:none;color:var(--text);transition:border-color .2s}
+.dl-card:hover{border-color:var(--muted)}
+.dl-card .icon{font-size:2rem;min-width:48px;text-align:center}
+.dl-card .info{flex:1}
+.dl-card .info .os{font-size:1rem;font-weight:600}
+.dl-card .info .detail{font-size:.78rem;color:var(--muted);margin-top:2px}
+.dl-card .arrow{color:var(--muted);font-size:1.2rem}
+.dl-card.disabled{opacity:.4;pointer-events:none}
+.back{margin-top:40px;text-align:center}
+.back a{color:var(--muted);font-size:.85rem;text-decoration:none}
+.back a:hover{color:var(--text)}
+.note{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 20px;margin-top:24px;font-size:.82rem;color:var(--muted);line-height:1.7}
+.note strong{color:var(--text)}
+</style>
+</head>
+<body>
+<nav class="nav">
+  <a href="/" class="logo"><span>擎天</span> Atlas</a>
+  <a href="/">← 返回首页</a>
+</nav>
+
+<div class="container">
+  <h1>下载 Atlas</h1>
+  <p class="sub">macOS · Windows 全平台支持。<br>下载后登录你的擎天账号即可开始使用。</p>
+
+  <div class="download-grid">
+    <a href="https://github.com/jiangzh0202/atlas-desktop/releases/download/v1.5.0/Atlas_1.5.0_aarch64.dmg" class="dl-card">
+      <div class="icon">🍎</div>
+      <div class="info">
+        <div class="os">macOS · Apple Silicon</div>
+        <div class="detail">M1/M2/M3/M4 · DMG 安装包 · 4.2 MB</div>
+      </div>
+      <div class="arrow">↓</div>
+    </a>
+    <a href="https://github.com/jiangzh0202/atlas-desktop/releases/download/v1.5.0/Atlas_1.5.0_x64.dmg" class="dl-card">
+      <div class="icon">🍎</div>
+      <div class="info">
+        <div class="os">macOS · Intel</div>
+        <div class="detail">Intel 芯片 · DMG 安装包 · 4.4 MB</div>
+      </div>
+      <div class="arrow">↓</div>
+    </a>
+    <a href="https://github.com/jiangzh0202/atlas-desktop/releases/download/v1.5.0/Atlas_1.5.0_x64-setup.exe" class="dl-card">
+      <div class="icon">🪟</div>
+      <div class="info">
+        <div class="os">Windows · x64</div>
+        <div class="detail">EXE 安装包 · 2.8 MB</div>
+      </div>
+      <div class="arrow">↓</div>
+    </a>
+    <a href="https://github.com/jiangzh0202/atlas-desktop/releases/download/v1.5.0/Atlas_1.5.0_x64_en-US.msi" class="dl-card">
+      <div class="icon">🪟</div>
+      <div class="info">
+        <div class="os">Windows · x64（MSI）</div>
+        <div class="detail">MSI 安装包 · 4.2 MB · 企业部署适用</div>
+      </div>
+      <div class="arrow">↓</div>
+    </a>
+  </div>
+
+  <div class="note">
+    <strong>版本 v1.5.0</strong><br>
+    擎天 Atlas 由 GitHub Actions 自动构建，代码开源透明。<br>
+    更多版本请访问 <a href="https://github.com/jiangzh0202/atlas-desktop/releases" style="color:var(--green)">GitHub Releases</a>。
+  </div>
+
+  <div class="back">
+    <a href="/">← 返回首页</a>
+  </div>
+</div>
+</body>
+</html>
