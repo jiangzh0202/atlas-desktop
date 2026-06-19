@@ -143,6 +143,11 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);height:100vh;
 .modal .btn-danger{color:#ff4444;border-color:rgba(255,68,68,.2)}
 
 /* ═══ Settings Modal ═══ */
+/* Settings layout helpers */
+.settings-row{display:flex;gap:12px;margin-bottom:4px}
+.settings-col{flex:1;min-width:0}
+.settings-card{background:var(--active);padding:12px 14px;border-radius:8px;margin-bottom:12px}
+.settings-card table td{white-space:nowrap}
 .settings-modal{width:760px;height:540px;display:flex}
 .settings-sidebar{width:160px;background:var(--sidebar);border-right:1px solid var(--line);padding:8px 0;overflow-y:auto;flex-shrink:0}
 .settings-sidebar .section-title{padding:10px 14px;font-size:.75rem;font-weight:600;color:var(--dim);text-transform:uppercase;letter-spacing:.5px}
@@ -453,6 +458,7 @@ const SETTINGS_SECTIONS = [
   { id:'model', icon:'🤖', label:'模型', cat:'ai' },
   { id:'proxy', icon:'🛜', label:'代理配置', cat:'ai' },
   { id:'rules', icon:'📜', label:'报价员规则', cat:'employees' },
+  { id:'dev-rules', icon:'🧠', label:'客户开发员规则', cat:'employees' },
   { id:'smtp', icon:'✉️', label:'邮件配置', cat:'employees' },
   { id:'index', icon:'📇', label:'索引库', cat:'employees' },
   { id:'channels', icon:'📡', label:'通道设置', cat:'connect' },
@@ -504,42 +510,52 @@ function openSettings() {
 // ═══ 代理配置 ═══
 function renderProxySettings(el) {
   el.innerHTML = `<h3>🛜 代理配置</h3>
-    <p style="font-size:.78rem;color:var(--muted);margin-bottom:14px">海外平台（Google/Reddit/LinkedIn）需配置代理才能爬取。</p>
-    <div class="field">
-      <div class="field-label">启用代理</div>
-      <label style="display:flex;align-items:center;gap:8px;font-size:.82rem;cursor:pointer">
-        <input type="checkbox" id="proxyEnabled" onchange="toggleProxyFields()" style="accent-color:var(--green)">
-        开启后 Google / Reddit / LinkedIn 通过代理访问
-      </label>
+    <p style="font-size:.78rem;color:var(--muted);margin-bottom:18px">海外平台（Google / Reddit / LinkedIn）需配置代理才能爬取。中国大陆直连 Alibaba 无需代理。</p>
+
+    <div class="settings-card" style="margin-bottom:4px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <input type="checkbox" id="proxyEnabled" onchange="toggleProxyFields()" style="accent-color:var(--green);width:18px;height:18px;flex-shrink:0;cursor:pointer">
+        <label for="proxyEnabled" style="font-size:.84rem;font-weight:500;cursor:pointer;user-select:none">启用代理</label>
+      </div>
+      <div style="font-size:.72rem;color:var(--muted);margin-top:2px;margin-left:28px">开启后 Google / Reddit / LinkedIn 通过代理访问</div>
     </div>
-    <div class="field">
-      <div class="field-label">代理协议</div>
-      <select id="proxyProtocol" disabled style="width:100%">
-        <option value="socks5">SOCKS5（推荐，支持UDP）</option>
-        <option value="http">HTTP 代理</option>
-        <option value="https">HTTPS 代理</option>
-      </select>
+
+    <div class="settings-row">
+      <div class="settings-col">
+        <div class="field-label">代理协议</div>
+        <select id="proxyProtocol" disabled>
+          <option value="socks5">SOCKS5（推荐）</option>
+          <option value="http">HTTP</option>
+          <option value="https">HTTPS</option>
+        </select>
+      </div>
+      <div class="settings-col" style="flex:0 0 120px">
+        <div class="field-label">端口</div>
+        <input id="proxyPort" placeholder="1080" type="number" disabled style="text-align:center">
+      </div>
     </div>
+
     <div class="field">
       <div class="field-label">代理地址</div>
       <input id="proxyHost" placeholder="127.0.0.1" disabled>
     </div>
-    <div class="field">
-      <div class="field-label">端口</div>
-      <input id="proxyPort" placeholder="1080" type="number" disabled style="width:120px">
+
+    <div class="settings-row">
+      <div class="settings-col">
+        <div class="field-label">用户名（可选）</div>
+        <input id="proxyUser" placeholder="无需认证则留空" disabled>
+      </div>
+      <div class="settings-col">
+        <div class="field-label">密码（可选）</div>
+        <input id="proxyPass" type="password" placeholder="无需认证则留空" disabled>
+      </div>
     </div>
-    <div class="field">
-      <div class="field-label">用户名（可选）</div>
-      <input id="proxyUser" placeholder="留空则无需认证" disabled>
+
+    <div style="display:flex;gap:8px;margin-top:20px">
+      <button id="proxySaveBtn" class="btn-primary" onclick="saveProxyConfig()" style="flex:1">💾 保存配置</button>
+      <button class="btn-secondary" onclick="testProxyConn()">🔍 测试连接</button>
     </div>
-    <div class="field">
-      <div class="field-label">密码（可选）</div>
-      <input id="proxyPass" placeholder="留空则无需认证" type="password" disabled>
-    </div>
-    <div style="margin-top:8px;font-size:.72rem;color:var(--dim)">Alibaba 国际站中国大陆直连，无需代理。</div>
-    <button id="proxySaveBtn" class="btn-primary" style="margin-top:12px" onclick="saveProxyConfig()">💾 保存配置</button>
-    <button class="btn-secondary" style="margin-top:12px;margin-left:8px" onclick="testProxyConn()">🔍 测试连接</button>
-    <div id="proxyResult" style="margin-top:8px;font-size:.76rem"></div>`;
+    <div id="proxyResult" style="margin-top:10px;font-size:.76rem"></div>`;
 
   // Load saved config
   fetch(API + '/api/config/proxy').then(r=>r.json()).then(d=>{
@@ -602,47 +618,62 @@ function testProxyConn() {
 // ═══ 邮件配置 ═══
 function renderSmtpSettings(el) {
   el.innerHTML = `<h3>✉️ 邮件配置</h3>
-    <p style="font-size:.78rem;color:var(--muted);margin-bottom:14px">配置发件邮箱，用于发送客户开发信。</p>
-    <div class="field">
-      <div class="field-label">SMTP 服务器</div>
-      <input id="smtpHost" placeholder="smtp.gmail.com / smtp.qiye.aliyun.com">
+    <p style="font-size:.78rem;color:var(--muted);margin-bottom:18px">配置发件邮箱，用于发送客户开发信。推荐使用企业邮箱（见下方指引）。</p>
+
+    <div class="settings-row">
+      <div class="settings-col">
+        <div class="field-label">SMTP 服务器</div>
+        <input id="smtpHost" placeholder="smtp.qiye.aliyun.com">
+      </div>
+      <div class="settings-col" style="flex:0 0 140px">
+        <div class="field-label">端口</div>
+        <select id="smtpPort">
+          <option value="587">587 (STARTTLS)</option>
+          <option value="465">465 (SSL)</option>
+          <option value="25">25</option>
+        </select>
+      </div>
     </div>
-    <div class="field">
-      <div class="field-label">端口</div>
-      <select id="smtpPort" style="width:140px">
-        <option value="587">587 (STARTTLS, 推荐)</option>
-        <option value="465">465 (SSL)</option>
-        <option value="25">25 (不加密)</option>
-      </select>
+
+    <div class="settings-card" style="margin-bottom:4px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <input type="checkbox" id="smtpTls" checked style="accent-color:var(--green);width:18px;height:18px;flex-shrink:0;cursor:pointer">
+        <label for="smtpTls" style="font-size:.84rem;font-weight:500;cursor:pointer;user-select:none">启用 TLS 加密</label>
+      </div>
+      <div style="font-size:.72rem;color:var(--muted);margin-top:2px;margin-left:28px">端口 587 建议开启，端口 465 自动 SSL 无需 TLS</div>
     </div>
-    <div class="field">
-      <div class="field-label">加密方式</div>
-      <label style="display:flex;align-items:center;gap:8px;font-size:.82rem;cursor:pointer">
-        <input type="checkbox" id="smtpTls" checked style="accent-color:var(--green)"> TLS (端口 587 时开启)
-      </label>
+
+    <div class="settings-row">
+      <div class="settings-col">
+        <div class="field-label">发件邮箱</div>
+        <input id="smtpEmail" placeholder="sender@yourcompany.com">
+      </div>
+      <div class="settings-col">
+        <div class="field-label">密码 / 授权码</div>
+        <input id="smtpPass" type="password" placeholder="企业邮箱登录密码或客户端授权码">
+      </div>
     </div>
-    <div class="field">
-      <div class="field-label">发件邮箱</div>
-      <input id="smtpEmail" placeholder="sender@yourcompany.com">
-    </div>
-    <div class="field">
-      <div class="field-label">邮箱密码 / 授权码</div>
-      <input id="smtpPass" type="password" placeholder="Gmail 需用应用专用密码; 阿里企业邮箱用登录密码">
-    </div>
+
     <div class="field">
       <div class="field-label">发件人名称</div>
-      <input id="smtpName" placeholder="如: Jason / 张经理 / Sales Team">
+      <input id="smtpName" placeholder="如：Jason / 张经理 / Sales Team">
     </div>
-    <div style="margin-top:8px;padding:10px 12px;background:var(--active);border-radius:8px;font-size:.72rem;color:var(--muted)">
-      <b>常用 SMTP：</b><br>
-      • Gmail: smtp.gmail.com / 587 / TLS / 需<a href="https://myaccount.google.com/apppasswords" target="_blank" style="color:var(--green)">应用专用密码</a><br>
-      • 阿里企业邮: smtp.qiye.aliyun.com / 465 / SSL<br>
-      • QQ邮箱: smtp.qq.com / 587 / TLS / 授权码<br>
-      • 网易企业邮: smtp.ym.163.com / 465 / SSL
+
+    <div style="margin-top:16px;padding:12px 14px;background:var(--active);border-radius:8px;font-size:.72rem">
+      <b style="font-size:.76rem;color:var(--ink)">📋 常用企业邮箱 SMTP</b>
+      <table style="width:100%;margin-top:8px;border-collapse:collapse;font-size:.72rem">
+        <tr style="color:var(--muted)"><td style="padding:2px 6px">阿里企业邮</td><td style="color:var(--green);font-weight:500">外贸首选</td><td>smtp.qiye.aliyun.com</td><td>465</td><td>SSL</td></tr>
+        <tr style="color:var(--muted)"><td style="padding:2px 6px">腾讯企业邮</td><td>国内通用</td><td>smtp.exmail.qq.com</td><td>587</td><td>TLS</td></tr>
+        <tr style="color:var(--muted)"><td style="padding:2px 6px">Gmail</td><td><a href="https://myaccount.google.com/apppasswords" target="_blank" style="color:var(--green)">需应用密码</a></td><td>smtp.gmail.com</td><td>587</td><td>TLS</td></tr>
+        <tr style="color:var(--muted)"><td style="padding:2px 6px">QQ 邮箱</td><td>个人可用</td><td>smtp.qq.com</td><td>587</td><td>TLS</td></tr>
+      </table>
     </div>
-    <button class="btn-primary" style="margin-top:12px" onclick="saveSmtpConfig()">💾 保存配置</button>
-    <button class="btn-secondary" style="margin-top:12px;margin-left:8px" onclick="testSmtpConn()">🔍 测试发送</button>
-    <div id="smtpResult" style="margin-top:8px;font-size:.76rem"></div>`;
+
+    <div style="display:flex;gap:8px;margin-top:20px">
+      <button class="btn-primary" onclick="saveSmtpConfig()" style="flex:1">💾 保存配置</button>
+      <button class="btn-secondary" onclick="testSmtpConn()">🔍 测试发送</button>
+    </div>
+    <div id="smtpResult" style="margin-top:10px;font-size:.76rem"></div>`;
 
   // Load saved config
   fetch(API + '/api/puzzler/status').then(r=>r.json()).then(d=>{
@@ -689,6 +720,111 @@ function testSmtpConn() {
       el.innerHTML = '<span style="color:#e06c75">❌ 网络错误</span>';
     });
   }, 500);
+}
+
+
+// ═══ 规则记忆面板（通用：报价员 & 客户开发员）═══
+function renderRulesSettings(el, agent) {
+  const AGENT_INFO = {
+    quoter:   { icon:'📜', name:'报价员', desc:'审查标准、品牌矩阵、折扣表、七星等级规则', hint:'用 Markdown 编写规则。报价员会自动读取此文档作为审查依据。' },
+    developer:{ icon:'🧠', name:'客户开发员', desc:'搜索策略、客户画像维度、开发信模板、跟进频率', hint:'定义找客户的标准：哪些行业优先、如何判断匹配度、开发信的语气和结构。' },
+  };
+  const info = AGENT_INFO[agent] || AGENT_INFO.developer;
+
+  el.innerHTML = `<h3>${info.icon} ${info.name} · 规则记忆</h3>
+    <p style="font-size:.78rem;color:var(--muted);margin-bottom:4px">${info.desc}</p>
+    <div style="font-size:.72rem;color:var(--dim);margin-bottom:14px;padding:8px 12px;background:var(--green-bg);border-radius:6px">💡 ${info.hint}</div>
+
+    <div style="display:flex;gap:8px;margin-bottom:8px;align-items:center">
+      <select id="rulesVersion" style="font-size:.72rem;padding:4px 8px">
+        <option value="">当前版本</option>
+      </select>
+      <button class="btn-secondary" style="font-size:.7rem;padding:4px 10px" onclick="loadRulesVersion('${agent}')">📜 加载选中版本</button>
+    </div>
+
+    <textarea id="rulesEditor" style="width:100%;height:360px;padding:14px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font-family:monospace;font-size:.82rem;line-height:1.6;resize:vertical" spellcheck="false"></textarea>
+
+    <div style="display:flex;gap:8px;margin-top:14px">
+      <button class="btn-primary" onclick="saveRules('${agent}')" style="flex:1">💾 保存规则</button>
+      <button class="btn-secondary" onclick="loadRules('${agent}')">🔄 重新加载</button>
+    </div>
+    <div style="font-size:.72rem;color:var(--dim);margin-top:8px">修改自动备份，可在「版本历史」中恢复。</div>
+    <div id="rulesMsg" style="margin-top:8px;font-size:.76rem"></div>`;
+
+  loadRules(agent);
+}
+
+async function loadRules(agent) {
+  const editor = document.getElementById('rulesEditor');
+  const select = document.getElementById('rulesVersion');
+  if (!editor) return;
+
+  editor.value = '⏳ 加载中...';
+  try {
+    const resp = await fetch(API + '/api/rules?agent=' + agent);
+    const data = await resp.json();
+    if (data.ok) {
+      editor.value = data.raw || '';
+      // Load backups
+      if (select) {
+        const vResp = await fetch(API + '/api/rules/versions');
+        const vData = await vResp.json();
+        select.innerHTML = '<option value="">当前版本</option>';
+        (vData.data || []).forEach(v => {
+          select.innerHTML += '<option value="' + v.filename + '">' + v.filename + ' (' + v.modified + ')</option>';
+        });
+      }
+    } else {
+      editor.value = '# 加载失败: ' + (data.error || '未知错误');
+    }
+  } catch(e) {
+    editor.value = '# 网络错误: ' + e.message;
+  }
+}
+
+async function saveRules(agent) {
+  const editor = document.getElementById('rulesEditor');
+  const msg = document.getElementById('rulesMsg');
+  if (!editor) return;
+
+  msg.innerHTML = '<span style="color:var(--green)">⏳ 保存中...</span>';
+  try {
+    const resp = await fetch(API + '/api/rules?agent=' + agent, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({content: editor.value})
+    });
+    const data = await resp.json();
+    if (data.ok) {
+      msg.innerHTML = '<span style="color:var(--green)">✅ 已保存 (' + (data.size||0) + ' 字节) · 备份: ' + (data.backups||[]).length + ' 份</span>';
+      // Refresh versions
+      setTimeout(() => loadRules(agent), 500);
+    } else {
+      msg.innerHTML = '<span style="color:#e06c75">❌ ' + (data.error || '保存失败') + '</span>';
+    }
+  } catch(e) {
+    msg.innerHTML = '<span style="color:#e06c75">❌ 网络错误: ' + e.message + '</span>';
+  }
+}
+
+async function loadRulesVersion(agent) {
+  const select = document.getElementById('rulesVersion');
+  const editor = document.getElementById('rulesEditor');
+  const version = select ? select.value : '';
+  if (!version || !editor) return;
+  if (!confirm('加载备份版本 ' + version + ' 将覆盖当前编辑器内容，确定？')) return;
+  try {
+    const resp = await fetch(API + '/api/rules/restore/' + version);
+    const data = await resp.json();
+    if (data.ok) {
+      editor.value = data.raw || '';
+      document.getElementById('rulesMsg').innerHTML = '<span style="color:var(--green)">✅ 已加载备份版本: ' + version + '</span>';
+    } else {
+      alert('加载失败: ' + (data.error || ''));
+    }
+  } catch(e) {
+    alert('加载版本失败: ' + e.message);
+  }
 }
 
 function renderSettingsContent() {
@@ -995,51 +1131,9 @@ function switchRulesAgent(agentId) {
   openSettings();
 }
 
-async function loadRules() {
-  const editor = document.getElementById('rulesEditor');
-  if (!editor) return;
-  if (!S.token) { editor.value = '# 请先登录后查看规则'; editor.style.color = 'var(--muted)'; return; }
-  const agent = S.selectedRulesAgent || 'quoter';
-  editor.value = '加载中...';
-  editor.style.color = 'var(--muted)';
-  try {
-    const res = await fetch(API + '/api/rules?agent=' + agent, { headers: { 'Authorization': 'Bearer ' + S.token } });
-    const data = await res.json();
-    if (data.ok) {
-      editor.value = data.raw || '# 暂无规则';
-      editor.style.color = 'var(--ink)';
-    } else {
-      editor.value = '# 加载失败: ' + (data.error || '未知错误');
-      editor.style.color = '#ff4444';
-    }
-  } catch(e) {
-    editor.value = '# 网络错误';
-    editor.style.color = '#ff4444';
-  }
-}
+// OLD loadRules removed — using new renderRulesSettings-based version
 
-async function saveRules() {
-  if (!S.token) { alert('请先登录'); return; }
-  const editor = document.getElementById('rulesEditor');
-  if (!editor) return;
-  const agent = S.selectedRulesAgent || 'quoter';
-  const content = editor.value;
-  try {
-    const res = await fetch(API + '/api/rules', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + S.token },
-      body: JSON.stringify({ content, agent })
-    });
-    const data = await res.json();
-    if (data.ok) {
-      alert('✅ 规则已保存！' + data.agent + ' 记忆已更新。\n备份数: ' + (data.backups||[]).length);
-    } else {
-      alert('❌ 保存失败: ' + (data.error || '未知错误'));
-    }
-  } catch(e) {
-    alert('⚠️ 网络错误，保存失败');
-  }
-}
+// OLD saveRules removed — using new version
 
 function closeSettings() {
   document.getElementById('settingsOverlay').classList.add('hidden');
