@@ -3,49 +3,16 @@
 借鉴 KWeaver BKN Lang：规则用数据定义，不用写死在代码里
 """
 
-# ═══════════ 品牌折扣矩阵（基于真实报价留底提取）═══════════
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
-DEFAULT_BRAND_MATRIX = {
-    "A2080": {
-        "tiers": [
-            {"price_min": 0, "price_max": 5, "qty_threshold": None, "discount_lt": 0, "discount_gte": 0},
-            {"price_min": 5, "price_max": 50, "qty_threshold": None, "discount_lt": 16, "discount_gte": 16},
-            {"price_min": 50, "price_max": 1000, "qty_threshold": 30, "discount_lt": 23, "discount_gte": 24},
-            {"price_min": 1000, "price_max": 999999, "qty_threshold": 10, "discount_lt": 24, "discount_gte": 25.5},
-        ],
-        "cap_discount": 25.5,
-        "special_policy": "福田任务未完成 → 可突破顶格多下1-2个点"
-    },
-    "卡友配": {
-        "tiers": [
-            {"price_min": 0, "price_max": 100000, "qty_threshold": None, "discount_lt": 15, "discount_gte": 15},
-            {"price_min": 100000, "price_max": 999999, "qty_threshold": None, "discount_lt": 18, "discount_gte": 18},
-        ],
-        "cap_discount": 18,
-        "min_order_amount": 30000,
-        "special_policy": "供应部王双确认：总额>=10万下18个点"
-    },
-    "E9300": {
-        "tiers": [
-            {"price_min": 0, "price_max": 1000, "qty_threshold": None, "discount_lt": 15, "discount_gte": 15},
-            {"price_min": 1000, "price_max": 999999, "qty_threshold": 30, "discount_lt": 15, "discount_gte": 17},
-        ],
-        "cap_discount": 17
-    },
-    "东亚": {
-        "tiers": [
-            {"price_min": 0, "price_max": 999999, "qty_threshold": None, "discount_lt": 7, "discount_gte": 7},
-        ],
-        "cap_discount": 7,
-        "special_policy": "国6后处理件：4%"
-    },
-    "BOSCH": {
-        "tiers": [
-            {"price_min": 0, "price_max": 999999, "qty_threshold": None, "discount_lt": 24, "discount_gte": 24},
-        ],
-        "cap_discount": 24
-    },
-}
+from config import cfg, get_brand_rules
+
+
+# ═══════════ 品牌折扣矩阵 — 全部来自 config/rules.yaml ═══════════
+# 所有品牌折扣数据现在从 config 的 brands 节点读取
+# get_brand_rules() 替代了硬编码的 DEFAULT_BRAND_MATRIX
 
 
 # ═══════════ 折扣匹配引擎 ═══════════
@@ -60,13 +27,13 @@ def match_discount(brand: str, unit_price: float, quantity: int, rules: dict = N
         unit_price: 牌价单价
         quantity: 数量
         rules: 可选，自定义品牌矩阵 dict。若为 dict 且含 "brands" key，则使用 rules["brands"]；
-               否则直接作为 brand_rules 使用。None 则使用内置 DEFAULT_BRAND_MATRIX。
+               否则直接作为 brand_rules 使用。None 则使用 config 中的品牌规则。
 
     Returns:
         (discount_pct: float, coefficient: float, description: str)
     """
     if rules is None:
-        brand_rules = DEFAULT_BRAND_MATRIX
+        brand_rules = get_brand_rules()
     elif isinstance(rules, dict) and "brands" in rules:
         # 兼容 sentinel 的 DEFAULT_RULES 全量格式
         brand_rules = rules.get("brands", {})
@@ -107,7 +74,8 @@ def match_discount(brand: str, unit_price: float, quantity: int, rules: dict = N
             return (disc, (100 - disc) / 100, f"{brand}≈{key},默认{disc}%")
 
     # 默认
-    return (15, 0.85, f"{brand}:默认15%")
+    default_disc = cfg.get("rules", "default_discount_pct", default=15)
+    return (default_disc, (100 - default_disc) / 100, f"{brand}:默认{default_disc}%")
 
 
 # ═══════════ 测试 ═══════════

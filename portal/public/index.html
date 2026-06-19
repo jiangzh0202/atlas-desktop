@@ -1,223 +1,354 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>元策·擎天</title>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>擎天 Atlas — AI 报价引擎</title>
 <style>
-:root{--bg:#f2f2f4;--card:#fff;--green:#7ecf5e;--green-soft:#e8f7e0;--text:#1a1a2e;--muted:#888;--red:#e94560;--amber:#f59e0b;--blue:#3b82f6;--line:rgba(0,0,0,0.06)}
+:root{--bg:#0a0a0a;--card:#141414;--border:#2a2a2a;--text:#f0f0f0;--muted:#888;--accent:#fff;--green:#00ff88}
+[data-theme="light"]{--bg:#f2f2f4;--card:#ffffff;--border:#d0d0d5;--text:#1a1a1e;--muted:#666;--accent:#1a1a1e;--green:#00cc66}
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
-a{color:var(--green);text-decoration:none}
-/* Topbar */
-.topbar{background:var(--card);padding:12px 24px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 1px 4px rgba(0,0,0,.06);position:sticky;top:0;z-index:100}
-.topbar .logo{font-size:1.2rem;font-weight:700}
-.topbar .logo span{color:var(--green)}
-.topbar nav{display:flex;gap:4px;flex-wrap:wrap}
-.topbar nav a{color:var(--muted);text-decoration:none;font-size:.82rem;padding:6px 12px;border-radius:8px;transition:all .15s}
-.topbar nav a:hover,.topbar nav a.active{background:var(--green-soft);color:var(--green)}
-/* Container */
-.container{max-width:1040px;margin:0 auto;padding:20px 24px}
-/* Welcome */
-.welcome{padding:24px 0 8px}
-.welcome h1{font-size:1.4rem;font-weight:700}
-.welcome p{color:var(--muted);font-size:.85rem;margin-top:4px}
-/* Stat Cards */
-.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
-@media(max-width:768px){.stat-grid{grid-template-columns:repeat(2,1fr)}}
-.stat-card{background:var(--card);border-radius:14px;padding:20px;box-shadow:0 1px 3px rgba(0,0,0,.04);display:flex;flex-direction:column;gap:6px;border:1px solid var(--line);transition:box-shadow .15s}
-.stat-card:hover{box-shadow:0 2px 8px rgba(0,0,0,.08)}
-.stat-card .label{font-size:.78rem;color:var(--muted)}
-.stat-card .value{font-size:2rem;font-weight:700;line-height:1}
-.stat-card .value.green{color:var(--green)}
-.stat-card .value.red{color:var(--red)}
-.stat-card .value.amber{color:var(--amber)}
-.stat-card .sub{font-size:.75rem;color:var(--muted)}
-/* Section */
-.section{margin-bottom:20px}
-.section-title{font-size:1rem;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:8px}
-/* Cards */
-.card{background:var(--card);border-radius:14px;padding:20px;box-shadow:0 1px 3px rgba(0,0,0,.04);margin-bottom:16px;border:1px solid var(--line)}
-.card h2{font-size:1.05rem;margin-bottom:14px}
-/* Two column */
-.col2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-@media(max-width:768px){.col2{grid-template-columns:1fr}}
-/* Table */
-table{width:100%;border-collapse:collapse;font-size:.82rem}
-th{background:var(--bg);padding:10px 12px;text-align:left;font-weight:600;border-bottom:2px solid #eee;white-space:nowrap}
-td{padding:10px 12px;border-bottom:1px solid #f0f0f0}
-tr:hover td{background:#fafafa}
-/* Tags */
-.tag{display:inline-block;padding:2px 8px;border-radius:8px;font-size:.7rem;font-weight:600}
-.tag-ok{background:#d4f5e0;color:#0d7a3e}
-.tag-warn{background:#fef3c7;color:#92400e}
-.tag-err{background:#fee2e2;color:#991b1b}
-.tag-info{background:#dbeafe;color:#1e40af}
-/* Buttons */
-.btn{display:inline-flex;align-items:center;gap:6px;padding:10px 20px;border-radius:10px;font-size:.88rem;font-weight:600;cursor:pointer;border:none;transition:all .15s;text-decoration:none}
-.btn-p{background:var(--green);color:#fff}
-.btn-p:hover{opacity:.9}
-.btn-s{background:var(--bg);color:var(--text);border:1px solid #ddd}
-.btn-s:hover{background:#e8e8ea}
-/* Quick Actions */
-.quick-actions{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
-@media(max-width:768px){.quick-actions{grid-template-columns:repeat(2,1fr)}}
-.action-card{background:var(--card);border-radius:14px;padding:18px;border:1px solid var(--line);text-align:center;cursor:pointer;transition:all .15s;text-decoration:none;color:var(--text)}
-.action-card:hover{box-shadow:0 2px 8px rgba(0,0,0,.08);border-color:var(--green)}
-.action-card .icon{font-size:1.8rem;margin-bottom:6px}
-.action-card .action-label{font-size:.82rem;font-weight:600}
-.action-card .hint{font-size:.72rem;color:var(--muted);margin-top:2px}
-/* Empty */
-.empty{padding:40px;text-align:center;color:var(--muted);font-size:.85rem}
-/* Badge */
-.badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:.7rem;font-weight:600;margin-left:6px}
-.badge-alert{background:var(--red);color:#fff}
-/* Spinner */
-.spinner{display:inline-block;width:20px;height:20px;border:2px solid #ddd;border-top-color:var(--green);border-radius:50%;animation:spin .6s linear infinite;margin-right:8px}
-@keyframes spin{to{transform:rotate(360deg)}}
-</style></head>
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--text);min-height:100vh;line-height:1.6;transition:background .3s,color .3s}
+a{color:inherit;text-decoration:none}
+/* Nav */
+.nav{display:flex;justify-content:space-between;align-items:center;padding:20px 40px;border-bottom:1px solid var(--border);position:sticky;top:0;background:rgba(10,10,10,0.85);backdrop-filter:blur(12px);z-index:100}
+[data-theme="light"] .nav{background:rgba(242,242,244,0.85)}
+.th-btn{width:36px;height:36px;display:flex;align-items:center;justify-content:center;border-radius:50%;border:1px solid var(--border);background:transparent;cursor:pointer;font-size:1rem;color:var(--muted);transition:all .15s;flex-shrink:0;line-height:1}
+.th-btn:hover{color:var(--text);border-color:var(--muted)}
+.nav .logo{font-size:1.2rem;font-weight:700;letter-spacing:-0.5px}
+.nav .logo span{color:var(--green)}
+.nav .links{display:flex;align-items:center;gap:20px;font-size:.88rem}
+.nav .links a{color:var(--muted);transition:color .2s}
+.nav .links a:hover{color:var(--text)}
+.btn{display:inline-flex;align-items:center;justify-content:center;padding:10px 24px;border-radius:8px;font-size:.88rem;font-weight:600;cursor:pointer;border:none;transition:all .15s;text-decoration:none}
+.btn-w{background:var(--accent);color:var(--bg)}
+.btn-w:hover{background:#e0e0e0}
+.btn-o{background:transparent;color:var(--text);border:1px solid var(--border)}
+.btn-o:hover{border-color:var(--muted)}
+.btn-g{background:var(--green);color:var(--bg);font-weight:700}
+.btn-g:hover{opacity:.9}
+.btn-lg{padding:14px 36px;font-size:1rem;border-radius:10px}
+/* Hero */
+.hero{padding:100px 40px 80px;text-align:center;max-width:800px;margin:0 auto}
+.hero .tag{display:inline-block;padding:4px 14px;border:1px solid var(--border);border-radius:20px;font-size:.78rem;color:var(--muted);margin-bottom:24px;letter-spacing:1px}
+.hero h1{font-size:3.2rem;font-weight:800;line-height:1.2;margin-bottom:20px;letter-spacing:-1px}
+.hero h1 em{font-style:normal;color:var(--green)}
+.hero .sub{font-size:1.15rem;color:var(--muted);max-width:560px;margin:0 auto 40px;line-height:1.7}
+.hero .ctas{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
+/* Stats */
+.stats{display:flex;justify-content:center;gap:60px;padding:60px 40px;border-top:1px solid var(--border);border-bottom:1px solid var(--border);max-width:800px;margin:0 auto}
+.stat{text-align:center}
+.stat .num{font-size:2rem;font-weight:800;color:var(--green)}
+.stat .label{font-size:.82rem;color:var(--muted);margin-top:4px}
+/* Capabilities */
+.section{padding:80px 40px;max-width:1000px;margin:0 auto}
+.section h2{font-size:1.8rem;font-weight:700;text-align:center;margin-bottom:16px}
+.section .desc{text-align:center;color:var(--muted);margin-bottom:48px;font-size:.95rem}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:20px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:28px;transition:border-color .2s}
+.card:hover{border-color:var(--muted)}
+.card .icon{font-size:1.6rem;margin-bottom:12px}
+.card h3{font-size:1.05rem;margin-bottom:8px}
+.card p{color:var(--muted);font-size:.88rem;line-height:1.6}
+/* Pricing */
+.pricing-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px}
+.pcard{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:28px;text-align:center;transition:all .2s;position:relative}
+.pcard:hover{border-color:var(--muted)}
+.pcard.best{border-color:var(--green);background:var(--card)}
+.pcard.best .tag-badge{position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:var(--green);color:var(--bg);padding:3px 14px;border-radius:12px;font-size:.72rem;font-weight:700}
+.pcard .tier{font-size:.88rem;color:var(--muted);margin-bottom:4px}
+.pcard .price{font-size:2rem;font-weight:800;margin:8px 0}
+.pcard .price .unit{font-size:.85rem;font-weight:400;color:var(--muted)}
+.pcard .quota{color:var(--muted);font-size:.82rem;margin-bottom:16px}
+.pcard .ppq{color:var(--green);font-size:.82rem;margin-bottom:16px}
+.pcard .actions{display:flex;flex-direction:column;gap:8px}
+/* Footer */
+.footer{border-top:1px solid var(--border);padding:40px;text-align:center;color:var(--muted);font-size:.8rem}
+/* Modal */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:200;align-items:center;justify-content:center}
+.modal-overlay.show{display:flex}
+.modal{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:32px;width:100%;max-width:420px;margin:20px}
+.modal h2{font-size:1.3rem;margin-bottom:20px}
+.modal .field{margin-bottom:16px}
+.modal .field label{display:block;font-size:.82rem;color:var(--muted);margin-bottom:6px}
+.modal .field input,.modal .field select{width:100%;padding:10px 14px;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:.9rem;outline:none;font-family:inherit}
+.modal .field input:focus,.modal .field select:focus{border-color:var(--green)}
+.modal .actions{display:flex;gap:10px;margin-top:20px}
+.modal .actions .btn{flex:1}
+.modal .err{color:#ff4444;font-size:.82rem;margin-top:8px;display:none}
+.modal .switch{text-align:center;margin-top:16px;font-size:.82rem;color:var(--muted)}
+.modal .switch a{color:var(--green);cursor:pointer}
+</style>
+</head>
 <body>
-<div class="topbar">
-  <div class="logo"><span>元策</span>·擎天</div>
-  <nav>
-    <a href="/" class="active">📊 首页</a>
-    <a href="/quotation">📋 报价</a>
-    <a href="/parts">🔧 配件</a>
-    <a href="/customers">👥 客户</a>
-    <a href="/rules">📐 规则</a>
-    <a href="/history">📜 历史</a>
-    <a href="/stock">📦 库存</a>
-    <a href="/agents">🤖 智能体</a>
-    <a href="/trade">🌍 贸易</a>
-    <a href="#" onclick="logout()" style="color:var(--red)">退出</a>
-  </nav>
+
+<nav class="nav">
+  <a href="/" class="logo"><span>擎天</span> Atlas</a>
+  <div class="links">
+    <a href="#cap">能力</a>
+    <a href="#price">定价</a>
+    <a href="/tutorial">教程</a>
+    <button class="th-btn" id="themeToggle" onclick="toggleTheme()" title="切换白日/暗黑模式">🌙</button>
+    <a href="#" onclick="showLogin()" id="nav-login">登录</a>
+    <span id="nav-user" style="display:none">
+      <a href="/dashboard" class="btn btn-o" style="padding:6px 16px;font-size:.82rem">控制台</a>
+    </span>
+  </div>
+</nav>
+
+<section class="hero">
+  <div class="tag">AI Native 报价 · 汽车零部件</div>
+  <h1>AI 原生报价引擎<br><em>深度理解配件定价</em></h1>
+  <p class="sub">不卖软件，只卖结果。你把需求发来，报价我们帮你出。<br>报不准不要钱。<br><span style="font-size:.85rem;color:var(--green)">🔒 你的数据永远在你手里，我们不碰、不上传。</span></p>
+  <div class="ctas">
+    <a href="/download" class="btn btn-g btn-lg" style="background:var(--accent);color:var(--bg)">⬇ 下载 Atlas</a>
+    <a href="#price" class="btn btn-o btn-lg">查看定价</a>
+  </div>
+  <div style="margin-top:12px">
+    <a href="/download" style="font-size:.78rem;color:var(--muted);text-decoration:underline;text-underline-offset:4px">macOS · Windows</a>
+  </div>
+</section>
+
+<div class="stats">
+  <div class="stat"><div class="num">300万+</div><div class="label">配件知识库参数</div></div>
+  <div class="stat"><div class="num">90%</div><div class="label">报价成本节省</div></div>
+  <div class="stat"><div class="num">200+</div><div class="label">月处理报价量</div></div>
 </div>
 
-<div class="container">
-  <div class="welcome">
-    <h1>你好，恩同 👋</h1>
-    <p>AI 驱动的汽车配件外贸操作系统</p>
+<!-- Digital Employee Status Bar -->
+<section class="section" style="padding-bottom:40px">
+  <div style="display:flex;justify-content:center;gap:12px;flex-wrap:wrap">
+    <span style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:rgba(0,255,136,0.08);border:1px solid var(--green);border-radius:20px;font-size:.82rem">💎 报价员 <span style="color:var(--green);font-weight:600">已订阅</span></span>
+    <span style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:rgba(0,255,136,0.08);border:1px solid var(--green);border-radius:20px;font-size:.82rem">🎯 客户开发员 <span style="color:var(--green);font-weight:600">已订阅</span></span>
+    <span style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:20px;font-size:.82rem;color:var(--muted)">🔍 图片识零件员 未订阅</span>
   </div>
+  <div style="text-align:center;margin-top:16px;font-size:.75rem;color:var(--muted)"><kbd style="background:var(--border);padding:2px 8px;border-radius:4px;font-family:monospace">Ctrl+K</kbd> 打开命令面板</div>
+</section>
 
-  <!-- 快捷入口 -->
-  <div class="quick-actions">
-    <a href="/quotation" class="action-card">
-      <div class="icon">📋</div>
-      <div class="action-label">新建报价</div>
-      <div class="hint">上传询盘 → 30秒出报价</div>
-    </a>
-    <a href="/parts" class="action-card">
-      <div class="icon">🔧</div>
-      <div class="action-label">查配件</div>
-      <div class="hint">168个配件随时查</div>
-    </a>
-    <a href="/stock" class="action-card">
-      <div class="icon">📦</div>
-      <div class="action-label">看库存<span id="alertBadge" class="badge badge-alert" style="display:none">0</span></div>
-      <div class="hint">实时库存预警</div>
-    </a>
-    <a href="/trade" class="action-card">
-      <div class="icon">🌍</div>
-      <div class="action-label">外贸工具</div>
-      <div class="hint">翻译 · PI · 装箱单</div>
-    </a>
-  </div>
-
-  <!-- 核心指标 -->
-  <div class="stat-grid" id="statGrid">
-    <div class="stat-card"><div class="label">配件总数</div><div class="value green" id="statParts">-</div><div class="sub">5条产品线</div></div>
-    <div class="stat-card"><div class="label">库存预警</div><div class="value red" id="statAlerts">-</div><div class="sub">低于安全线</div></div>
-    <div class="stat-card"><div class="label">品牌渠道</div><div class="value" id="statBrands">-</div><div class="sub">活跃供应商</div></div>
-    <div class="stat-card"><div class="label">库存SKU</div><div class="value amber" id="statStock">-</div><div class="sub">在库配件</div></div>
-  </div>
-
-  <!-- 双栏 -->
-  <div class="col2">
-    <!-- 库存预警 -->
+<!-- Features: 从数据到报价，一步到位 -->
+<section class="section" style="padding-top:0">
+  <h2>从数据到报价，一步到位</h2>
+  <p class="desc">不需要配置复杂的规则引擎。喂入历史数据，AI 自动学习。</p>
+  <div class="cards">
     <div class="card">
-      <h2>⚠️ 库存预警 <span style="font-weight:400;font-size:.75rem;color:var(--muted)" id="alertCount"></span></h2>
-      <div id="alertList"><div class="empty"><span class="spinner"></span>加载中...</div></div>
+      <div class="icon">📊</div>
+      <h3>智能定价引擎</h3>
+      <p>AI 从历史交易中自主学习定价规律。你只需要历史报价，剩下的交给 AI。</p>
     </div>
-    <!-- 最近活动 -->
     <div class="card">
-      <h2>🕐 最近活动</h2>
-      <div id="activityList"><div class="empty"><span class="spinner"></span>加载中...</div></div>
+      <div class="icon">💬</div>
+      <h3>对话式交互</h3>
+      <p>"福田康明斯喷油器50件发迪拜" → AI 分析 338 条历史 → 3 秒出价。</p>
+    </div>
+    <div class="card">
+      <div class="icon">🧠</div>
+      <h3>持续学习</h3>
+      <p>每出一份新报价自动喂回。用得越久，报价越准。</p>
+    </div>
+    <div class="card">
+      <div class="icon">📝</div>
+      <h3>MD 规则</h3>
+      <p>AI 生成 pricing.md。老板看一眼、改两行、保存。一切透明。</p>
+    </div>
+    <div class="card">
+      <div class="icon">🔌</div>
+      <h3>API 直连</h3>
+      <p>对接用友/恩同 ERP。数字员工直接读取实时库存。</p>
+    </div>
+    <div class="card">
+      <div class="icon">🛡️</div>
+      <h3>企业级数据安全</h3>
+      <p>报价数据、客户名单、成本底线全部存储在你的电脑上，加密不上传。我们连碰都碰不到。</p>
     </div>
   </div>
+</section>
 
-  <!-- 定价模式分布 -->
-  <div class="card">
-    <h2>📊 定价模式分布</h2>
-    <div id="modeChart" style="display:flex;gap:12px;flex-wrap:wrap"></div>
+<!-- Digital Employees Catalog -->
+<section class="section" style="padding-top:0">
+  <h2>数字员工 · 即开即用，按需订阅</h2>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px">
+    <div style="background:var(--card);border:1px solid var(--green);border-radius:12px;padding:18px;text-align:center">
+      <div style="font-size:1.4rem">💎</div>
+      <div style="font-weight:600;font-size:.9rem;margin:6px 0">报价员</div>
+      <div style="font-size:.75rem;color:var(--muted);margin-bottom:8px">导入 Excel → AI 学习 → 3秒出价</div>
+      <span style="font-size:.7rem;color:var(--green);font-weight:600">已含</span>
+    </div>
+    <div style="background:var(--card);border:1px solid var(--green);border-radius:12px;padding:18px;text-align:center">
+      <div style="font-size:1.4rem">🎯</div>
+      <div style="font-weight:600;font-size:.9rem;margin:6px 0">客户开发员</div>
+      <div style="font-size:.75rem;color:var(--muted);margin-bottom:8px">搜客户 → 画像 → 开发信</div>
+      <span style="font-size:.7rem;color:var(--green);font-weight:600">已含</span>
+    </div>
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;text-align:center">
+      <div style="font-size:1.4rem">🔍</div>
+      <div style="font-weight:600;font-size:.9rem;margin:6px 0">图片识零件员</div>
+      <div style="font-size:.75rem;color:var(--muted);margin-bottom:8px">拍照 → 识别 OE 号</div>
+      <span style="font-size:.7rem;color:var(--amber);font-weight:600">专业版</span>
+    </div>
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;text-align:center">
+      <div style="font-size:1.4rem">📦</div>
+      <div style="font-weight:600;font-size:.9rem;margin:6px 0">库存管理员</div>
+      <div style="font-size:.75rem;color:var(--muted);margin-bottom:8px">预测 · 预警 · 补货</div>
+      <span style="font-size:.7rem;color:var(--amber);font-weight:600">专业版</span>
+    </div>
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;text-align:center">
+      <div style="font-size:1.4rem">🛃</div>
+      <div style="font-weight:600;font-size:.9rem;margin:6px 0">清关助理</div>
+      <div style="font-size:.75rem;color:var(--muted);margin-bottom:8px">HS 编码 · 报关单</div>
+      <span style="font-size:.7rem;color:var(--red);font-weight:600">企业版</span>
+    </div>
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;text-align:center">
+      <div style="font-size:1.4rem">🌐</div>
+      <div style="font-weight:600;font-size:.9rem;margin:6px 0">多语翻译员</div>
+      <div style="font-size:.75rem;color:var(--muted);margin-bottom:8px">询盘翻译 · 多语言报价</div>
+      <span style="font-size:.7rem;color:var(--red);font-weight:600">企业版</span>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="price" style="text-align:center">
+  <h2>数字员工租赁</h2>
+  <p class="desc">🤖 报价员 + 🔍 客户开发员 — 按结果付费，不卖软件</p>
+  <div style="margin-top:24px">
+    <button class="btn btn-g btn-lg" onclick="location.href='/login'">登录查看套餐</button>
+    <p style="font-size:.78rem;color:var(--muted);margin-top:12px">没有账号？<a href="/login" style="color:var(--green)">免费注册</a>，报价员 + 客户开发员各送 1 次试用</p>
+  </div>
+</section>
+
+</section>
+
+<footer class="footer">
+  © 2026 元策 · 擎天 Atlas — AI 报价引擎
+</footer>
+
+<!-- Register Modal -->
+<div class="modal-overlay" id="reg-modal">
+  <div class="modal">
+    <h2>注册擎天 Atlas</h2>
+    <div class="field"><label>邮箱</label><input type="email" id="reg-email" placeholder="your@company.com"></div>
+    <div class="field"><label>密码</label><input type="password" id="reg-pass" placeholder="至少6位"></div>
+    <div class="field"><label>公司名称</label><input type="text" id="reg-company" placeholder="公司全称"></div>
+    <div class="field"><label>企业类型</label>
+      <select id="reg-type">
+        <option value="">请选择</option>
+        <option value="配件生产商">🏭 配件生产商</option>
+        <option value="经销商/贸易商">🚚 经销商/贸易商</option>
+        <option value="修理厂/服务站">🔧 修理厂/服务站</option>
+        <option value="外贸公司">🌍 外贸公司</option>
+      </select>
+    </div>
+    <div class="err" id="reg-err"></div>
+    <div class="actions">
+      <button class="btn btn-o" onclick="closeModals()">取消</button>
+      <button class="btn btn-g" onclick="doRegister()" id="reg-btn">注册</button>
+    </div>
+    <div class="switch">已有账号？<a onclick="closeModals();showLogin()">去登录</a></div>
+  </div>
+</div>
+
+<!-- Login Modal -->
+<div class="modal-overlay" id="login-modal">
+  <div class="modal">
+    <h2>登录擎天 Atlas</h2>
+    <div class="field"><label>邮箱</label><input type="email" id="login-email" placeholder="your@company.com"></div>
+    <div class="field"><label>密码</label><input type="password" id="login-pass" placeholder="输入密码"></div>
+    <div class="err" id="login-err"></div>
+    <div class="actions">
+      <button class="btn btn-o" onclick="closeModals()">取消</button>
+      <button class="btn btn-g" onclick="doLogin()" id="login-btn">登录</button>
+    </div>
+    <div class="switch">没有账号？<a onclick="closeModals();showRegister()">去注册</a></div>
   </div>
 </div>
 
 <script>
-if(!localStorage.getItem('atlas_token'))location='/login';
-function logout(){localStorage.removeItem('atlas_token');location='/login'}
+// ═══ Theme Toggle ═══
+(function(){
+  const saved = localStorage.getItem('atlas-theme') || 'dark';
+  document.documentElement.setAttribute('data-theme', saved);
+})();
+function toggleTheme(){
+  const cur = document.documentElement.getAttribute('data-theme');
+  const next = cur === 'light' ? 'dark' : 'light';
+  document.documentElement.setAttribute('data-theme', next);
+  localStorage.setItem('atlas-theme', next);
+  const btn = document.getElementById('themeToggle');
+  if (btn) btn.textContent = next === 'light' ? '☀️' : '🌙';
+}
+const API = '';
+const token = localStorage.getItem('atlas_token');
 
-async function loadDashboard(){
-  try{
-    const r=await fetch('/api/dashboard');
-    const d=await r.json();
-    if(!d.ok){console.error(d.error);return}
-
-    const s=d.data.stats;
-    document.getElementById('statParts').textContent=s.parts;
-    document.getElementById('statAlerts').textContent=s.alerts;
-    document.getElementById('statBrands').textContent=s.brands;
-    document.getElementById('statStock').textContent=s.stock;
-
-    // Alert badge
-    const badge=document.getElementById('alertBadge');
-    if(s.alerts>0){badge.style.display='inline-block';badge.textContent=s.alerts}
-    else badge.style.display='none';
-
-    // Stock alerts
-    const alerts=d.data.stock_alerts||[];
-    document.getElementById('alertCount').textContent=`共${alerts.length}项`;
-    const al=document.getElementById('alertList');
-    if(!alerts.length){al.innerHTML='<div class="empty">✅ 所有库存正常</div>'}
-    else{
-      al.innerHTML='<table><tr><th>配件</th><th>库存</th><th>安全线</th><th>缺口</th><th>预估成本</th></tr>'+
-        alerts.map(a=>`<tr>
-          <td title="${a.part_oe}">${a.name_cn||a.part_oe}</td>
-          <td><span class="tag tag-${a.quantity<=a.safety_line*0.5?'err':'warn'}">${a.quantity}</span></td>
-          <td>${a.safety_line}</td>
-          <td style="color:var(--red)">${a.gap}</td>
-          <td>¥${(a.list_price*a.gap).toLocaleString()}</td>
-        </tr>`).join('')+'</table>';
-    }
-
-    // Recent activity
-    const act=d.data.recent_activity||[];
-    const actl=document.getElementById('activityList');
-    if(!act.length){actl.innerHTML='<div class="empty">暂无活动记录</div>'}
-    else{
-      actl.innerHTML=act.map(a=>`<div style="padding:10px 0;border-bottom:1px solid #f0f0f0;font-size:.82rem">
-        <span style="color:var(--muted)">📋</span>
-        <a href="#" onclick="viewTrace('${a}')" style="color:var(--green)">${a}</a>
-      </div>`).join('');
-    }
-
-    // Mode chart
-    const mc=document.getElementById('modeChart');
-    const total= (s.modes||[]).reduce((sum,m)=>sum+m.count,0);
-    mc.innerHTML=(s.modes||[]).map(m=>{
-      const pct=total>0?Math.round(m.count/total*100):0;
-      const colors={STANDARD:'#7ecf5e',FIXED_STOCK:'#3b82f6',COST_BASED:'#f59e0b',NEGOTIATED:'#e94560'};
-      const labels={STANDARD:'标准折扣',FIXED_STOCK:'一口价',COST_BASED:'成本加成',NEGOTIATED:'一单一议'};
-      return `<div style="flex:1;min-width:120px;background:var(--card);border-radius:12px;padding:14px;text-align:center;border:1px solid var(--line)">
-        <div style="font-size:1.5rem;font-weight:700;color:${colors[m.mode]||'#888'}">${m.count}</div>
-        <div style="font-size:.75rem;color:var(--muted)">${labels[m.mode]||m.mode}</div>
-        <div style="font-size:.7rem;color:var(--muted);margin-top:2px">${pct}%</div>
-      </div>`;
-    }).join('');
-  }catch(e){console.error(e)}
+// Auto-login check
+if (token) {
+  fetch(API+'/api/me', {headers:{'Authorization':'Bearer '+token}}).then(r=>r.json()).then(d=>{
+    if (d.ok) { document.getElementById('nav-login').style.display='none'; document.getElementById('nav-user').style.display='inline'; }
+    else { localStorage.removeItem('atlas_token'); }
+  }).catch(()=>{});
 }
 
-function viewTrace(id){fetch('/api/trace/'+id).then(r=>r.json()).then(d=>{
-  const steps=(d.data||[]).map(s=>`${s.step}: ${s.agent} → ${s.decision||'OK'}`).join('\n');
-  alert('AI计算链:\n\n'+steps.slice(0,800));
-})}
+function closeModals() {
+  document.getElementById('reg-modal').classList.remove('show');
+  document.getElementById('login-modal').classList.remove('show');
+}
+function showRegister() { closeModals(); document.getElementById('reg-modal').classList.add('show'); }
+function showLogin() { closeModals(); document.getElementById('login-modal').classList.add('show'); }
 
-loadDashboard();
-</script></body></html>
+async function doRegister() {
+  const btn = document.getElementById('reg-btn');
+  const err = document.getElementById('reg-err');
+  const email = document.getElementById('reg-email').value.trim();
+  const password = document.getElementById('reg-pass').value.trim();
+  const company = document.getElementById('reg-company').value.trim();
+  const company_type = document.getElementById('reg-type').value;
+  if (!email || !password || !company || !company_type) { err.textContent = '请填写所有字段'; err.style.display='block'; return; }
+  if (password.length < 6) { err.textContent = '密码至少6位'; err.style.display='block'; return; }
+  btn.textContent = '注册中...'; btn.disabled = true;
+  try {
+    const r = await fetch(API+'/api/register', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password,company,company_type})});
+    const d = await r.json();
+    if (d.ok) {
+      localStorage.setItem('atlas_token', d.token);
+      localStorage.setItem('atlas_user', JSON.stringify(d.user));
+      window.location.href = '/dashboard';
+    } else {
+      err.textContent = d.error || '注册失败'; err.style.display='block';
+    }
+  } catch(e) { err.textContent = '网络错误'; err.style.display='block'; }
+  btn.textContent = '注册'; btn.disabled = false;
+}
+
+async function doLogin() {
+  const btn = document.getElementById('login-btn');
+  const err = document.getElementById('login-err');
+  const email = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-pass').value.trim();
+  if (!email || !password) { err.textContent = '请输入邮箱和密码'; err.style.display='block'; return; }
+  btn.textContent = '登录中...'; btn.disabled = true;
+  try {
+    const r = await fetch(API+'/api/login', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password})});
+    const d = await r.json();
+    if (d.ok) {
+      localStorage.setItem('atlas_token', d.token);
+      localStorage.setItem('atlas_user', JSON.stringify(d.user));
+      window.location.href = '/dashboard';
+    } else {
+      err.textContent = d.error || '登录失败'; err.style.display='block';
+    }
+  } catch(e) { err.textContent = '网络错误'; err.style.display='block'; }
+  btn.textContent = '登录'; btn.disabled = false;
+}
+
+function doPurchase(plan, period) {
+  if (!token) { showRegister(); return; }
+  fetch(API+'/api/recharge', {method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({plan,period})}).then(r=>r.json()).then(d=>{
+    if (d.ok && d.order && d.order.pay_url) window.open(d.order.pay_url);
+    else alert(d.error || '创建订单失败');
+  }).catch(()=>alert('网络错误'));
+}
+
+// Enter key for login/register
+document.getElementById('login-pass').addEventListener('keydown', e => { if (e.key==='Enter') doLogin(); });
+document.getElementById('reg-type').addEventListener('keydown', e => { if (e.key==='Enter') doRegister(); });
+</script>
+</body>
+</html>

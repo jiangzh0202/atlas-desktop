@@ -9,51 +9,57 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from .matrix import match_discount
 from sentinel import check_price_floor
+from config import cfg, get_dimension, get_brand_rules, get_approval_flow
 
 
+# ═══════════ 12维报价变量 (§8.3) — 全部来自 config ═══════════
+# 所有维度系数现在从 config/rules.yaml 的 dimensions 节点读取
+# cfg.get('rules','dimensions','<key>') 替代了硬编码 dict
 
-# ═══════════ 12维报价变量 (§8.3) ═══════════
-
-REGION_MATURITY = {"east_asia":1.0,"southeast_asia":1.05,"middle_east":1.08,"africa":1.12,"south_america":1.10,"east_europe":1.06}
-PAYMENT_PREMIUM = {"prepaid":0,"bl_copy":0.02,"15days":0.03,"30days":0.05,"60days":0.08,"90days":0.12}
-WARRANTY_PREMIUM = {"none":0,"normal":0,"extended":0.05}
-STAR_MARGIN_FLOOR = {1:0.25,2:0.20,3:0.15,4:0.12,5:0.08,6:0.06,7:0.05}
-APPLICATION_RISK = {"truck":1.0,"mining":1.15,"excavator":1.10,"generator":1.05,"bus":1.02,"marine":1.20,"power_pack":1.08}
 
 def apply_twelve_dimensions(base_price, dims=None):
     """12维变量叠加"""
     d = dims or {}
     price = base_price
     adj = []
-    
-    qg = d.get("quality_grade","B+")
-    qf = {"A+":1.08,"B+":1.0,"C+":0.92,"D":0.85}.get(qg,1.0)
-    price *= qf; adj.append(f"质量档{qg} x{qf}")
-    
-    tt = d.get("trade_term","FOB")
-    tf = {"FOB":1.0,"CNF":1.03,"CIF":1.06}.get(tt,1.0)
-    price *= tf; adj.append(f"贸易术语{tt} x{tf}")
-    
-    pt = d.get("payment_term","prepaid")
-    pp = PAYMENT_PREMIUM.get(pt,0)
-    price *= (1+pp); adj.append(f"付款{pt} +{pp*100:.0f}%")
-    
-    reg = d.get("region","east_asia")
-    rf = REGION_MATURITY.get(reg,1.0)
-    price *= rf; adj.append(f"地区{reg} x{rf}")
-    
-    app = d.get("application","truck")
-    af = APPLICATION_RISK.get(app,1.0)
-    price *= af; adj.append(f"场景{app} x{af}")
-    
-    war = d.get("warranty","normal")
-    wp = WARRANTY_PREMIUM.get(war,0)
-    price *= (1+wp); adj.append(f"质保{war} +{wp*100:.0f}%")
-    
-    margin = d.get("profit_margin",0.08)
-    price *= (1+margin); adj.append(f"利润率{margin*100:.0f}%")
-    
-    return round(price,2), adj
+
+    qg = d.get("quality_grade", "B+")
+    qf = cfg.get("rules", "dimensions", "quality_grade", default={}).get(qg, 1.0)
+    price *= qf
+    adj.append(f"质量档{qg} x{qf}")
+
+    tt = d.get("trade_term", "FOB")
+    tf = cfg.get("rules", "dimensions", "trade_term", default={}).get(tt, 1.0)
+    price *= tf
+    adj.append(f"贸易术语{tt} x{tf}")
+
+    pt = d.get("payment_term", "prepaid")
+    pp = cfg.get("rules", "dimensions", "payment_term", default={}).get(pt, 0)
+    price *= (1 + pp)
+    adj.append(f"付款{pt} +{pp*100:.0f}%")
+
+    reg = d.get("region", "east_asia")
+    rf = cfg.get("rules", "dimensions", "region", default={}).get(reg, 1.0)
+    price *= rf
+    adj.append(f"地区{reg} x{rf}")
+
+    app = d.get("application", "truck")
+    af = cfg.get("rules", "dimensions", "application", default={}).get(app, 1.0)
+    price *= af
+    adj.append(f"场景{app} x{af}")
+
+    war = d.get("warranty", "normal")
+    wp = cfg.get("rules", "dimensions", "warranty", default={}).get(war, 0)
+    price *= (1 + wp)
+    adj.append(f"质保{war} +{wp*100:.0f}%")
+
+    default_margin = cfg.get("rules", "dimensions", "default_profit_margin", default=0.08)
+    margin = d.get("profit_margin", default_margin)
+    price *= (1 + margin)
+    adj.append(f"利润率{margin*100:.0f}%")
+
+    return round(price, 2), adj
+
 
 def calculate_line_price(part: dict, quantity: int, rules: dict = None) -> dict:
     """一条配件 → 一个报价（四种模式）

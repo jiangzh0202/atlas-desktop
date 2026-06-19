@@ -6,9 +6,25 @@ import sys, os, json, io
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 
-from flask import Flask, request, jsonify, send_file
+from flask import Flask, request, jsonify, send_file, g
 from flask_cors import CORS
 
+import sys, os
+sys.path.insert(0, os.path.dirname(__file__))
+
+from config import cfg, get_plans, get_brand_rules, get_approval_flow, get_price_floors, get_dimension, calc_procurement_units, sku_per_unit
+from middleware import require_auth, require_role, sign_jwt, verify_jwt
+from puzzler_engine import (find_leads, background_check, generate_email, full_pipeline, match_analysis, configure_smtp, send_email_via_smtp, send_bulk_emails, SMTP_CONFIG, PRODUCT_LINES, INFO_SOURCES)
+from pipeline import get_pipeline  # 硬管道骨架
+from review_criteria import ReviewCriteria  # 审查标准保护层
+from email_utils import check_spam_score, build_html_email
+from models import (
+    init_db, ensure_admin, verify_login, get_user, list_users, create_user, delete_user,
+    role_can, get_role_label, log_usage, get_usage, ROLES, DB_PATH
+)
+
+# Init DB
+ensure_admin()
 app = Flask(__name__)
 CORS(app)
 
@@ -17,8 +33,62 @@ CORS(app)
 def health():
     return jsonify({"ok": True, "service": "atlas-api", "version": "2.0"})
 
+@app.route("/api/login", methods=["POST"])
+def api_login():
+    data = request.get_json() or {}
+    email = data.get("email", "").strip()
+    password = data.get("password", "")
+    if not email or not password:
+        return jsonify({"ok": False, "error": "请输入邮箱和密码"}), 400
+    user = verify_login(email, password)
+    if not user:
+        return jsonify({"ok": False, "error": "邮箱或密码错误"}), 401
+    from middleware import sign_jwt
+    import time
+    token = sign_jwt({
+        "sub": user["id"], "user_id": user["id"],
+        "role": user.get("role", "user"),
+        "company_id": user.get("company_id", ""),
+        "iat": int(time.time()), "exp": int(time.time()) + 86400 * 7
+    })
+    return jsonify({"ok": True, "token": token, "user": {
+        "id": user["id"], "name": user.get("name",""), "email": email,
+        "role": user.get("role","user"), "company_id": user.get("company_id","")
+    }})
+
+@app.route("/api/register", methods=["POST"])
+def api_register():
+    data = request.get_json() or {}
+    email = data.get("email", "").strip()
+    password = data.get("password", "")
+    name = data.get("name", email.split("@")[0] if "@" in email else "")
+    company = data.get("company", "")
+    if not email or not password:
+        return jsonify({"ok": False, "error": "请输入邮箱和密码"}), 400
+    if "@" not in email or len(password) < 4:
+        return jsonify({"ok": False, "error": "邮箱格式错误或密码过短（至少4位）"}), 400
+    # Check existing
+    existing = verify_login(email, password)
+    # Actually check if just email exists (wrong password also means exists)
+    try:
+        cur = db.cursor()
+        cur.execute("SELECT id FROM users WHERE email = ?", (email,))
+        if cur.fetchone():
+            return jsonify({"ok": False, "error": "该邮箱已注册，请直接登录"}), 409
+    except:
+        pass
+    import uuid
+    uid = "U-" + str(uuid.uuid4())[:12]
+    try:
+        create_user(email=email, password=password, name=name, role="user", company_id=company or "COMPANY-DEFAULT")
+        return jsonify({"ok": True, "message": "注册成功"})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
 # ─── 配件搜索 ───
 @app.route("/api/parts")
+@require_role("quote")
 def search_parts():
     q = request.args.get("q", "")
     if not q:
@@ -32,6 +102,7 @@ def search_parts():
 
 # ─── 解析上传的Excel询盘 ───
 @app.route("/api/parse", methods=["POST"])
+@require_role("quote")
 def parse_inquiry():
     if "file" not in request.files:
         return jsonify({"ok": False, "error": "请上传Excel文件"})
@@ -83,6 +154,7 @@ def parse_inquiry():
 
 # ─── 报价计算 ───
 @app.route("/api/quote", methods=["POST"])
+@require_role("quote")
 def calculate_quote():
     try:
         data = request.get_json(force=True)
@@ -123,6 +195,7 @@ def calculate_quote():
 
 # ─── 报价 Excel 导出 ───
 @app.route("/api/quote/<quote_id>/export")
+@require_role("quote")
 def export_quote_excel(quote_id):
     """
     GET /api/quote/<quote_id>/export — 导出报价单为 Excel
@@ -295,6 +368,7 @@ def export_quote_excel(quote_id):
 
 # ─── 报价对比 ───
 @app.route("/api/quote/compare", methods=["POST"])
+@require_role("quote")
 def compare_quote():
     """
     POST /api/quote/compare — 报价对比
@@ -324,6 +398,7 @@ def compare_quote():
 
 # ─── 客户列表 ───
 @app.route("/api/customers")
+@require_role("quote")
 def list_customers():
     try:
         from core import get_db
@@ -336,9 +411,20 @@ def list_customers():
 
 # ─── 规则面板 ───
 @app.route("/api/rules", methods=["GET", "POST"])
+@require_role("manage")
 def handle_rules():
     import os, shutil, time
-    rules_path = os.path.join(os.path.dirname(__file__), "data", "rules.md")
+    agent = request.args.get("agent", "quoter").strip()
+    AGENT_RULES = {
+        "quoter": "rules.quoter.md",
+        "developer": "rules.developer.md",
+        "buyer": "rules.buyer.md",
+        "image": "rules.image.md",
+        "stock": "rules.stock.md",
+        "customs": "rules.customs.md",
+    }
+    rules_file = AGENT_RULES.get(agent, "rules.md")
+    rules_path = os.path.join(os.path.dirname(__file__), "data", rules_file)
     backup_dir = os.path.join(os.path.dirname(__file__), "data", "rules_backups")
     os.makedirs(backup_dir, exist_ok=True)
     
@@ -360,6 +446,7 @@ def handle_rules():
     return jsonify({"ok": True, "message": "saved", "size": len(content), "backups": backups})
 
 @app.route("/api/rules/versions")
+@require_role("manage")
 def list_rule_versions():
     import time
     import os
@@ -373,6 +460,7 @@ def list_rule_versions():
     return jsonify({"ok": True, "data": vers[:20], "count": len(vers)})
 
 @app.route("/api/rules/restore/<filename>")
+@require_role("manage")
 def restore_rule_version(filename):
     import time
     import os, shutil
@@ -386,7 +474,354 @@ def restore_rule_version(filename):
     shutil.copy2(bp, rp)
     raw = open(rp, encoding="utf-8").read()
     return jsonify({"ok": True, "raw": raw, "message": f"Restored to {filename}"})
+
+# ─── 训练 — 上传历史报价Excel → AI审视提取规则 → 更新记忆 ───
+# ─── 知识库上传 — 上传参考文件到指定Agent的知识库 ───
+@app.route("/api/kb/upload", methods=["POST"])
+@require_role("quote")
+def kb_upload():
+    """
+    上传参考文件到指定Agent的知识库目录
+    Body: multipart/form-data with 'file' and 'agent' fields
+    Returns: {ok, filename, path}
+    """
+    try:
+        if 'file' not in request.files:
+            return jsonify({"ok": False, "error": "请上传文件"})
+        f = request.files['file']
+        agent = request.form.get('agent', 'quoter').strip()
+        # Security: only allow alphanumeric agent names
+        import re
+        if not re.match(r'^[a-z]+$', agent):
+            return jsonify({"ok": False, "error": "无效的agent名称"})
+        
+        kb_dir = os.path.join(os.path.dirname(__file__), "data", "kb", agent)
+        os.makedirs(kb_dir, exist_ok=True)
+        
+        # Safe filename
+        safe_name = re.sub(r'[^a-zA-Z0-9_.\-]', '_', f.filename)
+        filepath = os.path.join(kb_dir, safe_name)
+        f.save(filepath)
+        
+        return jsonify({"ok": True, "filename": safe_name, "path": filepath, "agent": agent})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)})
+
+
+# ─── 知识库列表 — 返回已上传的知识库文件清单 ───
+@app.route("/api/kb/list")
+@require_role("quote")
+def kb_list():
+    """返回所有Agent的知识库文件列表"""
+    try:
+        agent_filter = request.args.get("agent", "").strip()
+        kb_root = os.path.join(os.path.dirname(__file__), "data", "kb")
+        files = []
+        if os.path.exists(kb_root):
+            for agent_dir in sorted(os.listdir(kb_root)):
+                if agent_filter and agent_dir != agent_filter:
+                    continue
+                agent_path = os.path.join(kb_root, agent_dir)
+                if os.path.isdir(agent_path):
+                    for fname in sorted(os.listdir(agent_path)):
+                        fpath = os.path.join(agent_path, fname)
+                        if os.path.isfile(fpath):
+                            st = os.stat(fpath)
+                            files.append({
+                                "name": fname,
+                                "agent": agent_dir,
+                                "size": st.st_size,
+                                "modified": st.st_mtime,
+                                "path": f"data/kb/{agent_dir}/{fname}"
+                            })
+        return jsonify({"ok": True, "files": files, "total": len(files)})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)})
+
+@app.route("/api/train", methods=["POST"])
+@require_role("quote")
+def train_from_history():
+    """
+    客户上传历史报价Excel → AI按审视表逐维度提取定价规则 → 写入 rules.{agent}.md（记忆）
+    ?agent=quoter|developer|image|stock|customs — 指定训练哪个数字员工
+    Body: multipart/form-data with 'file' (xlsx) and optional 'customer_name'
+    Returns: training report with extracted patterns
+    """
+    agent = request.args.get("agent", "quoter").strip()
+    # Map agent to rules file
+    AGENT_RULES = {
+        "quoter": "rules.quoter.md",
+        "developer": "rules.developer.md",
+        "buyer": "rules.buyer.md",
+        "image": "rules.image.md",
+        "stock": "rules.stock.md",
+        "customs": "rules.customs.md",
+    }
+    rules_filename = AGENT_RULES.get(agent, "rules.md")
+    try:
+        import tempfile, re
+        from openpyxl import load_workbook
+        
+        if 'file' not in request.files:
+            return jsonify({"ok": False, "error": "请上传 xlsx 文件"})
+        
+        f = request.files['file']
+        if not f.filename.endswith(('.xlsx', '.xls')):
+            return jsonify({"ok": False, "error": "仅支持 .xlsx 格式"})
+        
+        tmp = tempfile.NamedTemporaryFile(delete=False, suffix='.xlsx')
+        f.save(tmp.name)
+        wb = load_workbook(tmp.name, data_only=True)
+        os.unlink(tmp.name)
+        
+        # ─── Agent-adaptive column detection ───
+        AGENT_COLUMNS = {
+            "quoter":    ['折扣', '单价', '数量', '牌价', '折后', '折扣率'],
+            "developer": ['客户', '国家', '行业', '来源', '联系人', '邮箱', '电话', '采购'],
+            "buyer":     ['供应商', '报价', '单价', '品牌', '货期', '付款', '税点'],
+            "stock":     ['库存', '安全库存', '周转', '入库', '出库', 'SKU', '品名'],
+            "customs":   ['HS', '海关', '品名', '申报', '报关', '税率', '原产'],
+            "image":     ['零件', '型号', 'OE号', '识别', '标签'],
+        }
+        keywords = AGENT_COLUMNS.get(agent, AGENT_COLUMNS['quoter'])
+        
+        # Find the best-matching sheet
+        target_sheet = None
+        header_row = None
+        col_map = {}
+        best_score = 0
+        
+        for sname in wb.sheetnames:
+            ws = wb[sname]
+            for r in range(1, min(10, ws.max_row + 1)):
+                header = []
+                for c in range(1, ws.max_column + 1):
+                    val = str(ws.cell(r, c).value or '').strip()
+                    header.append(val)
+                header_str = ' '.join(header)
+                score = sum(1 for k in keywords if k in header_str)
+                if score > best_score:
+                    best_score = score
+                    target_sheet = sname
+                    header_row = r
+                    col_map = {}
+                    for c in range(1, ws.max_column + 1):
+                        val = str(ws.cell(r, c).value or '').strip()
+                        if val:
+                            col_map[val] = c
+            if target_sheet and best_score >= len(keywords) // 2 + 1:
+                break
+        
+        if not target_sheet or best_score == 0:
+            # Fallback: use first sheet, treat all columns as data
+            target_sheet = wb.sheetnames[0]
+            ws = wb[target_sheet]
+            header_row = 1
+            col_map = {}
+            for c in range(1, ws.max_column + 1):
+                val = str(ws.cell(1, c).value or '').strip() or f'Column_{c}'
+                col_map[val] = c
+        
+        # Extract all data rows
+        records = []
+        ws = wb[target_sheet]
+        col_count = len(col_map)
+        for r in range(header_row + 1, ws.max_row + 1):
+            row = {}
+            has_data = False
+            for label, col in col_map.items():
+                val = ws.cell(r, col).value
+                row[label] = val
+                if val is not None:
+                    has_data = True
+            if has_data:
+                records.append({'row': r, **row})
+        
+        # ─── Agent-specific pattern analysis ───
+        patterns = {}
+        pattern_type = "模式"
+        
+        if agent == "quoter":
+            # Extract discount patterns
+            discount_records = []
+            for rec in records:
+                discount = None
+                qty = None
+                for key, val in rec.items():
+                    kv = str(key).lower()
+                    if val is None:
+                        continue
+                    try:
+                        v = float(str(val).replace(',','').replace(' ',''))
+                    except:
+                        continue
+                    if '数量' in kv or 'кол' in kv or 'qty' in kv:
+                        qty = int(v)
+                    elif ('折扣' in kv or '率' in kv) and '系数' not in kv:
+                        discount = v
+                if discount is not None:
+                    rounded = round(discount, -1) if discount > 10 else round(discount)
+                    key = f"折扣{rounded}%"
+                    if key not in patterns:
+                        patterns[key] = {'count': 0, 'values': []}
+                    patterns[key]['count'] += 1
+                    patterns[key]['values'].append(discount)
+            pattern_type = "折扣模式"
+        
+        elif agent == "developer":
+            # Extract customer/country/industry distributions
+            for col_name in ['国家', '行业', '来源', '客户']:
+                cats = {}
+                for rec in records:
+                    for key, val in rec.items():
+                        if col_name in str(key) and val:
+                            v = str(val).strip()
+                            if v and v != 'None':
+                                cats[v] = cats.get(v, 0) + 1
+                if cats:
+                    top = sorted(cats.items(), key=lambda x: x[1], reverse=True)[:10]
+                    for name, cnt in top:
+                        patterns[f"{col_name}:{name}"] = {'count': cnt, 'values': []}
+            pattern_type = "客户分布"
+        
+        elif agent == "stock":
+            # Extract stock quantity ranges
+            for rec in records:
+                for key, val in rec.items():
+                    kv = str(key).lower()
+                    if val is None:
+                        continue
+                    try:
+                        v = int(float(str(val).replace(',','').replace(' ','')))
+                    except:
+                        continue
+                    if any(k in kv for k in ['库存', '数量', '安全']):
+                        if v < 10: bucket = "0-9"
+                        elif v < 100: bucket = "10-99"
+                        elif v < 1000: bucket = "100-999"
+                        else: bucket = "1000+"
+                        key = f"库存:{bucket}"
+                        if key not in patterns:
+                            patterns[key] = {'count': 0, 'values': []}
+                        patterns[key]['count'] += 1
+                        patterns[key]['values'].append(v)
+            pattern_type = "库存分布"
+        
+        elif agent == "buyer":
+            # Extract supplier + price patterns
+            for rec in records:
+                supplier = None
+                price = None
+                for key, val in rec.items():
+                    if val is None:
+                        continue
+                    kv = str(key).lower()
+                    if '供应商' in kv or '供货' in kv:
+                        supplier = str(val).strip()
+                    elif '报价' in kv or '单价' in kv or '价格' in kv:
+                        try:
+                            price = float(str(val).replace(',','').replace(' ',''))
+                        except:
+                            pass
+                if supplier and price is not None:
+                    key = f"供应商:{supplier}"
+                    if key not in patterns:
+                        patterns[key] = {'count': 0, 'values': []}
+                    patterns[key]['count'] += 1
+                    patterns[key]['values'].append(price)
+            # Also count by price range
+            price_ranges = {}
+            for rec in records:
+                for key, val in rec.items():
+                    if val is None:
+                        continue
+                    try:
+                        p = float(str(val).replace(',','').replace(' ',''))
+                    except:
+                        continue
+                    if any(k in str(key).lower() for k in ['报价', '单价', '价格']):
+                        if p < 100: bucket = "0-99"
+                        elif p < 1000: bucket = "100-999"
+                        elif p < 5000: bucket = "1000-4999"
+                        else: bucket = "5000+"
+                        k2 = f"价格区间:{bucket}"
+                        patterns[k2] = patterns.get(k2, {'count': 0, 'values': []})
+                        patterns[k2]['count'] += 1
+                        patterns[k2]['values'].append(p)
+            pattern_type = "供应商报价分布"
+        
+        elif agent == "customs":
+            # Extract HS code patterns
+            for rec in records:
+                for key, val in rec.items():
+                    kv = str(key).lower()
+                    if val is None:
+                        continue
+                    if any(k in kv for k in ['hs', '海关', '编码', 'code']):
+                        code = str(val).strip()[:4]
+                        key = f"HS前4位:{code}"
+                        if key not in patterns:
+                            patterns[key] = {'count': 0, 'values': []}
+                        patterns[key]['count'] += 1
+            pattern_type = "HS编码分布"
+        
+        else:
+            # Generic: count columns and data distribution
+            patterns['数据行数'] = {'count': len(records), 'values': []}
+            patterns['列数'] = {'count': col_count, 'values': []}
+            patterns['工作表'] = {'count': 1, 'values': [target_sheet] if isinstance(target_sheet, str) else []}
+            pattern_type = "数据概览"
+        
+        # ─── Generate training report ───
+        agent_cn = {"developer":"客户开发员","quoter":"报价员","buyer":"采购员","image":"图片识零件员","stock":"库存管理员","customs":"清关助理"}
+        agent_name = agent_cn.get(agent, agent)
+        
+        report_lines = [
+            f"## {agent_name} 训练报告 · {f.filename}",
+            f"训练时间: {__import__('datetime').datetime.now().strftime('%Y-%m-%d %H:%M')}",
+            f"数据源: {target_sheet} (共{len(wb.sheetnames)}个工作表)",
+            f"提取数据行数: {len(records)}",
+            f"识别列数: {len(col_map)}",
+            f"",
+            f"### 发现的{pattern_type}",
+        ]
+        
+        for key, data in sorted(patterns.items(), key=lambda x: x[1]['count'], reverse=True):
+            vals = data.get('values', [])
+            extra = ''
+            if vals:
+                try:
+                    avg = sum(vals) / len(vals)
+                    extra = f', 平均值={avg:.1f}'
+                except:
+                    pass
+            report_lines.append(f"- {key}: 出现{data['count']}次{extra}")
+        
+        report = '\n'.join(report_lines)
+        
+        # Append to rules.md as training memory
+        rules_path = os.path.join(os.path.dirname(__file__), "data", rules_filename)
+        if os.path.exists(rules_path):
+            with open(rules_path, "a", encoding="utf-8") as rf:
+                rf.write(f"\n\n{report}\n")
+        
+        return jsonify({
+            "ok": True,
+            "message": f"训练完成。从 {target_sheet} 提取了 {len(records)} 条报价记录",
+            "record_count": len(records),
+            "patterns_found": len(patterns),
+            "report": report,
+            "sheet_used": target_sheet,
+            "total_sheets": len(wb.sheetnames),
+        })
+    
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({"ok": False, "error": str(e)})
+
 @app.route("/api/trace/<quote_id>")
+@require_role("quote")
 def get_trace(quote_id):
     from ledger.trace import audit
     trace = audit.get_trace(quote_id)
@@ -394,6 +829,7 @@ def get_trace(quote_id):
 
 # ─── 报价历史 ───
 @app.route("/api/history")
+@require_role("quote")
 def list_history():
     """返回完整报价历史（含金额/日期/配件数/状态）"""
     try:
@@ -442,6 +878,7 @@ def list_history():
 
 # ─── 库存查询 ───
 @app.route("/api/stock")
+@require_role("quote")
 def get_stock_api():
     try:
         from core import get_stock
@@ -452,6 +889,7 @@ def get_stock_api():
 
 # ─── 库存预警 ───
 @app.route("/api/stock/alerts")
+@require_role("quote")
 def get_stock_alerts_api():
     try:
         from core import get_stock_alerts
@@ -462,6 +900,7 @@ def get_stock_alerts_api():
 
 # ─── 事件链触发（模拟报价完成 → 减库存 → 预警 → 补货建议）───
 @app.route("/api/trigger-event", methods=["POST"])
+@require_role("quote")
 def trigger_event():
     """
     模拟报价完成事件，触发完整事件链:
@@ -565,6 +1004,7 @@ def trigger_event():
 
 # ─── 智能体状态 ───
 @app.route("/api/agents/status")
+@require_role("dashboard")
 def agents_status():
     """返回所有智能体的运行状态"""
     try:
@@ -617,6 +1057,7 @@ def agents_status():
 # ═══════════ 别名映射 API ═══════════
 
 @app.route("/api/aliases")
+@require_role("quote")
 def search_aliases():
     """GET /api/aliases?q=xxx — 搜索别名（FTS5 + 别名表）"""
     q = request.args.get("q", "")
@@ -632,6 +1073,7 @@ def search_aliases():
 
 
 @app.route("/api/aliases/suggest", methods=["POST"])
+@require_role("quote")
 def suggest_aliases():
     """
     POST /api/aliases/suggest — AI 建议
@@ -652,6 +1094,7 @@ def suggest_aliases():
 
 
 @app.route("/api/aliases/confirm", methods=["POST"])
+@require_role("quote")
 def confirm_alias_api():
     """
     POST /api/aliases/confirm — 人工确认别名
@@ -687,6 +1130,7 @@ def confirm_alias_api():
 
 
 @app.route("/api/aliases/<int:part_id>", methods=["GET"])
+@require_role("quote")
 def get_part_aliases(part_id):
     """GET /api/aliases/<part_id> — 获取某配件的所有别名"""
     try:
@@ -699,6 +1143,7 @@ def get_part_aliases(part_id):
 
 
 @app.route("/api/aliases/unconfirmed", methods=["GET"])
+@require_role("quote")
 def get_unconfirmed():
     """GET /api/aliases/unconfirmed — 获取所有待确认的 AI 建议别名"""
     try:
@@ -711,6 +1156,7 @@ def get_unconfirmed():
 
 # ─── 翻译接口 ───
 @app.route("/api/translate", methods=["POST"])
+@require_role("quote")
 def translate_text():
     """POST /api/translate — 翻译询盘文本
     请求: {"text": "...", "source_lang": "ru", "target_lang": "zh"}
@@ -737,6 +1183,7 @@ def translate_text():
 
 # ─── PI 生成接口 ───
 @app.route("/api/pi/generate", methods=["POST"])
+@require_role("quote")
 def generate_pi():
     """POST /api/pi/generate — 根据报价结果生成 PI 草稿
     请求: {
@@ -780,6 +1227,7 @@ def generate_pi():
 
 # ─── 询盘处理（翻译+提取+PI一体化）───
 @app.route("/api/inquiry/process", methods=["POST"])
+@require_role("quote")
 def process_inquiry():
     """POST /api/inquiry/process — 一站式询盘处理
     请求: {"text": "俄文/英文询盘", "language": "ru", "customer": "客户名"}
@@ -824,6 +1272,7 @@ def process_inquiry():
 
 # ─── 价格变更接口 ───
 @app.route("/api/price/update", methods=["POST"])
+@require_role("manage")
 def update_price():
     """POST /api/price/update — 更新配件价格并发布 price.changed 事件
     请求: {"oe_number": "PART-0001", "new_price": 4500.00, "brand": "A2080"}
@@ -944,6 +1393,7 @@ def update_price():
 
 # ─── 首页看板 ───
 @app.route("/api/dashboard")
+@require_role("dashboard")
 def dashboard():
     """返回首页看板数据：核心指标 + 库存预警 + 最近活动"""
     try:
@@ -1021,18 +1471,16 @@ def dashboard():
 
 # ─── 套餐查询 ───
 @app.route("/api/plans")
+@require_auth
 def get_plans():
     """返回四个订阅套餐"""
-    plans = [
-        {"id":"starter","name":"微光","monthly_price":1500,"yearly_price":13500,"quota":300,"overage_price":8,"features":["AI报价引擎","配件匹配","报价单导出","邮件支持"]},
-        {"id":"standard","name":"标准","monthly_price":4800,"yearly_price":43200,"quota":1000,"overage_price":6,"features":["AI报价引擎","配件匹配","报价单导出","采购建议","库存预警","电话支持"]},
-        {"id":"unlimited","name":"无界","monthly_price":9800,"yearly_price":88200,"quota":3000,"overage_price":4,"features":["AI报价引擎","配件匹配","报价单导出","采购建议","库存预警","外贸翻译","PI生成","优先支持"]},
-        {"id":"enterprise","name":"企业","monthly_price":0,"yearly_price":120000,"quota":999999,"overage_price":0,"features":["全部功能","私有部署","不限调用","数据不出门","专属运维","定制开发"]},
-    ]
-    return jsonify({"ok":True,"data":plans})
+    from config import get_plans as _load_plans
+    plans = _load_plans()
+    return jsonify({"ok": True, "data": plans})
 
 # ─── 订单创建 ───
 @app.route("/api/orders", methods=["GET","POST"])
+@require_role("manage")
 def orders():
     if request.method == "GET":
         try:
@@ -1052,13 +1500,8 @@ def orders():
         period = data.get("period","month")  # month or year
         
         # Get plan
-        plans_list = [
-            {"id":"starter","monthly_price":1500,"yearly_price":13500},
-            {"id":"standard","monthly_price":4800,"yearly_price":43200},
-            {"id":"unlimited","monthly_price":9800,"yearly_price":88200},
-            {"id":"enterprise","monthly_price":0,"yearly_price":120000},
-        ]
-        plan = next((p for p in plans_list if p["id"]==plan_id), plans_list[0])
+        plans_list = _load_plans()
+        plan = next((p for p in plans_list if p.get("id")==plan_id), {})
         amount = plan["yearly_price"] if period=="year" else plan["monthly_price"]
         
         import uuid, time
@@ -1084,6 +1527,7 @@ def orders():
 
 # ─── 支付回调(模拟) ───
 @app.route("/api/orders/pay", methods=["POST"])
+@require_auth
 def pay_order():
     try:
         data = request.get_json(force=True)
@@ -1137,6 +1581,7 @@ def pay_order():
 
 # ─── 用量查询 ───
 @app.route("/api/usage")
+@require_role("dashboard")
 def get_usage():
     try:
         from core import get_db
@@ -1164,6 +1609,7 @@ def get_usage():
 
 # ─── 调用计数(报价时自动+1) ───
 @app.route("/api/usage/increment", methods=["POST"])
+@require_role("dashboard")
 def increment_usage():
     try:
         data = request.get_json(force=True)
@@ -1185,6 +1631,7 @@ def increment_usage():
 
 # ═══════════ 管理后台 ═══════════
 @app.route("/api/admin/stats")
+@require_role("manage")
 def admin_stats():
     """营收总览"""
     try:
@@ -1230,6 +1677,7 @@ def admin_stats():
         }})
 
 @app.route("/api/admin/health")
+@require_role("manage")
 def admin_health():
     """系统健康检查 — 无需psutil"""
     import os
@@ -1283,6 +1731,492 @@ def admin_health():
         "services": services,
         "uptime": uptime_str,
     }})
+
+
+
+# ═══ Procurement + Users APIs ═══
+@app.route("/api/procurement/orders", methods=["GET", "POST"])
+@require_role("procure")
+def procurement_orders():
+    import sqlite3
+    if request.method == "GET":
+        try:
+            conn = sqlite3.connect(str(DB_PATH))
+            conn.row_factory = sqlite3.Row
+            rows = conn.execute("SELECT * FROM procurement_orders WHERE company_id=? ORDER BY created_at DESC LIMIT 50", (g.company_id,)).fetchall()
+            data = []
+            for r in rows:
+                d = dict(r)
+                lc = conn.execute("SELECT COUNT(*) FROM procurement_lines WHERE order_id=?", (d["id"],)).fetchone()
+                d["line_count"] = lc[0] if lc else 0
+                d["units"] = calc_procurement_units(d.get("sku_count", 0))
+                data.append(d)
+            conn.close()
+            return jsonify({"ok": True, "data": data, "count": len(data)})
+        except Exception as e:
+            return jsonify({"ok": False, "error": str(e)})
+    try:
+        data = request.get_json(force=True)
+        items = data.get("items", [])
+        supplier = data.get("supplier", "")
+        if not items:
+            return jsonify({"ok": False, "error": "items required"})
+        import uuid, time
+        order_id = f"PO-{int(time.time())}-{uuid.uuid4().hex[:6]}"
+        sku_count = len(items)
+        conn = sqlite3.connect(str(DB_PATH))
+        total = sum(it.get("quantity",1)*it.get("unit_price",0) for it in items)
+        conn.execute("INSERT INTO procurement_orders (id,company_id,created_by,supplier,sku_count,total_amount,approver,status) VALUES (?,?,?,?,?,?,?,?)",
+                     (order_id, g.company_id, g.user.get("id",""), supplier, sku_count, round(total,2), g.user.get("name",""), "draft"))
+        for it in items:
+            conn.execute("INSERT INTO procurement_lines (order_id,oe_number,name_cn,quantity,unit_price,supplier_name) VALUES (?,?,?,?,?,?)",
+                         (order_id, it.get("oe_number",""), it.get("name_cn",""), it.get("quantity",1), it.get("unit_price",0), it.get("supplier_name",supplier)))
+        conn.commit()
+        units = calc_procurement_units(sku_count)
+        log_usage(g.company_id, g.user.get("id",""), "procure", units)
+        conn.close()
+        return jsonify({"ok": True, "data": {"order_id": order_id, "sku_count": sku_count, "units": units, "total": round(total,2)}})
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        return jsonify({"ok": False, "error": str(e)})
+
+@app.route("/api/procurement/orders/<order_id>", methods=["GET", "PATCH"])
+@require_role("procure")
+def procurement_order_detail(order_id):
+    import sqlite3
+    conn = sqlite3.connect(str(DB_PATH))
+    conn.row_factory = sqlite3.Row
+    if request.method == "GET":
+        order = conn.execute("SELECT * FROM procurement_orders WHERE id=?", (order_id,)).fetchone()
+        if not order:
+            conn.close()
+            return jsonify({"ok": False, "error": "not found"})
+        lines = conn.execute("SELECT * FROM procurement_lines WHERE order_id=?", (order_id,)).fetchall()
+        conn.close()
+        od = dict(order)
+        od["units"] = calc_procurement_units(od.get("sku_count",0))
+        return jsonify({"ok": True, "data": {"order": od, "lines": [dict(l) for l in lines]}})
+    try:
+        data = request.get_json(force=True)
+        st = data.get("status","")
+        if st in ("draft","pending_approval","approved","ordered","received","cancelled"):
+            conn.execute("UPDATE procurement_orders SET status=? WHERE id=?", (st, order_id))
+            conn.commit()
+        conn.close()
+        return jsonify({"ok": True, "status": st})
+    except Exception as e:
+        conn.close()
+        return jsonify({"ok": False, "error": str(e)})
+
+@app.route("/api/users", methods=["GET", "POST"])
+@require_role("manage")
+def manage_users():
+    if request.method == "GET":
+        users = list_users(g.company_id)
+        return jsonify({"ok": True, "data": users, "count": len(users)})
+    try:
+        data = request.get_json(force=True)
+        email = (data.get("email") or "").strip()
+        if not email: return jsonify({"ok": False, "error": "email required"})
+        role = data.get("role", "quoter")
+        u = create_user(email, data.get("password","123456"), data.get("name",""), role, g.company_id)
+        return jsonify({"ok": True, "data": u})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)})
+
+@app.route("/api/users/<user_id>", methods=["DELETE"])
+@require_role("manage")
+def delete_user_api(user_id):
+    try:
+        delete_user(user_id)
+        return jsonify({"ok": True, "message": "deleted"})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)})
+
+@app.route("/api/roles")
+def list_roles():
+    return jsonify({"ok": True, "data": [{"id": k, "label": v["label"], "level": v["level"], "permissions": v["can"]} for k, v in ROLES.items()]})
+
+@app.route("/api/me")
+@require_auth
+def get_me():
+    u = g.user
+    return jsonify({"ok": True, "data": {"id": u.get("id",""), "name": u.get("name",""), "email": u.get("email",""), "role": g.role, "role_label": get_role_label(g.role), "company_id": g.company_id}})
+
+
+# ═══ SUPER ADMIN — Multi-tenant ═══
+@app.route("/api/super/stats")
+@require_role("platform")
+def super_stats():
+    import sqlite3
+    try:
+        conn = sqlite3.connect(str(DB_PATH))
+        c = conn.cursor()
+        companies = c.execute("SELECT COUNT(*) FROM companies").fetchone()[0]
+        users = c.execute("SELECT COUNT(*) FROM users WHERE status='active'").fetchone()[0]
+        rev = c.execute("SELECT COALESCE(SUM(amount),0) FROM orders WHERE status='paid'").fetchone()[0]
+        parts = 0
+        try: parts = c.execute("SELECT COUNT(*) FROM parts").fetchone()[0]
+        except: pass
+        quotes = c.execute("SELECT COUNT(*) FROM quotations").fetchone()[0]
+        proc = c.execute("SELECT COUNT(*) FROM procurement_orders").fetchone()[0]
+        conn.close()
+        return jsonify({"ok":True,"data":{"companies":companies,"users":users,"revenue":rev,"parts":parts,"quotations":quotes,"procurement_orders":proc}})
+    except Exception as e:
+        return jsonify({"ok":False,"error":str(e)})
+
+@app.route("/api/super/companies")
+@require_role("platform")
+def super_companies():
+    import sqlite3
+    try:
+        conn = sqlite3.connect(str(DB_PATH))
+        rows = conn.execute("SELECT c.*, COUNT(DISTINCT u.id) as user_count FROM companies c LEFT JOIN users u ON u.company_id=c.id GROUP BY c.id ORDER BY c.created_at DESC").fetchall()
+        conn.close()
+        return jsonify({"ok":True,"data":[{"id":r[0],"name":r[1],"plan_id":r[2],"subscription_end":r[3],"invite_code":r[4],"created_at":r[5],"user_count":r[6]} for r in rows],"count":len(rows)})
+    except Exception as e:
+        return jsonify({"ok":False,"error":str(e)})
+
+@app.route("/api/super/companies", methods=["POST"])
+@require_role("platform")
+def super_create_company():
+    import sqlite3, uuid, time, subprocess
+    try:
+        data = request.get_json(force=True)
+        name = data.get("name","").strip()
+        slug = data.get("slug","").strip()
+        plan = data.get("plan","starter")
+        admin_email = data.get("admin_email","").strip()
+        admin_pass = data.get("admin_password","admin123")
+        if not name or not slug:
+            return jsonify({"ok":False,"error":"name and slug required"})
+        cid = f"COMPANY-{slug.upper()}-{uuid.uuid4().hex[:6]}"
+        conn = sqlite3.connect(str(DB_PATH))
+        conn.execute("INSERT INTO companies (id,name,plan_id) VALUES (?,?,?)",(cid,name,plan))
+        conn.commit(); conn.close()
+        uid = create_user(admin_email, admin_pass, name+"管理员", "boss", cid)
+        url = ""
+        try:
+            subprocess.run(["sudo","python3","/srv/atlas/scripts/deploy_client.py",slug,name,admin_email],capture_output=True,timeout=30)
+            url = f"https://{slug}.traceclaw.cn"
+        except: url = f"https://enter.traceclaw.cn"
+        return jsonify({"ok":True,"data":{"company_id":cid,"name":name,"slug":slug,"admin_user_id":uid.get("id",""),"url":url}})
+    except Exception as e:
+        return jsonify({"ok":False,"error":str(e)})
+
+@app.route("/api/super/company/<cid>")
+@require_role("platform")
+def super_company_detail(cid):
+    import sqlite3
+    try:
+        conn = sqlite3.connect(str(DB_PATH))
+        conn.row_factory = sqlite3.Row
+        company = conn.execute("SELECT * FROM companies WHERE id=?",(cid,)).fetchone()
+        if not company: conn.close(); return jsonify({"ok":False,"error":"not found"})
+        users = conn.execute("SELECT id,name,email,role,status FROM users WHERE company_id=? AND status='active'",(cid,)).fetchall()
+        quotes = conn.execute("SELECT id,total_amount,status,created_at FROM quotations ORDER BY created_at DESC LIMIT 10").fetchall()
+        po = conn.execute("SELECT id,supplier,sku_count,total_amount,status FROM procurement_orders WHERE company_id=? LIMIT 10",(cid,)).fetchall()
+        conn.close()
+        return jsonify({"ok":True,"data":{"company":dict(company),"users":[dict(u) for u in users],"recent_quotes":[dict(q) for q in quotes],"procurement_orders":[dict(p) for p in po]}})
+    except Exception as e:
+        return jsonify({"ok":False,"error":str(e)})
+
+@app.route("/api/super/company/<cid>", methods=["PATCH"])
+@require_role("platform")
+def super_update_company(cid):
+    import sqlite3
+    try:
+        data = request.get_json(force=True)
+        plan = data.get("plan_id","")
+        sub_end = data.get("subscription_end","")
+        conn = sqlite3.connect(str(DB_PATH))
+        if plan: conn.execute("UPDATE companies SET plan_id=? WHERE id=?",(plan,cid))
+        if sub_end: conn.execute("UPDATE companies SET subscription_end=? WHERE id=?",(sub_end,cid))
+        conn.commit(); conn.close()
+        return jsonify({"ok":True})
+    except Exception as e:
+        return jsonify({"ok":False,"error":str(e)})
+
+
+
+# ═══ 客户拼图员 API ═══
+
+@app.route("/api/puzzler/search", methods=["POST"])
+def api_puzzler_search():
+    """找线索: 多渠道搜索潜在客户"""
+    data = request.get_json() or {}
+    industry = data.get("industry", "")
+    country = data.get("country", "")
+    keywords = data.get("keywords", "")
+    channels = data.get("channels", None)
+    if not industry or not country:
+        return jsonify({"ok": False, "error": "请填写行业和目标国家"}), 400
+    try:
+        leads = find_leads(industry, country, keywords, channels)
+        return jsonify({"ok": True, "leads": leads, "count": len(leads)})
+    except Exception as e:
+        return jsonify({"ok": False, "error": f"搜索失败: {str(e)}"}), 500
+
+@app.route("/api/puzzler/bgcheck", methods=["POST"])
+def api_puzzler_bgcheck():
+    """拼背调: 多维度企业背景调查"""
+    data = request.get_json() or {}
+    company = data.get("company", "")
+    website = data.get("website", "")
+    country = data.get("country", "")
+    if not company:
+        return jsonify({"ok": False, "error": "请填写公司名称"}), 400
+    try:
+        result = background_check(company, website, country)
+        return jsonify({"ok": True, "bgcheck": result})
+    except Exception as e:
+        return jsonify({"ok": False, "error": f"背调失败: {str(e)}"}), 500
+
+@app.route("/api/puzzler/email", methods=["POST"])
+def api_puzzler_email():
+    """写开发信: 基于背调生成个性化邮件"""
+    data = request.get_json() or {}
+    company_info = data.get("company", {})
+    bg_check = data.get("bgcheck", {})
+    language = data.get("language", "en")
+    style = data.get("style", "professional")
+    if not company_info or not bg_check:
+        return jsonify({"ok": False, "error": "请提供公司信息和背调数据"}), 400
+    try:
+        result = generate_email(company_info, bg_check, language, style)
+        return jsonify({"ok": True, "email": result})
+    except Exception as e:
+        return jsonify({"ok": False, "error": f"生成失败: {str(e)}"}), 500
+
+@app.route("/api/puzzler/pipeline", methods=["POST"])
+def api_puzzler_pipeline():
+    """硬管道: 搜客 → 匹配 → 开发信 (三阶段强制，不可跳过)"""
+    data = request.get_json() or {}
+    industry = data.get("industry", "")
+    country = data.get("country", "")
+    keywords = data.get("keywords", "")
+    language = data.get("language", "en")
+    channels = data.get("channels", None)
+    if not industry or not country:
+        return jsonify({"ok": False, "error": "请填写行业和目标国家"}), 400
+    try:
+        pipeline = get_pipeline()
+        result = pipeline.run(industry, country, keywords, channels=channels, language=language)
+        return jsonify(result.to_dict())
+    except Exception as e:
+        return jsonify({"ok": False, "error": f"管道执行失败: {str(e)}"}), 500
+
+# ═══ 客户开发员 - 匹配分析 ═══
+@app.route("/api/puzzler/match", methods=["POST"])
+def api_puzzler_match():
+    """分析客户与产品线的匹配度"""
+    data = request.get_json() or {}
+    lead = data.get("lead", {})
+    bgcheck = data.get("bgcheck", {})
+    if not lead.get("company"):
+        return jsonify({"ok": False, "error": "请提供客户信息"}), 400
+    try:
+        result = match_analysis(lead, bgcheck)
+        return jsonify({"ok": True, "match": result})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+# ═══ 客户开发员 - SMTP 配置 ═══
+@app.route("/api/puzzler/config", methods=["POST"])
+def api_puzzler_config():
+    """配置邮件发送 SMTP"""
+    data = request.get_json() or {}
+    host = data.get("host", "")
+    port = data.get("port", 587)
+    user = data.get("user", "")
+    password = data.get("password", "")
+    from_name = data.get("from_name", "")
+    from_email = data.get("from_email", "")
+    if not host or not user or not password:
+        return jsonify({"ok": False, "error": "请填写SMTP服务器、用户名和密码"}), 400
+    try:
+        result = configure_smtp(host, port, user, password, from_name, from_email)
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+# ═══ 客户开发员 - 发送开发信 ═══
+@app.route("/api/puzzler/send", methods=["POST"])
+def api_puzzler_send():
+    """发送单封或批量开发信"""
+    data = request.get_json() or {}
+    emails = data.get("emails", [])
+    
+    # 单封模式
+    if not emails and data.get("to_email"):
+        to_email = data.get("to_email")
+        subject = data.get("subject", "")
+        body = data.get("body", "")
+        body_html = data.get("body_html", "")
+        to_name = data.get("to_name", "")
+        result = send_email_via_smtp(to_email, subject, body, to_name, body_html)
+        return jsonify(result)
+    
+    # 批量模式
+    if emails:
+        result = send_bulk_emails(emails)
+        return jsonify(result)
+    
+    return jsonify({"ok": False, "error": "请提供收件人和邮件内容"}), 400
+
+# ═══ 客户开发员 - SMTP 状态检查 ═══
+@app.route("/api/puzzler/status", methods=["GET"])
+def api_puzzler_status():
+    """检查 SMTP 配置状态"""
+    configured = bool(SMTP_CONFIG.get("host"))
+    return jsonify({
+        "ok": True,
+        "configured": configured,
+        "host": SMTP_CONFIG.get("host", ""),
+        "user": SMTP_CONFIG.get("user", ""),
+        "from_name": SMTP_CONFIG.get("from_name", "")
+    })
+
+# ═══ 邮件垃圾检测 ═══
+@app.route("/api/puzzler/spam-check", methods=["POST"])
+def api_spam_check():
+    """检测邮件内容垃圾风险"""
+    data = request.get_json() or {}
+    subject = data.get("subject", "")
+    body = data.get("body", "")
+    result = check_spam_score(subject, body)
+    return jsonify({"ok": True, **result})
+
+# ═══ 报价审查标准 API（受保护）═══
+@app.route("/api/review/validate", methods=["GET"])
+def api_review_validate():
+    """校验审查标准完整性"""
+    try:
+        c = ReviewCriteria.load()
+        return jsonify({
+            "ok": True,
+            "version": c.version,
+            "brands": list(c.brands.keys()),
+            "customer_tiers": list(c.customer_tiers.keys()),
+            "price_floors_count": len(c.price_floors),
+            "approval_flow_count": len(c.approval_flow),
+            "status": "完整性校验通过"
+        })
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+@app.route("/api/review/rules", methods=["GET"])
+def api_review_rules():
+    """获取完整审查标准（只读）"""
+    try:
+        c = ReviewCriteria.load()
+        return jsonify({"ok": True, "data": c.all_data})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+@app.route("/api/review/add-brand", methods=["POST"])
+def api_review_add_brand():
+    """新增品牌规则（只能新增，不能修改已有）"""
+    data = request.get_json() or {}
+    brand_code = data.get("brand_code", "")
+    tiers = data.get("tiers", [])
+    cap_discount = data.get("cap_discount", 0)
+    special_policy = data.get("special_policy", "")
+    if not brand_code or not tiers:
+        return jsonify({"ok": False, "error": "请提供 brand_code 和 tiers"}), 400
+    try:
+        c = ReviewCriteria.load()
+        c.add_brand_rule(brand_code, tiers, cap_discount, special_policy)
+        c.save()
+        return jsonify({"ok": True, "message": f"品牌 {brand_code} 已新增"})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 400
+
+@app.route("/api/review/add-tier", methods=["POST"])
+def api_review_add_tier():
+    """新增客户等级"""
+    data = request.get_json() or {}
+    tier = data.get("tier", 0)
+    rule = data.get("rule", "")
+    if not tier or not rule:
+        return jsonify({"ok": False, "error": "请提供 tier 和 rule"}), 400
+    try:
+        c = ReviewCriteria.load()
+        c.add_customer_tier(int(tier), rule)
+        c.save()
+        return jsonify({"ok": True, "message": f"等级 {tier} 已新增"})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 400
+
+# ═══ 代理配置 ═══
+_proxy_config = {"enabled": False, "protocol": "socks5", "host": "", "port": 1080, "user": "", "password": ""}
+_proxy_config_path = os.path.join(os.path.dirname(__file__), "proxy.json")
+
+def _load_proxy_from_disk():
+    global _proxy_config
+    try:
+        with open(_proxy_config_path, "r") as f:
+            _proxy_config.update(json.load(f))
+    except:
+        pass
+
+_load_proxy_from_disk()
+
+@app.route("/api/config/proxy", methods=["GET"])
+def api_get_proxy():
+    return jsonify({"ok": True, "config": _proxy_config})
+
+@app.route("/api/config/proxy", methods=["POST"])
+def api_set_proxy():
+    global _proxy_config
+    data = request.get_json() or {}
+    _proxy_config["enabled"] = data.get("enabled", False)
+    _proxy_config["protocol"] = data.get("protocol", "socks5")
+    _proxy_config["host"] = data.get("host", "")
+    _proxy_config["port"] = int(data.get("port", 1080))
+    _proxy_config["user"] = data.get("user", "")
+    _proxy_config["password"] = data.get("password", "")
+    try:
+        with open(_proxy_config_path, "w") as f:
+            json.dump(_proxy_config, f, indent=2)
+        return jsonify({"ok": True, "message": "代理配置已保存"})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+@app.route("/api/config/proxy/test", methods=["POST"])
+def api_test_proxy():
+    """测试代理是否可达"""
+    import time
+    if not _proxy_config.get("enabled") or not _proxy_config.get("host"):
+        return jsonify({"ok": False, "error": "代理未启用或未配置"})
+    try:
+        proxy_url = f"{_proxy_config['protocol']}://{_proxy_config['host']}:{_proxy_config['port']}"
+        proxies = {"http": proxy_url, "https": proxy_url}
+        t0 = time.time()
+        resp = requests.get("https://www.google.com", proxies=proxies, timeout=10)
+        latency = round((time.time() - t0) * 1000)
+        return jsonify({"ok": True, "latency_ms": latency, "status": resp.status_code})
+    except Exception as e:
+        return jsonify({"ok": False, "error": f"代理不可达: {str(e)[:100]}"})
+
+# ═══ SMTP 测试 ═══
+@app.route("/api/puzzler/smtp-test", methods=["POST"])
+def api_smtp_test():
+    """发送测试邮件验证 SMTP 配置"""
+    try:
+        from puzzler_engine import send_email_via_smtp, SMTP_CONFIG
+        if not SMTP_CONFIG.get("host"):
+            return jsonify({"ok": False, "error": "SMTP 未配置"})
+        result = send_email_via_smtp(
+            to_email=SMTP_CONFIG.get("user", ""),
+            subject="[Atlas 测试] 邮件配置验证",
+            body="这是一封测试邮件。\n\n如果您收到此邮件，说明 SMTP 配置正确。\n\nAtlas 客户开发引擎",
+            to_name="Atlas User",
+            body_html=""
+        )
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)[:200]})
 
 
 if __name__ == "__main__":
