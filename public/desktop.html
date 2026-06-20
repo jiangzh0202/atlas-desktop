@@ -2474,21 +2474,50 @@ function saveModelMode() {
   var msg = document.getElementById('modelModeMsg');
   if (!select) return;
   var mode = select.value;
-  localStorage.setItem('atlas-model-mode', mode);
-  if (msg) { msg.innerHTML = '<span style="color:var(--green)">✅ 已保存</span>'; setTimeout(function(){ msg.innerHTML = ''; }, 2000); }
-  // Sync to server
+  // Save to server first, then localStorage as cache
   if (S.token) {
+    if (msg) { msg.innerHTML = '<span style="color:var(--muted)">⏳ 同步中...</span>'; }
     fetch(API + '/api/config/model', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + S.token },
       body: JSON.stringify({ mode: mode })
-    }).catch(function(){});
+    }).then(function(r){ return r.json(); })
+    .then(function(d){
+      if (d.ok) {
+        localStorage.setItem('atlas-model-mode', mode);
+        if (msg) { msg.innerHTML = '<span style="color:var(--green)">✅ 已保存，两端同步</span>'; }
+      } else {
+        if (msg) { msg.innerHTML = '<span style="color:#ff4d4f">❌ 保存失败</span>'; }
+      }
+    }).catch(function(){
+      // Fallback: save to localStorage
+      localStorage.setItem('atlas-model-mode', mode);
+      if (msg) { msg.innerHTML = '<span style="color:#fdd663">⚠️ 仅本地保存</span>'; }
+    });
+  } else {
+    localStorage.setItem('atlas-model-mode', mode);
+    if (msg) { msg.innerHTML = '<span style="color:var(--green)">✅ 已保存</span>'; }
   }
+  setTimeout(function(){ if (msg) msg.innerHTML = ''; }, 3000);
 }
 
 function loadModelMode() {
   var select = document.getElementById('modelModeSelect');
   if (!select) return;
+  // Try server first, fallback to localStorage
+  if (S.token) {
+    fetch(API + '/api/config/model', { headers: { 'Authorization': 'Bearer ' + S.token } })
+      .then(function(r){ return r.json(); })
+      .then(function(d){
+        if (d.ok && d.mode) {
+          for (var i = 0; i < select.options.length; i++) {
+            if (select.options[i].value === d.mode) { select.selectedIndex = i; break; }
+          }
+          localStorage.setItem('atlas-model-mode', d.mode);
+        }
+      }).catch(function(){});
+  }
+  // Fallback: use localStorage immediately
   var saved = localStorage.getItem('atlas-model-mode') || 'fast';
   for (var i = 0; i < select.options.length; i++) {
     if (select.options[i].value === saved) { select.selectedIndex = i; break; }
