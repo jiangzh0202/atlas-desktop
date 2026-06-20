@@ -862,9 +862,10 @@ function renderSettingsContent() {
         <h3>数据存储路径</h3>
         <div style="display:flex;gap:8px;align-items:center">
           <input id="dataDirInput" value="~/atlas-data" style="flex:1;padding:8px 12px;border:1px solid var(--line);border-radius:7px;background:var(--bg);color:var(--ink);font-size:.82rem;font-family:inherit">
-          <button class="btn-secondary" onclick="browseDataFolder()" style="white-space:nowrap;padding:8px 14px" id="browseDataBtn" style="display:none">📁 浏览</button>
+          <button class="btn-secondary" onclick="browseDataFolder()" style="white-space:nowrap;padding:8px 14px" id="browseDataBtn">📁 浏览</button>
         </div>
         <button class="btn-primary" onclick="saveDataFolder()" style="margin-top:10px;padding:6px 18px;font-size:.78rem">💾 保存路径</button>
+        <span id="dataDirMsg" style="margin-left:10px;font-size:.76rem"></span>
         <p style="font-size:.72rem;color:var(--dim);margin-top:6px">知识库文件、历史报价、pricing.md 均存储在此目录</p>`;
       setTimeout(function(){ loadDataFolderSaved(); }, 50);
       break;
@@ -1039,15 +1040,14 @@ function renderSettingsContent() {
     case 'channels':
       (() => {
         var configs = JSON.parse(localStorage.getItem('atlas-channels') || '{}');
-        // Load from server first, then render with data
-        if (S.token) {
+        // Silently sync from server (don't re-render — preserves open panels)
+        if (S.token && !S._channelsFetched) {
+          S._channelsFetched = true;
           fetch(API + '/api/channels/load', { headers: { 'Authorization': 'Bearer ' + S.token } })
             .then(function(r){ return r.json(); })
             .then(function(d){
               if (d.ok && d.channels) {
                 localStorage.setItem('atlas-channels', JSON.stringify(d.channels));
-                // Re-render with fresh data
-                renderSettingsContent();
               }
             });
         }
@@ -2452,19 +2452,22 @@ function browseDataFolder() {
 
 function saveDataFolder() {
   var input = document.getElementById('dataDirInput');
+  var msg = document.getElementById('dataDirMsg');
   var dir = input ? input.value.trim() : '~/atlas-data';
-  if (!dir) { alert('请输入有效的存储路径'); return; }
+  if (!dir) { if (msg) msg.innerHTML = '<span style="color:#ff4d4f">❌ 请输入有效的存储路径</span>'; return; }
   localStorage.setItem('atlas-data-dir', dir);
-  alert('✅ 数据目录已保存: ' + dir + '\n\n重启客户端生效');
+  if (msg) msg.innerHTML = '<span style="color:var(--green)">✅ 已保存: ' + dir + '（重启生效）</span>';
 }
 
 function loadDataFolderSaved() {
   var saved = localStorage.getItem('atlas-data-dir');
-  if (saved) {
-    var input = document.getElementById('dataDirInput');
-    if (input) input.value = saved;
-    var btn = document.getElementById('browseDataBtn');
-    if (btn && !window.__TAURI__ && !window.__TAURI_PLUGIN_DIALOG__) btn.style.display = 'none';
+  var input = document.getElementById('dataDirInput');
+  var btn = document.getElementById('browseDataBtn');
+  if (saved && input) input.value = saved;
+  // Only show browse button on Tauri desktop (web gets text input)
+  if (btn) {
+    var isTauri = window.__TAURI__ || window.__TAURI_PLUGIN_DIALOG__ || window.__TAURI_INTERNALS__;
+    btn.style.display = isTauri ? '' : 'none';
   }
 }
 
