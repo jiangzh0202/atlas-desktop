@@ -1229,7 +1229,7 @@ function showTutorial(id) {
     wecom: '<b>💬 企业微信配置步骤：</b><br>1. 打开 <a href="https://work.weixin.qq.com" target="_blank" style="color:var(--green)">企业微信后台</a><br>2. 应用管理 → 自建应用 → 获取 Corp ID / Agent ID / Secret<br>3. 接收消息 → 设置回调URL<br>4. 回调URL: <code style="color:var(--green);word-break:break-all">https://atlas.traceclaw.cn/api/wecom/callback</code><br>5. Token 和 EncodingAESKey 随机生成即可',
     email: '<b>📧 邮件配置步骤：</b><br>1. 使用企业邮箱（推荐腾讯/阿里企业邮）<br>2. 开启 SMTP 服务<br>3. 获取授权码（非登录密码）<br>4. 端口: 465 (SSL) 或 587 (TLS)<br>5. 配置后点「🔗 测试连接」验证'
   };
-  tutEl.innerHTML = '<div style="font-size:.75rem;color:var(--muted);line-height:1.8;padding:10px 12px">' + (tutorials[id] || '教程准备中...<br>访问 <a href="https://atlas.traceclaw.cn/tutorial" target="_blank" style="color:var(--green)">在线教程</a>') + '</div>';
+  tutEl.innerHTML = '<div style="font-size:.75rem;color:var(--muted);line-height:1.8;padding:10px 12px">' + (tutorials[id] || '教程准备中...<br>访问 <a href="https://atlas.traceclaw.cn/tutorial" target="_blank" style="color:var(--green)">在线教程</a>') + '<br><a href="/tutorial#tab-' + id + '" target="_blank" style="display:inline-block;margin-top:8px;color:var(--green);font-weight:600;font-size:.75rem">📖 查看完整教程 →</a></div>';
   tutEl.style.display = 'block';
   // Scroll into view
   tutEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
