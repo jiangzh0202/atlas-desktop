@@ -38,8 +38,7 @@
       "nsis": null
     },
     "macOS": {
-      "minimumSystemVersion": "10.15",
-      "dmg": {"active": false}
+      "minimumSystemVersion": "10.15"
     }
   }
 }

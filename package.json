@@ -11,8 +11,8 @@
     "tauri:dev": "tauri dev",
     "tauri:build": "tauri build",
     "tauri:build:win": "tauri build --target x86_64-pc-windows-msvc",
-    "tauri:build:mac-intel": "tauri build --target x86_64-apple-darwin",
-    "tauri:build:mac-arm": "tauri build --target aarch64-apple-darwin"
+    "tauri:build:mac-intel": "tauri build --target x86_64-apple-darwin --bundles app",
+    "tauri:build:mac-arm": "tauri build --target aarch64-apple-darwin --bundles app"
   },
   "dependencies": {
     "react": "^18.3.1",
