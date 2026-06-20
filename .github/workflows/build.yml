@@ -36,7 +36,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: Atlas-macOS-AppleSilicon
-          path: src-tauri/target/aarch64-apple-darwin/release/bundle/dmg/*.dmg
+          path: src-tauri/target/aarch64-apple-darwin/release/bundle/macos/*.app
 
   build-macos-intel:
     runs-on: macos-latest
@@ -53,7 +53,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: Atlas-macOS-Intel
-          path: src-tauri/target/x86_64-apple-darwin/release/bundle/dmg/*.dmg
+          path: src-tauri/target/x86_64-apple-darwin/release/bundle/macos/*.app
 
   release:
     needs: [build-windows, build-macos-arm, build-macos-intel]
