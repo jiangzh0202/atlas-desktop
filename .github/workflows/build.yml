@@ -74,6 +74,10 @@ jobs:
         with:
           name: Atlas-macOS-Intel
           path: artifacts/mac-intel
+      - name: Package macOS artifacts into zip
+        run: |
+          cd artifacts/mac-arm && zip -r ../../Atlas-macOS-ARM64.zip . && cd ../..
+          cd artifacts/mac-intel && zip -r ../../Atlas-macOS-Intel.zip . && cd ../..
       - name: List artifacts
         run: find artifacts -type f -ls
       - name: Create Release
@@ -81,7 +85,7 @@ jobs:
         with:
           files: |
             artifacts/win/**/*
-            artifacts/mac-arm/**/*
-            artifacts/mac-intel/**/*
+            Atlas-macOS-ARM64.zip
+            Atlas-macOS-Intel.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
