@@ -2422,30 +2422,46 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 function browseDataFolder() {
   var input = document.getElementById('dataDirInput');
+  var msg = document.getElementById('dataDirMsg');
   if (!input) return;
-  // Tauri desktop: try plugin dialog command
-  if (window.__TAURI__ && window.__TAURI__.core && window.__TAURI__.core.invoke) {
-    window.__TAURI__.core.invoke('plugin:dialog|open', {
+
+  // Helper: try to open native folder picker
+  function tryDialog(dialogFn) {
+    dialogFn.then(function(result) {
+      var path = typeof result === 'string' ? result : (result && result.path ? result.path : '');
+      if (path) { input.value = path; saveDataFolder(); }
+      else if (msg) msg.innerHTML = '<span style="color:var(--muted)">未选择目录</span>';
+    }).catch(function(e) {
+      if (msg) msg.innerHTML = '<span style="color:#ff4d4f">❌ 无法打开文件选择器: ' + (e.message || e) + '</span>';
+    });
+  }
+
+  // Method 1: Tauri v2 __TAURI__.invoke (most reliable)
+  if (window.__TAURI__ && typeof window.__TAURI__.invoke === 'function') {
+    tryDialog(window.__TAURI__.invoke('plugin:dialog|open', {
       directory: true, title: '选择数据存储目录', multiple: false
-    }).then(function(dir) {
-      if (dir) { input.value = typeof dir === 'string' ? dir : (dir.path || dir || ''); saveDataFolder(); }
-    }).catch(function(e) {
-      console.warn('Tauri dialog failed:', e);
-    });
+    }));
     return;
   }
-  // Tauri v2: try __TAURI_PLUGIN_DIALOG__ global
-  if (window.__TAURI_PLUGIN_DIALOG__ && window.__TAURI_PLUGIN_DIALOG__.open) {
-    window.__TAURI_PLUGIN_DIALOG__.open({
+
+  // Method 2: __TAURI_PLUGIN_DIALOG__ global
+  if (window.__TAURI_PLUGIN_DIALOG__ && typeof window.__TAURI_PLUGIN_DIALOG__.open === 'function') {
+    tryDialog(window.__TAURI_PLUGIN_DIALOG__.open({
       directory: true, title: '选择数据存储目录'
-    }).then(function(d) {
-      if (d) { input.value = typeof d === 'string' ? d : (d.path || d || ''); saveDataFolder(); }
-    }).catch(function(e) {
-      console.warn('Tauri dialog fallback failed:', e);
-    });
+    }));
     return;
   }
-  // Web: use text input (already rendered, user types path)
+
+  // Method 3: __TAURI_INTERNALS__ dialog
+  if (window.__TAURI_INTERNALS__ && window.__TAURI_INTERNALS__.dialog && typeof window.__TAURI_INTERNALS__.dialog.open === 'function') {
+    tryDialog(window.__TAURI_INTERNALS__.dialog.open({
+      directory: true, title: '选择数据存储目录', multiple: false
+    }));
+    return;
+  }
+
+  // Web: show prompt for manual path entry
+  if (msg) msg.innerHTML = '<span style="color:var(--muted)">📝 网页版请手动输入路径，或使用桌面客户端选择文件夹</span>';
   input.focus();
   input.select();
 }
