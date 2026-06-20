@@ -2425,43 +2425,36 @@ function browseDataFolder() {
   var msg = document.getElementById('dataDirMsg');
   if (!input) return;
 
-  // Helper: try to open native folder picker
-  function tryDialog(dialogFn) {
-    dialogFn.then(function(result) {
+  // 1. Tauri desktop: native dialog via invoke
+  if (window.__TAURI__ && typeof window.__TAURI__.invoke === 'function') {
+    if (msg) msg.innerHTML = '<span style="color:var(--muted)">⏳ 正在打开文件夹选择器...</span>';
+    window.__TAURI__.invoke('plugin:dialog|open', {
+      directory: true, title: '选择数据存储目录', multiple: false
+    }).then(function(result) {
       var path = typeof result === 'string' ? result : (result && result.path ? result.path : '');
       if (path) { input.value = path; saveDataFolder(); }
       else if (msg) msg.innerHTML = '<span style="color:var(--muted)">未选择目录</span>';
     }).catch(function(e) {
-      if (msg) msg.innerHTML = '<span style="color:#ff4d4f">❌ 无法打开文件选择器: ' + (e.message || e) + '</span>';
+      if (msg) msg.innerHTML = '<span style="color:#ff4d4f">❌ 对话框出错: ' + (e.message || e) + '</span>';
     });
-  }
-
-  // Method 1: Tauri v2 __TAURI__.invoke (most reliable)
-  if (window.__TAURI__ && typeof window.__TAURI__.invoke === 'function') {
-    tryDialog(window.__TAURI__.invoke('plugin:dialog|open', {
-      directory: true, title: '选择数据存储目录', multiple: false
-    }));
     return;
   }
 
-  // Method 2: __TAURI_PLUGIN_DIALOG__ global
-  if (window.__TAURI_PLUGIN_DIALOG__ && typeof window.__TAURI_PLUGIN_DIALOG__.open === 'function') {
-    tryDialog(window.__TAURI_PLUGIN_DIALOG__.open({
-      directory: true, title: '选择数据存储目录'
-    }));
+  // 2. Web browser: File System Access API (Chrome/Edge/Opera)
+  if (typeof window.showDirectoryPicker === 'function') {
+    if (msg) msg.innerHTML = '<span style="color:var(--muted)">⏳ 正在打开文件夹选择器...</span>';
+    window.showDirectoryPicker().then(function(dirHandle) {
+      if (dirHandle && dirHandle.name) { input.value = dirHandle.name; saveDataFolder(); }
+      else if (msg) msg.innerHTML = '<span style="color:var(--muted)">未选择目录</span>';
+    }).catch(function(e) {
+      if (e.name === 'AbortError') { if (msg) msg.innerHTML = '<span style="color:var(--muted)">已取消</span>'; }
+      else if (msg) msg.innerHTML = '<span style="color:#ff4d4f">❌ ' + (e.message || '浏览器不支持文件夹选择') + '</span>';
+    });
     return;
   }
 
-  // Method 3: __TAURI_INTERNALS__ dialog
-  if (window.__TAURI_INTERNALS__ && window.__TAURI_INTERNALS__.dialog && typeof window.__TAURI_INTERNALS__.dialog.open === 'function') {
-    tryDialog(window.__TAURI_INTERNALS__.dialog.open({
-      directory: true, title: '选择数据存储目录', multiple: false
-    }));
-    return;
-  }
-
-  // Web: show prompt for manual path entry
-  if (msg) msg.innerHTML = '<span style="color:var(--muted)">📝 网页版请手动输入路径，或使用桌面客户端选择文件夹</span>';
+  // 3. Fallback: manual text input
+  if (msg) msg.innerHTML = '<span style="color:var(--muted)">📝 当前浏览器不支持文件夹选择，请手动输入路径</span>';
   input.focus();
   input.select();
 }
@@ -2480,11 +2473,8 @@ function loadDataFolderSaved() {
   var input = document.getElementById('dataDirInput');
   var btn = document.getElementById('browseDataBtn');
   if (saved && input) input.value = saved;
-  // Only show browse button on Tauri desktop (web gets text input)
-  if (btn) {
-    var isTauri = window.__TAURI__ || window.__TAURI_PLUGIN_DIALOG__ || window.__TAURI_INTERNALS__;
-    btn.style.display = isTauri ? '' : 'none';
-  }
+  // Always show browse button — web uses showDirectoryPicker, Tauri uses native dialog
+  if (btn) btn.style.display = '';
 }
 
 // ═══ Model Mode ═══
