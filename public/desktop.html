@@ -218,7 +218,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);height:100vh;
   <div class="ab-item" data-view="agents" title="数字员工">🤖</div>
   <div class="ab-spacer"></div>
   <div class="ab-item" id="userBtn" title="用户" onclick="handleUserClick()" style="margin-bottom:4px">👤</div>
-  <div style="text-align:center;padding:10px 0 6px;font-size:.68rem;color:var(--dim);letter-spacing:.3px;opacity:.6">Atlas v1.5.0</div>
+  <div style="text-align:center;padding:10px 0 6px;font-size:.68rem;color:var(--dim);letter-spacing:.3px;opacity:.6">Atlas v1.5.6</div>
   <div class="ab-item" id="settingsBtn" title="设置">⚙️</div>
 </div>
 
@@ -472,7 +472,7 @@ const SETTINGS_SECTIONS = [
   { id:'storage', icon:'💾', label:'数据存储', cat:'system' },
   { id:'model', icon:'🤖', label:'模型', cat:'ai' },
   { id:'proxy', icon:'🛜', label:'代理配置', cat:'ai' },
-  { id:'rules', icon:'📜', label:'报价员规则', cat:'employees' },
+  { id:'rules', icon:'📜', label:'规则', cat:'employees' },
   { id:'smtp', icon:'✉️', label:'邮件配置', cat:'employees' },
   { id:'index', icon:'📇', label:'索引库', cat:'employees' },
   { id:'channels', icon:'📡', label:'通道设置', cat:'connect' },
@@ -846,10 +846,16 @@ function renderSettingsContent() {
   const s = S.settingsSection;
   switch(s) {
     case 'general':
-      el.innerHTML = `
-        <h3>常规设置</h3>
-        <div class="setting-row"><span>系统通知</span>
-          <button class="btn-secondary" style="background:var(--green-bg);color:var(--green)">已开启</button></div>`;
+      (() => {
+        var lang = localStorage.getItem('atlas-lang') || 'zh';
+        var notifOn = localStorage.getItem('atlas-notif') !== 'off';
+        var h = '<h3>常规设置</h3>';
+        h += '<div class="setting-row"><span>界面语言</span>';
+        h += '<button class="btn-secondary" onclick="toggleLang()" id="langToggleBtn" style="min-width:70px">' + (lang==='zh'?'🇨🇳 中文':'🇺🇸 EN') + '</button></div>';
+        h += '<div class="setting-row"><span>系统通知</span>';
+        h += '<button class="btn-secondary" onclick="toggleNotif()" id="notifToggleBtn" style="min-width:70px;background:' + (notifOn?'var(--green-bg);color:var(--green)':'var(--bg);color:var(--dim)') + '">' + (notifOn?'已开启':'已关闭') + '</button></div>';
+        el.innerHTML = h;
+      })();
       break;
     case 'storage':
       el.innerHTML = `
@@ -1032,7 +1038,8 @@ function renderSettingsContent() {
       return;
     case 'channels':
       (() => {
-        const configs = JSON.parse(localStorage.getItem('atlas-channels') || '{}');
+        var configs = JSON.parse(localStorage.getItem('atlas-channels') || '{}');
+        if (S.token) { fetch(API + '/api/channels/load', { headers: { 'Authorization': 'Bearer ' + S.token } }).then(function(r){ return r.json(); }).then(function(d){ if (d.ok && d.channels) { localStorage.setItem('atlas-channels', JSON.stringify(d.channels)); renderSettingsContent(); } }); }
         const chs = [
           { id:'feishu', icon:'📱', name:'飞书', fields:[
             {k:'app_id',label:'App ID',ph:'cli_a...',type:'text'},
@@ -1107,20 +1114,31 @@ function renderSettingsContent() {
     case 'usage':
       (() => {
         var q = S.quota || {};
+        var hasData = !!(q.quoter_used !== undefined || q.developer_used !== undefined);
+        var fetching = false;
         var items;
-        if (S.user) {
-          // Fetch fresh quota from server
-          if (S.token) {
+        if (S.user && S.token) {
+          if (!hasData) {
+            fetching = true;
             fetch(API + '/api/me', { headers: { 'Authorization': 'Bearer ' + S.token } })
               .then(function(r){ return r.json(); })
               .then(function(d){ if (d.ok && d.quota) { S.quota = d.quota; renderUsageStats(d.quota); } });
           }
-          items = [
-            {label:'报价用量',val:q.quoter_used+'/'+q.quoter_limit,u:'份'},
-            {label:'开发信用量',val:q.developer_used+'/'+q.developer_limit,u:'封'},
-            {label:'套餐到期',val:q.expires_at||'—',u:''},
-            {label:'订阅状态',val:q.plan||'试用',u:''},
-          ];
+          if (fetching) {
+            items = [
+              {label:'报价用量',val:'加载中…',u:''},
+              {label:'开发信用量',val:'加载中…',u:''},
+              {label:'套餐到期',val:'加载中…',u:''},
+              {label:'订阅状态',val:'加载中…',u:''},
+            ];
+          } else {
+            items = [
+              {label:'报价用量',val:(q.quoter_used||0)+'/'+(q.quoter_limit||0),u:'份'},
+              {label:'开发信用量',val:(q.developer_used||0)+'/'+(q.developer_limit||0),u:'封'},
+              {label:'套餐到期',val:q.expires_at||'—',u:''},
+              {label:'订阅状态',val:q.plan||'试用',u:''},
+            ];
+          }
         } else {
           items = [
             {label:'报价用量',val:'—',u:'请登录'},
@@ -1137,7 +1155,7 @@ function renderSettingsContent() {
         var h = '<h3>用量统计</h3>';
         h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">';
         items.forEach(function(m) {
-          h += '<div class="card"><div style="font-size:.72rem;color:var(--muted);margin-bottom:4px">'+m.label+'</div><div style="font-size:1.2rem;font-weight:700">'+m.val+' <span style="font-size:.75rem;color:var(--dim);font-weight:400">'+m.u+'</span></div></div>';
+          h += '<div class="card"><div style="font-size:.72rem;color:var(--muted);margin-bottom:4px">'+m.label+'</div><div style="font-size:1.2rem;font-weight:700;' + (fetching?'color:var(--dim)':'') + '">'+m.val+'</div><div style="font-size:.68rem;color:var(--dim)">'+m.u+'</div></div>';
         });
         h += '</div>';
         if (!S.user) h += '<p style="font-size:.75rem;color:var(--dim);margin-top:12px">登录后显示实时用量数据</p>';
@@ -2307,6 +2325,34 @@ function executeCommand(action) {
   }
 }
 
+
+// ═══ General Toggles ═══
+function toggleLang() {
+  var cur = localStorage.getItem('atlas-lang') || 'zh';
+  var next = cur === 'zh' ? 'en' : 'zh';
+  localStorage.setItem('atlas-lang', next);
+  var btn = document.getElementById('langToggleBtn');
+  if (btn) { btn.textContent = next === 'zh' ? '🇨🇳 中文' : '🇺🇸 EN'; }
+  document.documentElement.lang = next === 'zh' ? 'zh-CN' : 'en';
+  S.lang = next;
+  renderSettingsContent();
+}
+function toggleNotif() {
+  var cur = localStorage.getItem('atlas-notif') || 'on';
+  var next = cur === 'on' ? 'off' : 'on';
+  localStorage.setItem('atlas-notif', next);
+  var notifOn = next === 'on';
+  var btn = document.getElementById('notifToggleBtn');
+  if (btn) {
+    btn.textContent = notifOn ? '已开启' : '已关闭';
+    btn.style.background = notifOn ? 'var(--green-bg)' : 'var(--bg)';
+    btn.style.color = notifOn ? 'var(--green)' : 'var(--dim)';
+  }
+  if (notifOn && 'Notification' in window && Notification.permission === 'default') {
+    Notification.requestPermission();
+  }
+  S.notifOn = notifOn;
+}
 // ═══ Data Folder Picker ═══
 function browseDataFolder() {
   // Tauri v2: use __TAURI_INTERNALS__ (always injected) or core.invoke
