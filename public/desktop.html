@@ -862,7 +862,7 @@ function renderSettingsContent() {
         <h3>数据存储路径</h3>
         <div style="display:flex;gap:8px;align-items:center">
           <input id="dataDirInput" value="~/atlas-data" style="flex:1;padding:8px 12px;border:1px solid var(--line);border-radius:7px;background:var(--bg);color:var(--ink);font-size:.82rem;font-family:inherit">
-          <button class="btn-secondary" onclick="browseDataFolder()" style="white-space:nowrap;padding:8px 14px" id="browseDataBtn">📁 浏览</button>
+          <button class="btn-secondary" onclick="browseDataFolder()" style="white-space:nowrap;padding:8px 14px" id="browseDataBtn" style="display:none">📁 浏览</button>
         </div>
         <button class="btn-primary" onclick="saveDataFolder()" style="margin-top:10px;padding:6px 18px;font-size:.78rem">💾 保存路径</button>
         <p style="font-size:.72rem;color:var(--dim);margin-top:6px">知识库文件、历史报价、pricing.md 均存储在此目录</p>`;
@@ -2354,34 +2354,41 @@ function toggleNotif() {
   S.notifOn = notifOn;
 }
 // ═══ Data Folder Picker ═══
+// Show browse button only on Tauri desktop
+(function(){
+  if (window.__TAURI__ || window.__TAURI_PLUGIN_DIALOG__) {
+    var btn = document.getElementById('browseDataBtn');
+    if (btn) btn.style.display = '';
+  }
+})();
 function browseDataFolder() {
-  // Tauri v2: use __TAURI_INTERNALS__ (always injected) or core.invoke
-  var invoke = (window.__TAURI__ && window.__TAURI__.core && window.__TAURI__.core.invoke) || (window.__TAURI_INTERNALS__ && window.__TAURI_INTERNALS__.invoke);
-  if (invoke) {
-    invoke('plugin:dialog|open', { directory: true, title: '选择数据存储目录', multiple: false }).then(function(dir) {
-      if (dir) {
-        var input = document.getElementById('dataDirInput');
-        if (input) input.value = typeof dir === 'string' ? dir : (dir.path || '');
-      }
+  var input = document.getElementById('dataDirInput');
+  if (!input) return;
+  // Tauri desktop: try plugin dialog command
+  if (window.__TAURI__ && window.__TAURI__.core && window.__TAURI__.core.invoke) {
+    window.__TAURI__.core.invoke('plugin:dialog|open', {
+      directory: true, title: '选择数据存储目录', multiple: false
+    }).then(function(dir) {
+      if (dir) { input.value = typeof dir === 'string' ? dir : (dir.path || dir || ''); saveDataFolder(); }
     }).catch(function(e) {
-      // Try plugin global as fallback
-      if (window.__TAURI_PLUGIN_DIALOG__ && window.__TAURI_PLUGIN_DIALOG__.open) {
-        window.__TAURI_PLUGIN_DIALOG__.open({ directory: true, title: '选择数据存储目录' }).then(function(d) {
-          if (d) { var inp = document.getElementById('dataDirInput'); if (inp) inp.value = typeof d === 'string' ? d : (d.path || ''); }
-        });
-      }
+      console.warn('Tauri dialog failed:', e);
     });
     return;
   }
-  // Web fallback: manual input
-  var input = document.getElementById('dataDirInput');
-  if (!input) return;
-  var cur = input.value.trim() || '~/atlas-data';
-  var path = prompt('请输入数据存储路径（仅对本浏览器生效）：', cur);
-  if (path && path.trim()) {
-    input.value = path.trim();
-    saveDataFolder();
+  // Tauri v2: try __TAURI_PLUGIN_DIALOG__ global
+  if (window.__TAURI_PLUGIN_DIALOG__ && window.__TAURI_PLUGIN_DIALOG__.open) {
+    window.__TAURI_PLUGIN_DIALOG__.open({
+      directory: true, title: '选择数据存储目录'
+    }).then(function(d) {
+      if (d) { input.value = typeof d === 'string' ? d : (d.path || d || ''); saveDataFolder(); }
+    }).catch(function(e) {
+      console.warn('Tauri dialog fallback failed:', e);
+    });
+    return;
   }
+  // Web: use text input (already rendered, user types path)
+  input.focus();
+  input.select();
 }
 
 function saveDataFolder() {
