@@ -1,13 +1,13 @@
 {
   "$schema": "https://raw.githubusercontent.com/nicehash/tauri/dev/crates/tauri-cli/schema.json",
   "productName": "QingTian Atlas",
-  "version": "1.5.4",
+  "version": "1.5.5",
   "identifier": "com.atlas.desktop",
   "build": {
-    "frontendDist": "../html-dist",
+    "frontendDist": "../dist",
     "devUrl": "",
     "beforeDevCommand": "",
-    "beforeBuildCommand": ""
+    "beforeBuildCommand": "npm run build"
   },
   "app": {
     "title": "QingTian Atlas",
