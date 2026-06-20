@@ -1100,7 +1100,7 @@ function renderSettingsContent() {
           h += `<div style="display:flex;gap:8px;margin-top:4px">
             <button class="btn-primary" onclick="saveChannel('${ch.id}')">💾 保存</button>
             <button class="btn-secondary" onclick="testChannel('${ch.id}')">🔗 测试连接</button>
-            <button class="btn-secondary" onclick="showTutorial('${ch.id}')" style="font-size:.68rem">📖 部署教程</button>
+            <button class="btn-secondary" onclick="window.open('/tutorial#tab-${ch.id}')" style="font-size:.68rem">📖 部署教程</button>
           </div>
           </div></div></div>
           <div style="margin-top:6px;padding:12px;background:var(--green-bg);border-radius:8px;display:none" id="tut-${ch.id}"></div>`;
@@ -2425,36 +2425,47 @@ function browseDataFolder() {
   var msg = document.getElementById('dataDirMsg');
   if (!input) return;
 
-  // 1. Tauri desktop: native dialog via invoke
-  if (window.__TAURI__ && typeof window.__TAURI__.invoke === 'function') {
-    if (msg) msg.innerHTML = '<span style="color:var(--muted)">⏳ 正在打开文件夹选择器...</span>';
-    window.__TAURI__.invoke('plugin:dialog|open', {
-      directory: true, title: '选择数据存储目录', multiple: false
-    }).then(function(result) {
-      var path = typeof result === 'string' ? result : (result && result.path ? result.path : '');
-      if (path) { input.value = path; saveDataFolder(); }
-      else if (msg) msg.innerHTML = '<span style="color:var(--muted)">未选择目录</span>';
-    }).catch(function(e) {
-      if (msg) msg.innerHTML = '<span style="color:#ff4d4f">❌ 对话框出错: ' + (e.message || e) + '</span>';
-    });
+  if (msg) msg.innerHTML = '<span style="color:var(--muted)">⏳ 正在打开文件夹选择器...</span>';
+
+  // 1. Tauri v2: __TAURI_PLUGIN_DIALOG__ global (most reliable)
+  if (window.__TAURI_PLUGIN_DIALOG__ && typeof window.__TAURI_PLUGIN_DIALOG__.open === 'function') {
+    window.__TAURI_PLUGIN_DIALOG__.open({ directory: true, title: '选择数据存储目录', multiple: false })
+      .then(function(path) {
+        if (path) { input.value = typeof path === 'string' ? path : (path.path || ''); saveDataFolder(); }
+        else if (msg) msg.innerHTML = '<span style=\"color:var(--muted)\">未选择目录</span>';
+      }).catch(function(e) {
+        if (msg) msg.innerHTML = '<span style=\"color:#ff4d4f\">❌ 对话框出错: ' + (e.message || e) + '</span>';
+      });
     return;
   }
 
-  // 2. Web browser: File System Access API (Chrome/Edge/Opera)
+  // 2. Tauri: __TAURI__.invoke fallback
+  if (window.__TAURI__ && typeof window.__TAURI__.invoke === 'function') {
+    window.__TAURI__.invoke('plugin:dialog|open', { directory: true, title: '选择数据存储目录', multiple: false })
+      .then(function(result) {
+        var path = typeof result === 'string' ? result : (result && result.path ? result.path : '');
+        if (path) { input.value = path; saveDataFolder(); }
+        else if (msg) msg.innerHTML = '<span style=\"color:var(--muted)\">未选择目录</span>';
+      }).catch(function(e) {
+        if (msg) msg.innerHTML = '<span style=\"color:#ff4d4f\">❌ 对话框出错: ' + (e.message || e) + '</span>';
+      });
+    return;
+  }
+
+  // 3. Web browser: File System Access API (Chrome/Edge)
   if (typeof window.showDirectoryPicker === 'function') {
-    if (msg) msg.innerHTML = '<span style="color:var(--muted)">⏳ 正在打开文件夹选择器...</span>';
     window.showDirectoryPicker().then(function(dirHandle) {
       if (dirHandle && dirHandle.name) { input.value = dirHandle.name; saveDataFolder(); }
-      else if (msg) msg.innerHTML = '<span style="color:var(--muted)">未选择目录</span>';
+      else if (msg) msg.innerHTML = '<span style=\"color:var(--muted)\">未选择目录</span>';
     }).catch(function(e) {
-      if (e.name === 'AbortError') { if (msg) msg.innerHTML = '<span style="color:var(--muted)">已取消</span>'; }
-      else if (msg) msg.innerHTML = '<span style="color:#ff4d4f">❌ ' + (e.message || '浏览器不支持文件夹选择') + '</span>';
+      if (e.name === 'AbortError') { if (msg) msg.innerHTML = '<span style=\"color:var(--muted)\">已取消</span>'; }
+      else if (msg) msg.innerHTML = '<span style=\"color:#ff4d4f\">❌ ' + (e.message || '浏览器不支持文件夹选择') + '</span>';
     });
     return;
   }
 
-  // 3. Fallback: manual text input
-  if (msg) msg.innerHTML = '<span style="color:var(--muted)">📝 当前浏览器不支持文件夹选择，请手动输入路径</span>';
+  // 4. Fallback: manual text input
+  if (msg) msg.innerHTML = '<span style=\"color:var(--muted)\">📝 当前环境不支持文件夹选择，请手动输入路径</span>';
   input.focus();
   input.select();
 }
