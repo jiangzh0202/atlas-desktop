@@ -74,6 +74,21 @@ jobs:
         with:
           name: Atlas-macOS-Intel
           path: artifacts/mac-intel
+      - name: Delete existing release assets (allow clean re-upload)
+        run: |
+          RELEASE_TAG="${GITHUB_REF#refs/tags/}"
+          RELEASE_ID=$(gh api "repos/jiangzh0202/atlas-desktop/releases/tags/$RELEASE_TAG" --jq '.id' 2>/dev/null || echo "")
+          if [ -n "$RELEASE_ID" ]; then
+            ASSET_IDS=$(gh api "repos/jiangzh0202/atlas-desktop/releases/$RELEASE_ID/assets" --jq '.[].id' 2>/dev/null || echo "")
+            for id in $ASSET_IDS; do
+              gh api -X DELETE "repos/jiangzh0202/atlas-desktop/releases/assets/$id" 2>/dev/null || true
+            done
+            echo "Cleaned $RELEASE_ID"
+          else
+            echo "No existing release"
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Package macOS artifacts into zip
         run: |
           chmod +x "artifacts/mac-arm/QingTian Atlas.app/Contents/MacOS/atlas-desktop"
