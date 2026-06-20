@@ -1039,7 +1039,18 @@ function renderSettingsContent() {
     case 'channels':
       (() => {
         var configs = JSON.parse(localStorage.getItem('atlas-channels') || '{}');
-        if (S.token) { fetch(API + '/api/channels/load', { headers: { 'Authorization': 'Bearer ' + S.token } }).then(function(r){ return r.json(); }).then(function(d){ if (d.ok && d.channels) { localStorage.setItem('atlas-channels', JSON.stringify(d.channels)); renderSettingsContent(); } }); }
+        // Load from server first, then render with data
+        if (S.token) {
+          fetch(API + '/api/channels/load', { headers: { 'Authorization': 'Bearer ' + S.token } })
+            .then(function(r){ return r.json(); })
+            .then(function(d){
+              if (d.ok && d.channels) {
+                localStorage.setItem('atlas-channels', JSON.stringify(d.channels));
+                // Re-render with fresh data
+                renderSettingsContent();
+              }
+            });
+        }
         const chs = [
           { id:'feishu', icon:'📱', name:'飞书', fields:[
             {k:'app_id',label:'App ID',ph:'cli_a...',type:'text'},
@@ -1114,7 +1125,7 @@ function renderSettingsContent() {
     case 'usage':
       (() => {
         var q = S.quota || {};
-        var hasData = !!(q.quoter_used !== undefined || q.developer_used !== undefined);
+        var hasData = !!(q.quoter_used !== undefined && q.quoter_used !== null || q.developer_used !== undefined && q.developer_used !== null);
         var fetching = false;
         var items;
         if (S.user && S.token) {
@@ -1122,7 +1133,15 @@ function renderSettingsContent() {
             fetching = true;
             fetch(API + '/api/me', { headers: { 'Authorization': 'Bearer ' + S.token } })
               .then(function(r){ return r.json(); })
-              .then(function(d){ if (d.ok && d.quota) { S.quota = d.quota; renderUsageStats(d.quota); } });
+              .then(function(d){ 
+                if (d.ok && d.quota) { 
+                  S.quota = d.quota;
+                  // Also store plan info from user data
+                  if (d.user) { S.user = d.user; }
+                }
+                renderUsageStats(d.quota || S.quota); 
+              })
+              .catch(function(){ renderUsageStats(S.quota); });
           }
           if (fetching) {
             items = [
@@ -1201,17 +1220,19 @@ function toggleChannelCfg(id) {
 }
 
 function showTutorial(id) {
-  const urls = { feishu: '/tutorial#feishu', wecom: '/tutorial#wecom', email: '/tutorial#email' };
-  const path = urls[id] || '/tutorial';
-  var fullUrl = API + path;
-  // Tauri desktop: use shell plugin; web fallback: window.open
-  try {
-    if (window.__TAURI__ && window.__TAURI__.shell && window.__TAURI__.shell.open) {
-      window.__TAURI__.shell.open(fullUrl);
-      return;
-    }
-  } catch(e) {}
-  window.open(fullUrl, '_blank');
+  // Show inline tutorial content in the tut-{id} div
+  var tutEl = document.getElementById('tut-' + id);
+  if (!tutEl) return;
+  if (tutEl.style.display === 'block') { tutEl.style.display = 'none'; return; }
+  var tutorials = {
+    feishu: '<b>📱 飞书配置步骤：</b><br>1. 打开 <a href="https://open.feishu.cn" target="_blank" style="color:var(--green)">飞书开放平台</a><br>2. 创建自建应用 → 获取 App ID / App Secret<br>3. 在「事件订阅」中配置 Verification Token<br>4. 回调URL: <code style="color:var(--green);word-break:break-all">https://atlas.traceclaw.cn/api/feishu/callback</code><br>5. 订阅事件: im.message.receive_v1<br>6. 发布应用 → 企业审核通过后可用',
+    wecom: '<b>💬 企业微信配置步骤：</b><br>1. 打开 <a href="https://work.weixin.qq.com" target="_blank" style="color:var(--green)">企业微信后台</a><br>2. 应用管理 → 自建应用 → 获取 Corp ID / Agent ID / Secret<br>3. 接收消息 → 设置回调URL<br>4. 回调URL: <code style="color:var(--green);word-break:break-all">https://atlas.traceclaw.cn/api/wecom/callback</code><br>5. Token 和 EncodingAESKey 随机生成即可',
+    email: '<b>📧 邮件配置步骤：</b><br>1. 使用企业邮箱（推荐腾讯/阿里企业邮）<br>2. 开启 SMTP 服务<br>3. 获取授权码（非登录密码）<br>4. 端口: 465 (SSL) 或 587 (TLS)<br>5. 配置后点「🔗 测试连接」验证'
+  };
+  tutEl.innerHTML = '<div style="font-size:.75rem;color:var(--muted);line-height:1.8;padding:10px 12px">' + (tutorials[id] || '教程准备中...<br>访问 <a href="https://atlas.traceclaw.cn/tutorial" target="_blank" style="color:var(--green)">在线教程</a>') + '</div>';
+  tutEl.style.display = 'block';
+  // Scroll into view
+  tutEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
 function copyFeishuPermissions() {
@@ -1440,7 +1461,7 @@ function toggleUserPopup() {
     <div class="up-row">
       <button class="btn-secondary" onclick="window.open('${API}/dashboard?token='+encodeURIComponent(S.token||''),'_blank')">控制台</button>
       <button class="btn-secondary btn-danger" onclick="logout()">退出</button>
-    </div>`;
+    <a href="/dashboard" target="_blank" style="font-size:.72rem;color:var(--green);text-decoration:none;display:block;margin-top:4px">⚙️ 配置中心 →</a></div>`;
   popup.classList.remove('hidden');
 }
 
@@ -2335,6 +2356,8 @@ function toggleLang() {
   if (btn) { btn.textContent = next === 'zh' ? '🇨🇳 中文' : '🇺🇸 EN'; }
   document.documentElement.lang = next === 'zh' ? 'zh-CN' : 'en';
   S.lang = next;
+  // Apply translations to visible UI elements
+  applyTranslations(next);
   renderSettingsContent();
 }
 function toggleNotif() {
@@ -2353,14 +2376,50 @@ function toggleNotif() {
   }
   S.notifOn = notifOn;
 }
-// ═══ Data Folder Picker ═══
-// Show browse button only on Tauri desktop
-(function(){
-  if (window.__TAURI__ || window.__TAURI_PLUGIN_DIALOG__) {
-    var btn = document.getElementById('browseDataBtn');
-    if (btn) btn.style.display = '';
+
+// ═══ i18n Translations ═══
+var I18N = {
+  zh: {
+    'settings': '设置', 'general': '常规', 'theme': '主题', 'storage': '数据存储',
+    'model': '模型', 'rules': '规则', 'channels': '通道设置', 'usage': '用量统计',
+    'mcp': 'MCP 服务器', 'proxy': '网络代理', 'smtp': '邮件配置',
+    'market': '数字员工市场', 'plugins': '插件管理',
+    'save': '保存', 'cancel': '取消', 'test': '测试', 'browse': '浏览',
+    'connected': '已配置', 'disconnected': '未连接',
+    'knowledge': '知识库', 'agents': '数字员工', 'quoter': '报价员'
+  },
+  en: {
+    'settings': 'Settings', 'general': 'General', 'theme': 'Theme', 'storage': 'Storage',
+    'model': 'Model', 'rules': 'Rules', 'channels': 'Channels', 'usage': 'Usage',
+    'mcp': 'MCP Servers', 'proxy': 'Proxy', 'smtp': 'Email',
+    'market': 'Agent Market', 'plugins': 'Plugins',
+    'save': 'Save', 'cancel': 'Cancel', 'test': 'Test', 'browse': 'Browse',
+    'connected': 'Connected', 'disconnected': 'Disconnected',
+    'knowledge': 'Knowledge', 'agents': 'AI Agents', 'quoter': 'Quoter'
   }
-})();
+};
+function t(key) { var lang = S.lang || 'zh'; var dict = I18N[lang] || I18N.zh; return dict[key] || key; }
+function applyTranslations(lang) {
+  // Update sidebar labels
+  var labels = document.querySelectorAll('.sb-label');
+  labels.forEach(function(el) {
+    var key = el.getAttribute('data-i18n');
+    if (key) el.textContent = t(key);
+  });
+  // Re-render current view to pick up translations
+  if (S.settingsSection) renderSettingsContent();
+}
+
+// ═══ Data Folder Picker ═══
+// Show browse button only on Tauri desktop (deferred to DOM ready)
+document.addEventListener('DOMContentLoaded', function() {
+  setTimeout(function() {
+    if (window.__TAURI__ || window.__TAURI_PLUGIN_DIALOG__ || window.__TAURI_INTERNALS__) {
+      var btn = document.getElementById('browseDataBtn');
+      if (btn) btn.style.display = '';
+    }
+  }, 500);
+});
 function browseDataFolder() {
   var input = document.getElementById('dataDirInput');
   if (!input) return;
