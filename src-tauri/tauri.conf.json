@@ -1,6 +1,6 @@
 {
   "$schema": "https://raw.githubusercontent.com/nicehash/tauri/dev/crates/tauri-cli/schema.json",
-  "productName": "QingTian Atlas",
+  "productName": "Atlas",
   "version": "1.6.0",
   "identifier": "com.atlas.desktop",
   "build": {
@@ -10,7 +10,7 @@
   "app": {
     "windows": [
       {
-        "title": "QingTian Atlas - AI Quote Engine",
+        "title": "Atlas",
         "width": 1200,
         "height": 800,
         "minWidth": 900,
