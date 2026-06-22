@@ -94,6 +94,8 @@ a:hover{text-decoration:underline}
     <button class="tab" onclick="switchTab('wecom')">💬 企业微信</button>
     <button class="tab" onclick="switchTab('email')">📧 邮件</button>
     <button class="tab" onclick="switchTab('mcp')">🔌 MCP</button>
+    <button class="tab" onclick="switchTab('ai-config')">🤖 AI配置</button>
+    <button class="tab" onclick="switchTab('dev-tools')">🎯 客户开发</button>
   </div>
 
   <!-- ═══════════ 飞书 ═══════════ -->
@@ -131,7 +133,7 @@ a:hover{text-decoration:underline}
         <span id="copyFeishuOk" style="display:none;color:var(--green);margin-left:8px;font-size:.84rem">✅ 已复制</span>
         <br>
         <small style="color:var(--muted);margin-top:8px;display:inline-block">
-          展开确认格式无误后点击复制 → 粘贴到飞书弹窗。也可下载 <a href="/feishu_permissions.json" download>feishu_permissions.json</a> 上传。
+          展开确认格式无误后点击复制 → 粘贴到飞书弹窗。也可直接复制上方 JSON 上传。
         </small>
       </div>
     </div>
@@ -348,6 +350,142 @@ a:hover{text-decoration:underline}
   </div>
 </div>
 
+
+  <!-- ═══════════ AI 配置 ═══════════ -->
+  <div class="channel-content" id="tab-ai-config">
+    <h2 style="font-size:1.4rem;margin-bottom:8px">🤖 AI 模型全局配置</h2>
+    <p class="subtitle">所有 AI 调用（报价分析、客户开发、智能回复）共用此配置。在管理后台修改后实时生效，无需重启。</p>
+
+    <div class="step">
+      <div class="num">1</div>
+      <div class="body">
+        <b>配置入口</b><br>
+        <a href="/admin" target="_blank">管理后台</a> → 🤖 模型配置 → <span style="color:var(--green);font-weight:600">🌐 全局 AI 配置</span>（绿色边框区域）
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="num">2</div>
+      <div class="body">
+        <b>配置项说明</b><br><br>
+        <table class="fields-table">
+          <tr><td>服务商</td><td class="val">deepseek</td><td>AI 服务提供商（支持任意 OpenAI 兼容 API）</td></tr>
+          <tr><td>默认模型</td><td class="val">deepseek-v4-pro</td><td>推理能力最强的旗舰模型</td></tr>
+          <tr><td>API Base</td><td class="val">https://api.deepseek.com/v1</td><td>API 端点地址，换服务商时修改此项</td></tr>
+          <tr><td>API Key</td><td class="val">sk-...***...</td><td>密钥自动脱敏，输入新 Key 覆盖旧值</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="num">3</div>
+      <div class="body">
+        <b>System Prompt（系统提示词）</b><br>
+        定义 AI 的角色、语气、知识范围。例如：<br>
+        <span class="code">你是擎天 Atlas 的 AI 助手，帮助汽车零部件行业...</span><br><br>
+        <b>模式参数</b> — 三种调用模式可独立调参：<br>
+        <table class="fields-table">
+          <tr><td>⚡ 快速</td><td>Temp 0.7 / 300 tokens</td><td>日常对话、简单查询</td></tr>
+          <tr><td>🔍 深度</td><td>Temp 0.3 / 2000 tokens</td><td>复杂报价分析、技术文档</td></tr>
+          <tr><td>💾 存档</td><td>Temp 0.5 / 1500 tokens</td><td>知识库训练、数据解析</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="num">4</div>
+      <div class="body">
+        <b>兜底回复</b> — AI 异常时的用户提示：<br>
+        <table class="fields-table">
+          <tr><td>空回复</td><td class="val">嗯，收到了。有什么我可以帮您的？</td></tr>
+          <tr><td>解析错误</td><td class="val">抱歉，我暂时无法处理，请稍后再试。</td></tr>
+          <tr><td>网络异常</td><td class="val">网络异常，请稍后再试。</td></tr>
+          <tr><td>超时</td><td class="val">回复超时，请重新发送。</td></tr>
+          <tr><td>系统异常</td><td class="val">抱歉，出了点问题，请再试一次。</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="num">⚡</div>
+      <div class="body">
+        <b>即时生效</b><br>
+        配置保存后 <b>下次 AI 调用</b>即生效，无需重启服务。<br>
+        配置文件位置：<span class="code">/srv/atlas/data/ai_config.json</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ 客户开发 ═══════════ -->
+  <div class="channel-content" id="tab-dev-tools">
+    <h2 style="font-size:1.4rem;margin-bottom:8px">🎯 客户开发数字员工</h2>
+    <p class="subtitle">AI 驱动的外贸获客引擎 — 整合 7 大工具，自动搜索潜在客户、绘制客户画像、挖掘联系方式。</p>
+
+    <div class="step">
+      <div class="num">🔍</div>
+      <div class="body">
+        <b>核心能力</b><br>
+        客户开发数字员工内置以下获客技能，自动组合使用：<br><br>
+        <table class="fields-table">
+          <tr><td style="color:var(--text);font-weight:600">ImportGenius</td><td>海关进口采购记录</td><td>查真实买家、采购品类、价格区间</td></tr>
+          <tr><td style="color:var(--text);font-weight:600">ImportYeti</td><td>竞争对手客户分析</td><td>反向查对手供应了哪些客户</td></tr>
+          <tr><td style="color:var(--text);font-weight:600">Panjiva</td><td>全球物流追踪</td><td>跟踪买家物流记录、获取决策人信息</td></tr>
+          <tr><td style="color:var(--text);font-weight:600">RocketReach</td><td>直接联系方式</td><td>30秒内获取CEO电话/邮箱</td></tr>
+          <tr><td style="color:var(--text);font-weight:600">Apollo</td><td>邮箱电话挖掘</td><td>批量获取客户联系方式</td></tr>
+          <tr><td style="color:var(--text);font-weight:600">SimilarWeb</td><td>客户来源分析</td><td>分析客户网站流量来源和渠道</td></tr>
+          <tr><td style="color:var(--text);font-weight:600">Google Trends</td><td>搜索趋势监测</td><td>监测目标市场产品搜索热度</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="num">1</div>
+      <div class="body">
+        <b>使用方法 — 在桌面客户端中直接对话</b><br>
+        打开 Atlas 桌面客户端 → 选择「🔍 客户开发员」→ 输入需求：<br>
+        <span class="code">"帮我找美国的康明斯配件进口商，要5家以上，有联系方式的优先"</span>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="num">2</div>
+      <div class="body">
+        <b>画像拼图 — 多维度客户分析</b><br>
+        AI 自动聚合以下维度构建客户画像：<br>
+        • <b>采购记录</b>（ImportGenius/Panjiva）→ 买过什么、买多少、什么价<br>
+        • <b>竞争对手分析</b>（ImportYeti）→ 和谁合作、供应商是谁<br>
+        • <b>联系方式</b>（RocketReach/Apollo）→ 是谁、怎么联系<br>
+        • <b>行为习惯</b>（SimilarWeb/Google Trends）→ 从哪来、搜什么<br>
+        <div class="warn">💡 画像越完整，报价命中率越高。建议至少收集 3 个以上维度再出价。</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="num">3</div>
+      <div class="body">
+        <b>邮件开发信 — AI 自动撰写</b><br>
+        选定目标客户后，AI 根据客户画像自动生成个性化开发信：<br>
+        <span class="code">"给刚才找到的 5 家公司写开发信，英文，突出我们的康明斯配件价格优势"</span><br><br>
+        开发信会自动适配：<br>
+        • 客户行业术语<br>
+        • 当地商务习惯<br>
+        • 产品优势卖点<br>
+        • 报价锚点设计
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="num">⚙️</div>
+      <div class="body">
+        <b>配置说明</b><br>
+        • 客户开发员使用全局 AI 配置（见 🤖 AI配置 Tab）<br>
+        • 搜索范围：发动机配件、商用车配件、工程机械配件<br>
+        • 支持 5 语言自动适配：中文/英文/西班牙语/阿拉伯语/俄语<br>
+        • 所有线索自动存入 Atlas 客户库，可在桌面端查看和管理
+      </div>
+    </div>
+  </div>
+
 <div class="footer">擎天 Atlas · AI 报价引擎 · atlas.traceclaw.cn</div>
 
 <script>
@@ -361,19 +499,6 @@ function toggleTheme(){
   const isDark = !el.getAttribute('data-theme');
   el.setAttribute('data-theme', isDark ? 'light' : '');
   localStorage.setItem('atlas-theme', isDark ? 'light' : '');
-}
-
-// Render pretty-printed permissions JSON
-(function(){
-  const pre = document.getElementById('feishuPermsDisplay');
-  if (pre) pre.textContent = JSON.stringify(FEISHU_PERMISSIONS, null, 2);
-})();
-
-function switchTab(id){
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  document.querySelectorAll('.channel-content').forEach(c => c.classList.remove('active'));
-  document.querySelector(`.tab[onclick*="${id}"]`).classList.add('active');
-  document.getElementById('tab-'+id).classList.add('active');
 }
 
 // Feishu permissions JSON — 27 scopes (23 tenant + 4 user)
@@ -397,7 +522,20 @@ const FEISHU_PERMISSIONS = {
     ]
   }
 };
+(function(){
+  const pre = document.getElementById('feishuPermsDisplay');
+  if (pre) pre.textContent = JSON.stringify(FEISHU_PERMISSIONS, null, 2);
+})();
 
+function switchTab(id){
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.channel-content').forEach(c => c.classList.remove('active'));
+  document.querySelector(`.tab[onclick*="${id}"]`).classList.add('active');
+  const target = document.getElementById('tab-'+id);
+  if (target) target.classList.add('active');
+}
+
+// Feishu permissions JSON — 27 scopes (23 tenant + 4 user)
 async function copyFeishuPerms(){
   const text = JSON.stringify(FEISHU_PERMISSIONS, null, 2);
   try {

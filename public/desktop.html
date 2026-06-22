@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Atlas 擎天 — 汽车配件 AI 助手</title>
+<title>Atlas — 汽车配件 AI 助手</title>
 <style>
 /* ═══════════════════════════════════════════
-   Atlas 擎天 V3 — Web 预览版
+   Atlas V3 — Web 预览版
    对齐客户端 v1.3.0 标准
    暗/亮双主题 · 真实登录 · 完整设置
    ═══════════════════════════════════════════ */
@@ -218,7 +218,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);height:100vh;
   <div class="ab-item" data-view="agents" title="数字员工">🤖</div>
   <div class="ab-spacer"></div>
   <div class="ab-item" id="userBtn" title="用户" onclick="handleUserClick()" style="margin-bottom:4px">👤</div>
-  <div style="text-align:center;padding:10px 0 6px;font-size:.68rem;color:var(--dim);letter-spacing:.3px;opacity:.6">Atlas v1.5.8</div>
+  <div style="text-align:center;padding:10px 0 6px;font-size:.68rem;color:var(--dim);letter-spacing:.3px;opacity:.6">Atlas v1.6.2</div>
   <div class="ab-item" id="settingsBtn" title="设置">⚙️</div>
 </div>
 
@@ -226,14 +226,14 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);height:100vh;
 <div class="sidebar" id="sidebar">
   <div class="sidebar-header">
     <span id="sidebarTitle">知识库</span>
-    <a href="/tutorial" title="教程" style="font-size:.82rem;color:var(--green);text-decoration:none">📖</a>
-    <a href="/" title="返回官网" style="font-size:.82rem;color:var(--muted);text-decoration:none;margin-right:4px">🏠</a>
+    <a href="https://atlas.traceclaw.cn/tutorial" target="_blank" title="教程" style="font-size:.82rem;color:var(--green);text-decoration:none">📖</a>
+    <a href="https://atlas.traceclaw.cn/" title="返回官网" target="_blank" style="font-size:.82rem;color:var(--muted);text-decoration:none;margin-right:4px">🏠</a>
     <span class="actions" title="上传参考文件到知识库" onclick="document.getElementById('kbFileInput').click()">📤</span>
     <span class="actions" title="训练AI — 从知识库文件提取规则" onclick="document.getElementById('trainFileInput').click()" style="margin-left:4px">🧠</span>
   </div>
   <div class="sidebar-body" id="sidebarBody">
     <div id="knowledgeTree">
-      <div style="padding:20px;text-align:center;color:var(--muted);font-size:.8rem" id="kbEmpty">📂 登录后显示知识库文件</div>
+      <div style="padding:20px;text-align:center;color:var(--muted);font-size:.8rem" id="kbEmpty">📂 请登录后查看知识库</div>
     </div>
     <div id="agentList" style="display:none">
       <div class="agent-card" id="agent-prospect">
@@ -434,7 +434,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);height:100vh;
 
 <script>
 /* ═══════════════════════════════════════════
-   Atlas 擎天 V3 — Web 预览版 交互逻辑
+   Atlas V3 — Web 预览版 交互逻辑
    对齐客户端 v1.3.0 标准
    ═══════════════════════════════════════════ */
 
@@ -444,7 +444,7 @@ const API = 'https://atlas.traceclaw.cn';
 const S = {
   theme: localStorage.getItem('atlas-theme') || 'dark',
   accent: localStorage.getItem('atlas-accent') || '#00ff88',
-  token: localStorage.getItem('atlas-token') || null,
+  token: localStorage.getItem('atlas_token') || null,
   user: null,
   quota: null,
   activeView: 'knowledge',
@@ -936,7 +936,7 @@ function renderSettingsContent() {
           if (!url) { if (el) el.innerHTML = '<span style="color:#ff4d4f">❌ 请填写服务器地址</span>'; return; }
           if (btn) { btn.textContent = '⏳ 测试中...'; btn.disabled = true; }
           try {
-            var token = localStorage.getItem('atlas-token');
+            var token = localStorage.getItem('atlas_token');
             var resp = await fetch(API + '/api/mcp/test', { method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+(token||'')}, body:JSON.stringify({url:url,api_key:key}) });
             var j = await resp.json();
             if (j.ok) { if (el) el.innerHTML = '<span style="color:var(--green)">✅ 连接成功！' + j.count + ' 个工具</span>'; }
@@ -949,7 +949,7 @@ function renderSettingsContent() {
           var url = document.getElementById('mcp-url-inp').value.trim();
           var key = document.getElementById('mcp-key-inp').value.trim();
           if (!url) { alert('请填写 MCP 服务器地址'); return; }
-          var token = localStorage.getItem('atlas-token');
+          var token = localStorage.getItem('atlas_token');
           try {
             var resp = await fetch(API + '/api/mcp/connect', { method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+(token||'')}, body:JSON.stringify({server_id:sid,name:name,url:url,api_key:key||''}) });
             var j = await resp.json();
@@ -1038,18 +1038,22 @@ function renderSettingsContent() {
       renderSmtpSettings(el);
       return;
     case 'channels':
-      (() => {
-        var configs = JSON.parse(localStorage.getItem('atlas-channels') || '{}');
-        // Silently sync from server (don't re-render — preserves open panels)
-        if (S.token && !S._channelsFetched) {
-          S._channelsFetched = true;
-          fetch(API + '/api/channels/load', { headers: { 'Authorization': 'Bearer ' + S.token } })
-            .then(function(r){ return r.json(); })
-            .then(function(d){
-              if (d.ok && d.channels) {
-                localStorage.setItem('atlas-channels', JSON.stringify(d.channels));
-              }
-            });
+      (async () => {
+        // Always fetch from server first (Dashboard is source of truth)
+        var configs = {};
+        if (S.token) {
+          try {
+            var r = await fetch(API + '/api/channels/load', { headers: { 'Authorization': 'Bearer ' + S.token } });
+            var d = await r.json();
+            if (d.ok && d.channels) {
+              configs = d.channels;
+              localStorage.setItem('atlas-channels', JSON.stringify(d.channels));
+            }
+          } catch(e) { console.log('Channel fetch failed:', e); }
+        }
+        // Fallback to localStorage
+        if (Object.keys(configs).length === 0) {
+          configs = JSON.parse(localStorage.getItem('atlas-channels') || '{}');
         }
         const chs = [
           { id:'feishu', icon:'📱', name:'飞书', fields:[
@@ -1073,9 +1077,9 @@ function renderSettingsContent() {
         ];
         // Configuration tutorials for each channel
         const tutorials = {
-          feishu: { title: '飞书配置教程', url: '/tutorial#feishu' },
-          wecom: { title: '企业微信配置教程', url: '/tutorial#wecom' },
-          email: { title: '邮件配置教程', url: '/tutorial#email' },
+          feishu: { title: '飞书配置教程', url: 'https://atlas.traceclaw.cn/tutorial#feishu' },
+          wecom: { title: '企业微信配置教程', url: 'https://atlas.traceclaw.cn/tutorial#wecom' },
+          email: { title: '邮件配置教程', url: 'https://atlas.traceclaw.cn/tutorial#email' },
         };
         let h = '<h3>通道设置</h3>';
         chs.forEach(ch => {
@@ -1089,7 +1093,7 @@ function renderSettingsContent() {
                 <div style="font-size:.72rem;color:${connected?'var(--green)':'var(--muted)'}">${connected?'已配置':'未连接'}</div></div>
               </div>
               
-              <span onclick="toggleChannelCfg('${ch.id}')" style="font-size:.7rem;color:var(--dim);cursor:pointer" id="ch-arrow-${ch.id}">▶</span>
+              <span onclick="toggleChannelCfg('${ch.id}')" style="font-size:1rem;color:var(--text);cursor:pointer;padding:4px 8px;border-radius:4px" id="ch-arrow-${ch.id}" title="展开配置">▶</span>
             </div>
             <div id="ch-cfg-${ch.id}" style="display:none;padding:0 12px 12px">`;
           ch.fields.forEach(f => {
@@ -1100,7 +1104,7 @@ function renderSettingsContent() {
           h += `<div style="display:flex;gap:8px;margin-top:4px">
             <button class="btn-primary" onclick="saveChannel('${ch.id}')">💾 保存</button>
             <button class="btn-secondary" onclick="testChannel('${ch.id}')">🔗 测试连接</button>
-            <button class="btn-secondary" onclick="window.open('/tutorial#tab-${ch.id}')" style="font-size:.68rem">📖 部署教程</button>
+            <a class="btn-secondary" href="https://atlas.traceclaw.cn/tutorial#${ch.id}" target="_blank" style="font-size:.68rem;text-decoration:none">📖 部署教程</a>
           </div>
           </div></div></div>
           <div style="margin-top:6px;padding:12px;background:var(--green-bg);border-radius:8px;display:none" id="tut-${ch.id}"></div>`;
@@ -1178,7 +1182,7 @@ function renderSettingsContent() {
         });
         h += '</div>';
         if (!S.user) h += '<p style="font-size:.75rem;color:var(--dim);margin-top:12px">登录后显示实时用量数据</p>';
-        else h += '<p style="font-size:.75rem;color:var(--dim);margin-top:12px">数据实时同步。变更套餐请前往 <a href="'+API+'/dashboard" target="_blank" style="color:var(--green)">控制台</a></p>';
+        else h += '<p style="font-size:.75rem;color:var(--dim);margin-top:12px">数据实时同步。变更套餐请前往 <a href="https://atlas.traceclaw.cn/dashboard" target="_blank" target="_blank" style="color:var(--green)">控制台</a></p>';
         el.innerHTML = h;
       })();
       break;
@@ -1229,7 +1233,7 @@ function showTutorial(id) {
     wecom: '<b>💬 企业微信配置步骤：</b><br>1. 打开 <a href="https://work.weixin.qq.com" target="_blank" style="color:var(--green)">企业微信后台</a><br>2. 应用管理 → 自建应用 → 获取 Corp ID / Agent ID / Secret<br>3. 接收消息 → 设置回调URL<br>4. 回调URL: <code style="color:var(--green);word-break:break-all">https://atlas.traceclaw.cn/api/wecom/callback</code><br>5. Token 和 EncodingAESKey 随机生成即可',
     email: '<b>📧 邮件配置步骤：</b><br>1. 使用企业邮箱（推荐腾讯/阿里企业邮）<br>2. 开启 SMTP 服务<br>3. 获取授权码（非登录密码）<br>4. 端口: 465 (SSL) 或 587 (TLS)<br>5. 配置后点「🔗 测试连接」验证'
   };
-  tutEl.innerHTML = '<div style="font-size:.75rem;color:var(--muted);line-height:1.8;padding:10px 12px">' + (tutorials[id] || '教程准备中...<br>访问 <a href="https://atlas.traceclaw.cn/tutorial" target="_blank" style="color:var(--green)">在线教程</a>') + '<br><a href="/tutorial#tab-' + id + '" target="_blank" style="display:inline-block;margin-top:8px;color:var(--green);font-weight:600;font-size:.75rem">📖 查看完整教程 →</a></div>';
+  tutEl.innerHTML = '<div style="font-size:.75rem;color:var(--muted);line-height:1.8;padding:10px 12px">' + (tutorials[id] || '教程准备中...<br>访问 <a href="https://atlas.traceclaw.cn/tutorial" target="_blank" style="color:var(--green)">在线教程</a>') + '<br><a href="https://atlas.traceclaw.cn/tutorial#' + id + '" target="_blank" style="display:inline-block;margin-top:8px;color:var(--green);font-weight:600;font-size:.75rem">📖 查看完整教程 →</a></div>';
   tutEl.style.display = 'block';
   // Scroll into view
   tutEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -1308,7 +1312,8 @@ async function saveChannel(id) {
         body: JSON.stringify({ channel: id, config: cfg })
       });
       const data = await res.json();
-      if (data.ok) console.log('[Channels] ' + id + ' config synced to server');
+      if (data.ok) { console.log('[Channels] ' + id + ' config synced to server'); }
+      else { console.warn('[Channels] Server rejected: ' + (data.error || 'unknown')); /* still saved locally */ }
     } catch(e) { console.warn('[Channels] Server sync failed:', e.message); }
   }
   
@@ -1389,8 +1394,10 @@ async function doLogin() {
 
 function onLoginSuccess(data) {
   S.token = data.token;
+  // Re-trigger KB load now that token is available
+  setTimeout(function(){ loadKnowledgeBase(); }, 500);
   S.user = data.user;
-  localStorage.setItem('atlas-token', data.token);
+  localStorage.setItem('atlas_token', data.token);
   document.getElementById('loginOverlay').classList.add('hidden');
   updateUIForLogin();
   loadKnowledgeBase();
@@ -1428,7 +1435,7 @@ function updateUIForLogin() {
 
 function logout() {
   S.token = null; S.user = null; S.quota = null;
-  localStorage.removeItem('atlas-token');
+  localStorage.removeItem('atlas_token');
   const userBtn = document.getElementById('userBtn');
   if (userBtn) userBtn.style.color = '';
   document.getElementById('statusDot').style.background = 'var(--muted)';
@@ -1459,9 +1466,9 @@ function toggleUserPopup() {
       🔍 客户开发 · 免费试用 (${S.quota?.developer_used||0}/${S.quota?.developer_limit||1})
     </div>
     <div class="up-row">
-      <button class="btn-secondary" onclick="window.open('${API}/dashboard?token='+encodeURIComponent(S.token||''),'_blank')">控制台</button>
+      <button class="btn-secondary" onclick="location.href = 'https://atlas.traceclaw.cn/dashboard?token='+encodeURIComponent(S.token||'')">控制台</button>
       <button class="btn-secondary btn-danger" onclick="logout()">退出</button>
-    <a href="/dashboard" target="_blank" style="font-size:.72rem;color:var(--green);text-decoration:none;display:block;margin-top:4px">⚙️ 配置中心 →</a></div>`;
+    <a href="https://atlas.traceclaw.cn/dashboard" target="_blank" style="font-size:.72rem;color:var(--green);text-decoration:none;display:block;margin-top:4px">⚙️ 配置中心 →</a></div>`;
   popup.classList.remove('hidden');
 }
 
@@ -1723,6 +1730,7 @@ async function handleKBFiles(fileList) {
   document.getElementById('agentList').style.display = 'none';
   document.getElementById('sidebarTitle').textContent = agentName + ' · 知识库';
   document.getElementById('kbFileInput').value = '';
+}
 
 // ═══ Load Knowledge Base from API ═══
 function formatFileSize(bytes) {
@@ -1744,8 +1752,15 @@ async function loadKnowledgeBase() {
   if (!tree) return;
   
   if (!S.token) {
-    tree.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted);font-size:.8rem">📂 登录后显示知识库文件</div>';
-    return;
+    // Try reload from storage
+    var stored = localStorage.getItem('atlas_user');
+    if (stored) {
+      try { var u = JSON.parse(stored); if (u.id) { S.token = localStorage.getItem('atlas_token') || ''; S.user = u; } } catch(e) {}
+    }
+    if (!S.token) {
+      tree.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted);font-size:.8rem">📂 请登录后查看知识库</div>';
+      return;
+    }
   }
   
   tree.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted);font-size:.8rem">⏳ 加载中...</div>';
@@ -1756,13 +1771,13 @@ async function loadKnowledgeBase() {
     });
     const data = await res.json();
     if (!data.ok) {
-      tree.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted);font-size:.8rem">📂 暂无文件，点击 📤 上传</div>';
+      tree.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted);font-size:.8rem">📂 暂无知识库<br><span style='font-size:.72rem'>点击 📤 上传 Excel/CSV/PDF 添加知识库</span></div>';
       return;
     }
     
     const files = data.files || [];
     if (files.length === 0) {
-      tree.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted);font-size:.8rem">📂 知识库为空<br><span style="font-size:.72rem">点击 📤 上传 Excel/CSV/PDF 文件</span></div>';
+      tree.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted);font-size:.8rem">📂 知识库为空<br><span style="font-size:.72rem">点击下方 📤 上传按钮，添加 Excel/CSV/PDF 知识库文件</span></div>';
       return;
     }
     
@@ -1799,7 +1814,6 @@ async function loadKnowledgeBase() {
 function openKBFile(name, agent) {
   document.getElementById('fileNameDisplay').innerHTML = '📊 <strong>' + name + '</strong><br><span style="font-size:.78rem;color:var(--muted)">' + (agent||'知识库') + ' · 预览（完整客户端支持 AI 解析）</span>';
   openTab('file', '📊 ' + name.replace(/\.[^.]+$/, ''));
-}
 }
 
 // ═══ Training (upload Excel → extract rules) ═══
@@ -2414,10 +2428,10 @@ function applyTranslations(lang) {
 // Show browse button only on Tauri desktop (deferred to DOM ready)
 document.addEventListener('DOMContentLoaded', function() {
   setTimeout(function() {
-    if (window.__TAURI__ || window.__TAURI_PLUGIN_DIALOG__ || window.__TAURI_INTERNALS__) {
-      var btn = document.getElementById('browseDataBtn');
-      if (btn) btn.style.display = '';
-    }
+    // Show browse button on all platforms (Tauri native + web showDirectoryPicker)
+    var btn = document.getElementById('browseDataBtn');
+    if (btn) btn.style.display = '';
+  }
   }, 500);
 });
 function browseDataFolder() {
@@ -2463,6 +2477,22 @@ function browseDataFolder() {
     });
     return;
   }
+
+  // 4. Tauri IPC: try __TAURI_INTERNALS__ invoke
+  if (window.__TAURI_INTERNALS__ && typeof window.__TAURI_INTERNALS__.invoke === 'function') {
+    window.__TAURI_INTERNALS__.invoke('plugin:dialog|open', { directory: true, title: '选择数据存储目录', multiple: false })
+      .then(function(result) {
+        var path = typeof result === 'string' ? result : (result && result.path ? result.path : '');
+        if (path) { input.value = path; saveDataFolder(); }
+        else if (msg) msg.innerHTML = '<span style=\"color:var(--muted)\">未选择目录</span>';
+      }).catch(function(e) {
+        if (msg) msg.innerHTML = '<span style=\"color:#ff4d4f\">❌ 对话框出错: ' + (e.message || e) + '</span>';
+      });
+    return;
+  }
+
+  // 5. Manual fallback
+  if (msg) msg.innerHTML = '<span style=\"color:#faad14\">⚠️ 此功能需要桌面客户端<br><span style=\"font-size:.72rem\">请安装 Atlas 桌面应用后使用文件夹选择</span></span>';
 
   // 4. Fallback: manual text input
   if (msg) msg.innerHTML = '<span style=\"color:var(--muted)\">📝 当前环境不支持文件夹选择，请手动输入路径</span>';
