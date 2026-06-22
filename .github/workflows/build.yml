@@ -91,8 +91,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Package macOS artifacts into zip
         run: |
-          chmod +x "artifacts/mac-arm/QingTian Atlas.app/Contents/MacOS/atlas-desktop"
-          chmod +x "artifacts/mac-intel/QingTian Atlas.app/Contents/MacOS/atlas-desktop"
+          chmod +x "artifacts/mac-arm/Atlas.app/Contents/MacOS/atlas-desktop"
+          chmod +x "artifacts/mac-intel/Atlas.app/Contents/MacOS/atlas-desktop"
           cd artifacts/mac-arm && zip -r ../../Atlas-macOS-ARM64.zip . && cd ../..
           cd artifacts/mac-intel && zip -r ../../Atlas-macOS-Intel.zip . && cd ../..
       - name: List artifacts
