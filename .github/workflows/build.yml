@@ -33,6 +33,12 @@ jobs:
         run: rustup update stable && rustup default stable
       - name: Build
         run: npm install && npm run tauri:build:mac-arm
+      - name: Ad-hoc codesign (prevent "damaged" error)
+        run: |
+          APP="src-tauri/target/aarch64-apple-darwin/release/bundle/macos/Atlas.app"
+          xattr -cr "$APP" 2>/dev/null || true
+          codesign --force --deep --sign - "$APP"
+          echo "Signed: $APP"
       - uses: actions/upload-artifact@v4
         with:
           name: Atlas-macOS-AppleSilicon
@@ -50,6 +56,12 @@ jobs:
           rustup target add x86_64-apple-darwin
       - name: Build
         run: npm install && npm run tauri:build:mac-intel
+      - name: Ad-hoc codesign (prevent "damaged" error)
+        run: |
+          APP="src-tauri/target/x86_64-apple-darwin/release/bundle/macos/Atlas.app"
+          xattr -cr "$APP" 2>/dev/null || true
+          codesign --force --deep --sign - "$APP"
+          echo "Signed: $APP"
       - uses: actions/upload-artifact@v4
         with:
           name: Atlas-macOS-Intel
