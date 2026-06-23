@@ -218,7 +218,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);height:100vh;
   <div class="ab-item" data-view="agents" title="数字员工">🤖</div>
   <div class="ab-spacer"></div>
   <div class="ab-item" id="userBtn" title="用户" onclick="handleUserClick()" style="margin-bottom:4px">👤</div>
-  <div style="text-align:center;padding:10px 0 6px;font-size:.68rem;color:var(--dim);letter-spacing:.3px;opacity:.6">Atlas v1.6.2</div>
+  <div style="text-align:center;padding:10px 0 6px;font-size:.68rem;color:var(--dim);letter-spacing:.3px;opacity:.6">Atlas v1.6.4</div>
   <div class="ab-item" id="settingsBtn" title="设置">⚙️</div>
 </div>
 
@@ -673,6 +673,32 @@ function renderSmtpSettings(el) {
       <input id="smtpName" placeholder="如：Jason / 张经理 / Sales Team">
     </div>
 
+    <div style="margin-top:12px;padding:8px 0;font-size:.72rem;color:var(--muted);border-top:1px solid var(--line)">📋 邮件签名（自动加在每封邮件末尾）</div>
+    <div class="settings-row">
+      <div class="settings-col">
+        <div class="field-label">职位</div>
+        <input id="smtpTitle" placeholder="如：Export Manager">
+      </div>
+      <div class="settings-col">
+        <div class="field-label">电话</div>
+        <input id="smtpPhone" placeholder="如：+86 138-xxxx-xxxx">
+      </div>
+    </div>
+    <div class="settings-row">
+      <div class="settings-col">
+        <div class="field-label">WhatsApp</div>
+        <input id="smtpWhatsapp" placeholder="如：+86 138-xxxx-xxxx">
+      </div>
+      <div class="settings-col">
+        <div class="field-label">微信</div>
+        <input id="smtpWechat" placeholder="如：Jason_AutoParts">
+      </div>
+    </div>
+    <div class="field">
+      <div class="field-label">公司网站</div>
+      <input id="smtpWebsite" placeholder="如：www.yourcompany.com">
+    </div>
+
     <div style="margin-top:16px;padding:12px 14px;background:var(--active);border-radius:8px;font-size:.72rem">
       <b style="font-size:.76rem;color:var(--ink)">📋 常用企业邮箱 SMTP</b>
       <table style="width:100%;margin-top:8px;border-collapse:collapse;font-size:.72rem">
@@ -685,7 +711,10 @@ function renderSmtpSettings(el) {
 
     <div style="display:flex;gap:8px;margin-top:20px">
       <button class="btn-primary" onclick="saveSmtpConfig()" style="flex:1">💾 保存配置</button>
-      <button class="btn-secondary" onclick="testSmtpConn()">🔍 测试发送</button>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:10px;align-items:center">
+      <input id="smtpTestRecipient" placeholder="收件邮箱（可选，默认发给自己）" style="flex:1;padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);font-size:.78rem;font-family:inherit">
+      <button class="btn-secondary" onclick="testSmtpConn()" style="white-space:nowrap">🔍 测试发送</button>
     </div>
     <div id="smtpResult" style="margin-top:10px;font-size:.76rem"></div>`;
 
@@ -697,6 +726,11 @@ function renderSmtpSettings(el) {
       document.getElementById('smtpTls').checked = d.use_tls !== false;
       document.getElementById('smtpEmail').value = d.user || '';
       document.getElementById('smtpName').value = d.from_name || '';
+      document.getElementById('smtpTitle').value = d.title || '';
+      document.getElementById('smtpPhone').value = d.phone || '';
+      document.getElementById('smtpWhatsapp').value = d.whatsapp || '';
+      document.getElementById('smtpWechat').value = d.wechat || '';
+      document.getElementById('smtpWebsite').value = d.website || '';
     }
   }).catch(()=>{});
 }
@@ -710,10 +744,15 @@ function saveSmtpConfig() {
     password: document.getElementById('smtpPass').value,
     from_name: document.getElementById('smtpName').value,
     from_email: document.getElementById('smtpEmail').value,
+    title: document.getElementById('smtpTitle').value,
+    phone: document.getElementById('smtpPhone').value,
+    whatsapp: document.getElementById('smtpWhatsapp').value,
+    wechat: document.getElementById('smtpWechat').value,
+    website: document.getElementById('smtpWebsite').value,
   };
   fetch(API + '/api/puzzler/smtp-config', {
     method: 'POST',
-    headers: {'Content-Type':'application/json'},
+    headers: {'Content-Type':'application/json', 'Authorization':'Bearer ' + S.token},
     body: JSON.stringify(cfg)
   }).then(r=>r.json()).then(d=>{
     const el = document.getElementById('smtpResult');
@@ -726,8 +765,13 @@ function testSmtpConn() {
   const el = document.getElementById('smtpResult');
   el.innerHTML = '<span style="color:var(--green)">⏳ 发送测试邮件...</span>';
   saveSmtpConfig();
+  const recipient = document.getElementById('smtpTestRecipient')?.value?.trim();
   setTimeout(() => {
-    fetch(API + '/api/puzzler/smtp-test', {method:'POST'}).then(r=>r.json()).then(d=>{
+    fetch(API + '/api/puzzler/smtp-test', {
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer ' + S.token},
+      body: JSON.stringify(recipient ? { test_recipient: recipient } : {})
+    }).then(r=>r.json()).then(d=>{
       el.innerHTML = d.ok ? '<span style="color:var(--green)">✅ 测试邮件已发送! ' + (d.message||'') + '</span>'
                            : '<span style="color:#e06c75">❌ ' + (d.error || '发送失败') + '</span>';
     }).catch(()=>{
@@ -769,6 +813,7 @@ function renderRulesSettings(el, agent) {
 }
 
 async function loadRules(agent) {
+  agent = agent || S.selectedRulesAgent || 'quoter';
   const editor = document.getElementById('rulesEditor');
   const select = document.getElementById('rulesVersion');
   if (!editor) return;
@@ -797,6 +842,7 @@ async function loadRules(agent) {
 }
 
 async function saveRules(agent) {
+  agent = agent || S.selectedRulesAgent || 'quoter';
   const editor = document.getElementById('rulesEditor');
   const msg = document.getElementById('rulesMsg');
   if (!editor) return;
@@ -874,12 +920,124 @@ function renderSettingsContent() {
         const builtinServers = [
           { id:'erp', icon:'🏭', name:'ERP (用友/金蝶)', desc:'库存查询、供应商价格、客户应收应付', tools:'库存查询 / 采购订单 / 财务数据', npm:'atlas-mcp-erp', color:'#4ea6ff' },
           { id:'crm', icon:'👥', name:'CRM 系统', desc:'客户画像、销售机会、跟进记录', tools:'客户查询 / 创建商机 / 更新跟进', npm:'mcp-hubspot (已有开源)', color:'#f7a641' },
-          { id:'email', icon:'📧', name:'企业邮箱', desc:'邮件搜索、发送、附件提取', tools:'搜邮件 / 发邮件 / 读附件 / 线程', npm:'mcp-server-email (已有开源)', color:'#e06c75' },
+
           { id:'maas', icon:'⚙️', name:'MaaS 制造执行', desc:'工单状态、质检数据、设备监控', tools:'工单查询 / 质检报告 / 排产状态', npm:'atlas-mcp-maas', color:'#7ecf5e' },
           { id:'logistics', icon:'🚚', name:'物流追踪', desc:'运单状态、在途跟踪、签收确认', tools:'查运单 / 轨迹 / 签收通知', npm:'atlas-mcp-logistics', color:'#c678dd' },
           { id:'wework', icon:'💬', name:'企业微信/钉钉', desc:'消息推送、审批通知、群消息', tools:'发消息 / 查审批 / 群通知', npm:'atlas-mcp-wework', color:'#56b6c2' },
           { id:'tax', icon:'💰', name:'税务/开票', desc:'发票查验、税率查询、开票申请', tools:'查发票 / 税号验证 / 自动开票', npm:'atlas-mcp-tax', color:'#d19a66' },
+          { id:'customs', icon:'🛃', name:'海关数据（特易GT7）', desc:'进出口公司搜索、交易记录、市场推荐', tools:'找公司 / 查交易 / 市场推荐', npm:'atlas-mcp-customs', color:'#3b82f6' },
         ];
+
+        // ─── MCP Field Schema (shared with web dashboard) ───
+        var MCP_FIELDS = {
+          erp: [
+            { id:'mcp-url', label:'API 地址', placeholder:'http://erp.company.com:8080', type:'text', required:true, help:'用友/金蝶 API 网关地址' },
+            { id:'mcp-auth', label:'认证方式', placeholder:'', type:'select', options:[{v:'apikey',l:'API Key'},{v:'userpass',l:'用户名/密码'}], required:true, help:'选择 ERP 系统支持的认证方式' },
+            { id:'mcp-user', label:'用户名', placeholder:'admin', type:'text', show:'userpass', help:'ERP 登录用户名' },
+            { id:'mcp-pass', label:'密码', placeholder:'●●●●●●', type:'password', show:'userpass', help:'ERP 登录密码' },
+            { id:'mcp-apikey', label:'API Key', placeholder:'sk-...', type:'password', show:'apikey', help:'API 访问密钥' },
+            { id:'mcp-acct', label:'账套号', placeholder:'001', type:'text', required:true, help:'ERP 账套编号' }
+          ],
+          crm: [
+            { id:'mcp-url', label:'API 地址', placeholder:'https://crm.company.com/api', type:'text', required:true, help:'CRM 系统 API 地址' },
+            { id:'mcp-apikey', label:'API Key', placeholder:'sk-...', type:'password', required:true, help:'CRM API 访问密钥' }
+          ],
+
+          maas: [
+            { id:'mcp-url', label:'API 地址', placeholder:'https://mes.company.com/api', type:'text', required:true, help:'MES/MOM 系统 API 地址' },
+            { id:'mcp-apikey', label:'API Key', placeholder:'sk-...', type:'password', required:true, help:'MaaS API 访问密钥' },
+            { id:'mcp-factory', label:'工厂代码', placeholder:'WH01', type:'text', required:true, help:'工厂/车间编号' }
+          ],
+          logistics: [
+            { id:'mcp-url', label:'API 地址', placeholder:'https://logistics.company.com/api', type:'text', required:true, help:'物流系统 API 地址' },
+            { id:'mcp-apikey', label:'API Key', placeholder:'sk-...', type:'password', required:true, help:'物流 API 访问密钥' }
+          ],
+          wework: [
+            { id:'mcp-platform', label:'平台选择', placeholder:'', type:'select', options:[{v:'wecom',l:'企业微信'},{v:'dingtalk',l:'钉钉'}], required:true, help:'选择即时通讯平台' },
+            { id:'mcp-appid', label:'App ID (AgentId)', placeholder:'1000001', type:'text', required:true, help:'应用唯一标识' },
+            { id:'mcp-apikey', label:'App Secret', placeholder:'●●●●●●●●', type:'password', required:true, help:'应用密钥' },
+            { id:'mcp-corp', label:'Corp ID', placeholder:'ww...', type:'text', required:true, help:'企业唯一标识' }
+          ],
+          tax: [
+            { id:'mcp-url', label:'API 地址', placeholder:'https://tax.company.com/api', type:'text', required:true, help:'税务系统 API 地址' },
+            { id:'mcp-taxid', label:'税号', placeholder:'91110000MA001XXX', type:'text', required:true, help:'统一社会信用代码' },
+            { id:'mcp-apikey', label:'API Key', placeholder:'sk-...', type:'password', required:true, help:'税务 API 访问密钥' }
+          ],
+          customs: [
+            { id:'mcp-url', label:'MCP 服务地址', placeholder:'https://ai.traceclaw.cn/mcp', type:'text', required:true, help:'海关数据 MCP 服务地址（已部署）', default:'https://ai.traceclaw.cn/mcp' },
+            { id:'mcp-token', label:'Access Token', placeholder:'从特易浏览器获取', type:'password', required:true, help:'登录 et.topease.net 后 F12 Console 执行 copy(localStorage.getItem("accessToken")) 粘贴此处' }
+          ]
+        };
+
+        function _renderMcpFields(toolId, prefix) {
+          prefix = prefix || 'mcp-';
+          var fields = MCP_FIELDS[toolId];
+          if (!fields) return '<p class="muted">未知的 MCP 工具</p>';
+          var h = '';
+          for (var i = 0; i < fields.length; i++) {
+            var f = fields[i];
+            h += '<div style="margin-bottom:10px" id="row-' + prefix + f.id + '"><label style="font-size:.76rem;color:var(--muted);display:block;margin-bottom:3px">' + f.label;
+            if (f.help) h += ' <span style="font-size:.62rem;color:var(--dim)">(' + f.help + ')</span>';
+            h += '</label>';
+            if (f.type === 'select') {
+              h += '<select id="' + prefix + f.id + '" class="mcp-field" style="width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:7px;background:var(--bg);color:var(--ink);font-size:.82rem;font-family:inherit">';
+              for (var j = 0; j < f.options.length; j++) {
+                h += '<option value="' + f.options[j].v + '">' + f.options[j].l + '</option>';
+              }
+              h += '</select>';
+            } else {
+              h += '<input id="' + prefix + f.id + '" class="mcp-field" type="' + (f.type || 'text') + '" placeholder="' + (f.placeholder || '') + '" style="width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:7px;background:var(--bg);color:var(--ink);font-size:.82rem;font-family:inherit">';
+            }
+            h += '</div>';
+          }
+          return h;
+        }
+
+        function _collectMcpConfig(toolId, prefix) {
+          prefix = prefix || 'mcp-';
+          var cfg = {};
+          var fields = MCP_FIELDS[toolId];
+          if (!fields) return cfg;
+          for (var i = 0; i < fields.length; i++) {
+            var f = fields[i];
+            var el = document.getElementById(prefix + f.id);
+            if (el) cfg[f.id] = el.value.trim();
+          }
+          if (cfg['mcp-url']) cfg.url = cfg['mcp-url'];
+          if (cfg['mcp-apikey']) cfg.api_key = cfg['mcp-apikey'];
+          return cfg;
+        }
+
+        function _populateMcpFields(toolId, savedCfg, prefix) {
+          prefix = prefix || 'mcp-';
+          var fields = MCP_FIELDS[toolId];
+          if (!fields) return;
+          var src = (savedCfg && savedCfg.config) ? savedCfg.config : savedCfg || {};
+          for (var i = 0; i < fields.length; i++) {
+            var f = fields[i];
+            var el = document.getElementById(prefix + f.id);
+            if (el && src[f.id]) el.value = src[f.id];
+          }
+          if (savedCfg && savedCfg.url) {
+            var urlEl = document.getElementById(prefix + 'mcp-url');
+            if (urlEl && !urlEl.value) urlEl.value = savedCfg.url;
+            var keyEl = document.getElementById(prefix + 'mcp-apikey');
+            if (keyEl && !keyEl.value && savedCfg.api_key) keyEl.value = savedCfg.api_key;
+          }
+        }
+
+        function _toggleErpAuthFields(prefix) {
+          prefix = prefix || 'mcp-';
+          var auth = document.getElementById(prefix + 'mcp-auth');
+          var mode = auth ? auth.value : 'apikey';
+          var userRow = document.getElementById('row-' + prefix + 'mcp-user');
+          var passRow = document.getElementById('row-' + prefix + 'mcp-pass');
+          var keyRow = document.getElementById('row-' + prefix + 'mcp-apikey');
+          if (userRow) userRow.style.display = (mode === 'userpass') ? '' : 'none';
+          if (passRow) passRow.style.display = (mode === 'userpass') ? '' : 'none';
+          if (keyRow) keyRow.style.display = (mode === 'apikey') ? '' : 'none';
+        }
+
         let h = '<h3>🔌 MCP 服务器</h3>';
         h += '<p style="font-size:.8rem;color:var(--muted);margin-bottom:4px">MCP 让 AI 直接调用外部系统。选择你要接入的服务，一键连接。</p>';
         h += '<p style="font-size:.72rem;color:var(--dim);margin-bottom:14px">⏱ 快速接入：已有开源方案 → 10 分钟内可连通</p>';
@@ -914,10 +1072,7 @@ function renderSettingsContent() {
           m.style.cssText = 'background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:24px;width:420px;max-width:92vw;color:var(--ink);font-size:.85rem;font-family:inherit';
           m.innerHTML = '<h3 style="margin:0 0 4px;font-size:1.05rem">' + srv.icon + ' ' + srv.name + '</h3>' +
             '<p style="margin:0 0 16px;font-size:.76rem;color:var(--muted);line-height:1.5">' + srv.desc + '</p>' +
-            '<div style="margin-bottom:12px"><label style="font-size:.76rem;color:var(--muted);display:block;margin-bottom:3px">MCP 服务器地址</label>' +
-            '<input id="mcp-url-inp" placeholder="https://your-server.com" style="width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:7px;background:var(--bg);color:var(--ink);font-size:.82rem"></div>' +
-            '<div style="margin-bottom:14px"><label style="font-size:.76rem;color:var(--muted);display:block;margin-bottom:3px">API 密钥（可选）</label>' +
-            '<input id="mcp-key-inp" placeholder="sk-..." type="password" style="width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:7px;background:var(--bg);color:var(--ink);font-size:.82rem"></div>' +
+            '<div id="mcp-fields-dt"><p style="font-size:.76rem;color:var(--muted)">加载配置...</p></div>' +
             '<div style="margin-bottom:14px;padding:8px 12px;background:var(--green-bg);border-radius:7px;font-size:.73rem;color:var(--muted)">' + srv.tools + '</div>' +
             '<div style="display:flex;gap:8px">' +
             '<button id="mcp-test-btn" style="flex:1;padding:9px;border-radius:7px;font-size:.8rem;cursor:pointer;border:1px solid var(--green);background:transparent;color:var(--green);font-weight:600" onclick="testMcpConn(\'' + srv.id + '\')">🔍 测试连接</button>' +
@@ -925,15 +1080,33 @@ function renderSettingsContent() {
             '<div id="mcp-result-el" style="margin-top:10px;font-size:.76rem;min-height:20px"></div>';
           overlay.appendChild(m);
           document.body.appendChild(overlay);
-          setTimeout(function() { var inp = document.getElementById('mcp-url-inp'); if (inp) inp.focus(); }, 150);
+          setTimeout(function() {
+            var fc = document.getElementById('mcp-fields-dt');
+            if (fc) fc.innerHTML = _renderMcpFields(srv.id, 'mcp-');
+            if (srv.id === 'erp') {
+              var authSel = document.getElementById('mcp-mcp-auth');
+              if (authSel) authSel.onchange = function(){ _toggleErpAuthFields('mcp-'); };
+            }
+            // Load saved config and populate
+            var token = localStorage.getItem('atlas_token');
+            fetch(API + '/api/mcp/list', { headers: { 'Authorization': 'Bearer ' + (token||'') } })
+              .then(function(r){ return r.json(); })
+              .then(function(d){
+                if (d.ok && d.servers) {
+                  var found = d.servers.find(function(s){ return s.id === srv.id; });
+                  if (found) { _populateMcpFields(srv.id, found, 'mcp-'); _toggleErpAuthFields('mcp-'); }
+                }
+              });
+          }, 100);
   
 
         window.testMcpConn = async function(sid) {
-          var url = document.getElementById('mcp-url-inp').value.trim();
-          var key = document.getElementById('mcp-key-inp').value.trim();
+          var cfg = _collectMcpConfig(sid, 'mcp-');
+          var url = cfg.url || '';
+          var key = cfg.api_key || '';
           var el = document.getElementById('mcp-result-el');
           var btn = document.getElementById('mcp-test-btn');
-          if (!url) { if (el) el.innerHTML = '<span style="color:#ff4d4f">❌ 请填写服务器地址</span>'; return; }
+          if (!url) { if (el) el.innerHTML = '<span style="color:#ff4d4f">❌ 请填写 API 地址</span>'; return; }
           if (btn) { btn.textContent = '⏳ 测试中...'; btn.disabled = true; }
           try {
             var token = localStorage.getItem('atlas_token');
@@ -946,12 +1119,13 @@ function renderSettingsContent() {
         };
 
         window.saveMcpCfg = async function(sid, name) {
-          var url = document.getElementById('mcp-url-inp').value.trim();
-          var key = document.getElementById('mcp-key-inp').value.trim();
-          if (!url) { alert('请填写 MCP 服务器地址'); return; }
+          var cfg = _collectMcpConfig(sid, 'mcp-');
+          var url = cfg.url || '';
+          var key = cfg.api_key || '';
+          if (!url) { alert('请填写 API 地址'); return; }
           var token = localStorage.getItem('atlas_token');
           try {
-            var resp = await fetch(API + '/api/mcp/connect', { method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+(token||'')}, body:JSON.stringify({server_id:sid,name:name,url:url,api_key:key||''}) });
+            var resp = await fetch(API + '/api/mcp/connect', { method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+(token||'')}, body:JSON.stringify({server_id:sid,name:name,url:url,api_key:key||'',config:cfg}) });
             var j = await resp.json();
             if (j.ok) { var ov = document.getElementById('mcp-modal'); if (ov) ov.remove(); alert('✅ 已接入'); showSettings('mcp'); }
             else { alert('❌ ' + (j.error||'保存失败')); }
@@ -1049,7 +1223,7 @@ function renderSettingsContent() {
               configs = d.channels;
               localStorage.setItem('atlas-channels', JSON.stringify(d.channels));
             }
-          } catch(e) { console.log('Channel fetch failed:', e); }
+          } catch(e) { console.debug('Channel fetch failed:', e); }
         }
         // Fallback to localStorage
         if (Object.keys(configs).length === 0) {
@@ -1312,7 +1486,7 @@ async function saveChannel(id) {
         body: JSON.stringify({ channel: id, config: cfg })
       });
       const data = await res.json();
-      if (data.ok) { console.log('[Channels] ' + id + ' config synced to server'); }
+      if (data.ok) { console.debug('[Channels] ' + id + ' config synced to server'); }
       else { console.warn('[Channels] Server rejected: ' + (data.error || 'unknown')); /* still saved locally */ }
     } catch(e) { console.warn('[Channels] Server sync failed:', e.message); }
   }
@@ -1634,6 +1808,7 @@ S.attachedFiles = { quote: [], prospect: [] };
 const FILE_ICONS = { xlsx:'📊', xls:'📊', csv:'📊', pdf:'📄', jpg:'🖼️', jpeg:'🖼️', png:'🖼️', webp:'🖼️', txt:'📝', md:'📝' };
 
 function getFileIcon(name) {
+  if (!name) return '📁';
   const ext = (name.split('.').pop() || '').toLowerCase();
   return FILE_ICONS[ext] || '📁';
 }
@@ -1739,7 +1914,11 @@ function formatFileSize(bytes) {
   return (bytes/(1024*1024)).toFixed(1) + 'MB';
 }
 function formatTime(ts) {
-  const d = new Date(ts * 1000);
+  if (!ts) return '';
+  var d;
+  if (typeof ts === 'string') { d = new Date(ts); }
+  else { d = new Date(ts * 1000); }
+  if (isNaN(d.getTime())) return '';
   const now = new Date();
   const pad = n => String(n).padStart(2,'0');
   const date = d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
@@ -1751,13 +1930,13 @@ async function loadKnowledgeBase() {
   const emptyEl = document.getElementById('kbEmpty');
   if (!tree) return;
   
-  if (!S.token) {
+  if (!S.token || S.token === 'null' || S.token === 'undefined') {
     // Try reload from storage
     var stored = localStorage.getItem('atlas_user');
     if (stored) {
       try { var u = JSON.parse(stored); if (u.id) { S.token = localStorage.getItem('atlas_token') || ''; S.user = u; } } catch(e) {}
     }
-    if (!S.token) {
+    if (!S.token || S.token === 'null' || S.token === 'undefined') {
       tree.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted);font-size:.8rem">📂 请登录后查看知识库</div>';
       return;
     }
@@ -1795,18 +1974,20 @@ async function loadKnowledgeBase() {
       const aname = agentNames[agent] || agent;
       h += '<div style="padding:6px 14px;font-size:.68rem;font-weight:600;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-top:4px">' + aname + ' (' + groups[agent].length + ')</div>';
       groups[agent].forEach(f => {
-        const icon = getFileIcon(f.name);
-        h += '<div class="tree-item" onclick="openKBFile(\'' + f.name + '\',\'' + f.agent + '\')" title="' + f.name + ' · ' + formatFileSize(f.size) + ' · ' + formatTime(f.modified) + '">';
+        const fn = f.filename || f.name || 'unknown';
+        const icon = getFileIcon(fn);
+        h += '<div class="tree-item" onclick="openKBFile(\'' + fn + '\',\'' + f.agent + '\')" title="' + fn + ' · ' + formatFileSize(f.size) + ' · ' + formatTime(f.uploadedAt || f.modified) + '">';
         h += '<span style="font-size:.9rem;width:16px;text-align:center">' + icon + '</span>';
-        h += '<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + f.name + '</span>';
+        h += '<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + fn + '</span>';
         h += '<span style="font-size:.62rem;color:var(--dim);flex-shrink:0;margin-left:6px">' + formatFileSize(f.size) + '</span>';
+        h += '<span onclick="event.stopPropagation();deleteKBFile(\'' + fn + '\')" title="删除" style="cursor:pointer;color:var(--dim);margin-left:4px;font-size:.8rem;flex-shrink:0">🗑️</span>';
         h += '</div>';
       });
     });
     
     tree.innerHTML = h;
   } catch(e) {
-    tree.innerHTML = '<div style="padding:20px;text-align:center;color:#ff4444;font-size:.8rem">⚠️ 加载失败<br><span style="font-size:.72rem;color:var(--muted)">检查网络连接</span></div>';
+    tree.innerHTML = '<div style="padding:20px;text-align:center;color:#ff4444;font-size:.8rem">⚠️ 加载失败<br><span style="font-size:.72rem;color:var(--muted)">' + (e.message || '检查网络连接') + '</span><br><button onclick="loadKnowledgeBase()" style="margin-top:8px;padding:4px 12px;border-radius:6px;font-size:.7rem;cursor:pointer;border:1px solid var(--line);background:transparent;color:var(--muted)">🔄 重试</button></div>';
     console.error('KB load error:', e);
   }
 }
@@ -1814,6 +1995,20 @@ async function loadKnowledgeBase() {
 function openKBFile(name, agent) {
   document.getElementById('fileNameDisplay').innerHTML = '📊 <strong>' + name + '</strong><br><span style="font-size:.78rem;color:var(--muted)">' + (agent||'知识库') + ' · 预览（完整客户端支持 AI 解析）</span>';
   openTab('file', '📊 ' + name.replace(/\.[^.]+$/, ''));
+}
+
+async function deleteKBFile(filename) {
+  if (!confirm('确认删除「' + filename + '」？此操作不可恢复。')) return;
+  try {
+    const r = await fetch(API + '/api/kb/delete', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json','Authorization':'Bearer ' + S.token},
+      body: JSON.stringify({filename})
+    });
+    const d = await r.json();
+    if (d.ok) { loadKnowledgeBase(); }
+    else { alert(d.error || '删除失败'); }
+  } catch(e) { alert('删除失败: ' + e.message); }
 }
 
 // ═══ Training (upload Excel → extract rules) ═══
@@ -1935,11 +2130,12 @@ async function sendProspect() {
     const resultMsg = document.createElement('div');
     resultMsg.className = 'chat-msg agent';
 
+    let h;
     if (!data.ok) {
-      resultMsg.innerHTML = '<div class="label">🎯 客户开发</div>❌ ' + (data.error || '管道执行失败');
+      h = '<div class="label">🎯 客户开发</div>❌ ' + (data.error || '管道执行失败');
     } else {
       const s = data.summary || {};
-      let h = '<div class="label">🎯 客户开发</div>';
+      h = '<div class="label">🎯 客户开发</div>';
       h += '<b>✅ 管道完成！</b> 线索 ' + (s.total_leads||0) + ' 家 | 背调 ' + (s.bgcheck_count||0) + ' 份 | 匹配分析 ' + (s.match_count||0) + ' 份 | 开发信 ' + (s.email_count||0) + ' 封';
       if (s.avg_match_score) h += '<br>📊 平均匹配度: <b style="color:var(--green)">' + s.avg_match_score + '%</b>';
       if (s.recommended_action) h += '<br>💡 ' + s.recommended_action;
@@ -2047,11 +2243,12 @@ sendProspect = async function() {
     const resultMsg = document.createElement('div');
     resultMsg.className = 'chat-msg agent';
     
+    let h;
     if (!data.ok) {
-      resultMsg.innerHTML = '<div class="label">🎯 客户开发</div>❌ ' + (data.error || '管道执行失败');
+      h = '<div class="label">🎯 客户开发</div>❌ ' + (data.error || '管道执行失败');
     } else {
       const s = data.summary || {};
-      let h = '<div class="label">🎯 客户开发</div>';
+      h = '<div class="label">🎯 客户开发</div>';
       h += '<b>✅ 管道完成！</b> 线索 ' + (s.total_leads||0) + ' 家 | 背调 ' + (s.bgcheck_count||0) + ' 份 | 匹配分析 ' + (s.match_count||0) + ' 份 | 开发信 ' + (s.email_count||0) + ' 封';
       if (s.avg_match_score) h += '<br>📊 平均匹配度: <b style="color:var(--green)">' + s.avg_match_score + '%</b>';
       if (s.recommended_action) h += '<br>💡 ' + s.recommended_action;
@@ -2111,6 +2308,83 @@ sendProspect = async function() {
     messages.scrollTop = messages.scrollHeight;
   }
 };
+
+// ═══ Quote Pipeline ═══
+async function sendQuote() {
+  const input = document.getElementById('quoteInput');
+  const messages = document.getElementById('quoteMessages');
+  if (!input || !messages) return;
+  const raw = input.value.trim();
+  if (!raw) return;
+
+  const userMsg = document.createElement('div');
+  userMsg.className = 'chat-msg user';
+  userMsg.innerHTML = '<b>你</b><br>' + raw;
+  messages.appendChild(userMsg);
+
+  const loadingMsg = document.createElement('div');
+  loadingMsg.className = 'chat-msg agent';
+  loadingMsg.id = 'quoteLoading';
+  loadingMsg.innerHTML = '<div class="label">💎 报价员</div>⏳ 解析询盘 → 匹配产品 → 计算报价...<br><span style="font-size:.72rem;color:var(--muted)">约需 15-30 秒</span>';
+  messages.appendChild(loadingMsg);
+  messages.scrollTop = messages.scrollHeight;
+  input.value = '';
+
+  try {
+    const resp = await fetch(API + '/api/puzzler/quote', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ inquiry: raw, destination: '', oe_numbers: [] })
+    });
+    const data = await resp.json();
+    document.getElementById('quoteLoading')?.remove();
+
+    const resultMsg = document.createElement('div');
+    resultMsg.className = 'chat-msg agent';
+    let h;
+
+    if (!data.ok) {
+      h = '<div class="label">💎 报价员</div>❌ ' + (data.error || '报价失败');
+    } else {
+      const s = data.summary || {};
+      const items = data.items || [];
+      h = '<div class="label">💎 报价员</div>';
+      h += '<b>✅ 报价完成</b> ' + s.items_count + ' 件 | 总计: <b style="color:var(--green)">¥' + (s.total_amount||0).toLocaleString() + '</b>';
+      h += '<br>📦 建议交期: ' + (s.lead_time_days||'?') + ' 天 | 付款: ' + (s.payment_suggested||'TT');
+      if (s.freight_est) h += '<br>🚚 预估运费: ¥' + s.freight_est.toLocaleString();
+      if (s.notes) h += '<br>📝 ' + s.notes;
+      h += '<br><br>';
+
+      if (items.length > 0) {
+        h += '<table style="width:100%;font-size:.72rem;border-collapse:collapse;margin-bottom:8px">';
+        h += '<tr style="color:var(--dim)"><th style="text-align:left;padding:4px">OE号</th><th>名称</th><th>数量</th><th>单价</th><th>小计</th><th>利润率</th></tr>';
+        items.forEach(function(i) {
+          h += '<tr style="border-top:1px solid var(--line)">';
+          h += '<td style="padding:4px">' + (i.oe||'?') + '</td>';
+          h += '<td>' + (i.name||'?') + '</td>';
+          h += '<td style="text-align:center">' + (i.qty||0) + '</td>';
+          h += '<td style="text-align:right">¥' + (i.suggested_price||0).toLocaleString() + '</td>';
+          h += '<td style="text-align:right">¥' + (i.total||0).toLocaleString() + '</td>';
+          h += '<td style="text-align:right;color:var(--green)">' + (i.margin_pct||0) + '%</td>';
+          h += '</tr>';
+        });
+        h += '</table>';
+      }
+      h += '<div style="font-size:.68rem;color:var(--dim)">置信度: ' + (s.confidence||'?') + '</div>';
+    }
+
+    resultMsg.innerHTML = h;
+    messages.appendChild(resultMsg);
+    messages.scrollTop = messages.scrollHeight;
+  } catch(e) {
+    document.getElementById('quoteLoading')?.remove();
+    const errMsg = document.createElement('div');
+    errMsg.className = 'chat-msg agent';
+    errMsg.innerHTML = '<div class="label">💎 报价员</div>❌ 网络错误: ' + e.message;
+    messages.appendChild(errMsg);
+    messages.scrollTop = messages.scrollHeight;
+  }
+}
 
 function sendOneClientEmail(companyName) {
   if (!lastPipelineResult) return alert('请先运行客户搜索管道');
@@ -2206,25 +2480,98 @@ function openEmailConfig() {
   }
 }
 
-function showMatchDetail() {
-  if (!lastPipelineResult) return;
-  const matches = lastPipelineResult.match_analyses || {};
-  const bgchecks = lastPipelineResult.bgchecks || {};
+async function showMatchDetail() {
+  if (!lastPipelineResult || !lastPipelineResult.leads) return;
+  var leads = lastPipelineResult.leads || [];
   
-  let detail = '📊 客户匹配详情\n\n';
-  for (const [name, match] of Object.entries(matches)) {
-    const bg = bgchecks[name] || {};
-    detail += '🏭 ' + name + '\n';
-    detail += '  匹配度: ' + (match.best_score||0) + '% → ' + (match.best_match||'待分析') + '\n';
-    detail += '  策略: ' + (match.pitch_strategy||'') + '\n';
-    const bg_rec = bg.recommendation || {};
-    if (bg_rec.verdict) detail += '  评级: ' + bg_rec.verdict + '\n';
-    detail += '\n';
-  }
-  alert(detail);
-}
+  // Show loading
+  var modal = document.createElement('div');
+  modal.id = 'bgcheckModal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;display:flex;align-items:center;justify-content:center';
+  modal.innerHTML = '<div style="background:var(--panel);border-radius:12px;padding:24px;max-width:700px;max-height:80vh;overflow-y:auto;width:90%"><h3>🔍 客户背调拼图</h3><p style="color:var(--muted)">正在分析 ' + leads.length + ' 家客户...</p></div>';
+  document.body.appendChild(modal);
+  modal.onclick = function(e) { if (e.target === modal) modal.remove(); };
 
-// ═══ Resize ═══
+  try {
+    var resp = await fetch(API + '/api/puzzler/bgcheck', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ companies: leads.map(function(l) { return { company: l.company, country: l.country }; }) })
+    });
+    var data = await resp.json();
+    if (!data.ok) throw new Error(data.error);
+    
+    var profiles = data.profiles || [];
+    var h = '<h3 style="margin-bottom:16px">🔍 客户信息拼图</h3>';
+    
+    profiles.forEach(function(p) {
+      var ov = p.overview || {};
+      var biz = p.business || {};
+      var proc = p.procurement || {};
+      var dig = p.digital || {};
+      var trd = p.trade || {};
+      var risk = p.risk || {};
+      var ct = p.contact || {};
+      
+      h += '<div style="background:var(--bg);border-radius:10px;padding:16px;margin-bottom:12px;font-size:.78rem;border-left:3px solid var(--green)">';
+      h += '<h4 style="margin:0 0 8px">🏭 ' + (ov.full_name || '?') + '</h4>';
+      
+      // Overview
+      h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;margin-bottom:8px">';
+      h += '<div>📅 成立: ' + (ov.founded || '?') + '</div>';
+      h += '<div>📍 ' + (ov.headquarters || '?') + '</div>';
+      h += '<div>👥 员工: ' + (biz.employees || '?') + '</div>';
+      h += '<div>💰 营收: ' + (biz.revenue_est || '?') + '</div>';
+      h += '<div>🌐 <a href="' + (ov.website || '#') + '" target="_blank" style="color:var(--green)">' + (ov.website || '?') + '</a></div>';
+      h += '</div>';
+      
+      // Products
+      h += '<div style="margin-bottom:6px"><b>📦 主营:</b> ' + (biz.products || '?') + '</div>';
+      
+      // Procurement
+      if (proc.volume_est) {
+        h += '<div style="margin-bottom:6px"><b>📊 采购:</b> ' + proc.volume_est + ' | 周期: ' + (proc.cycle || '?') + '</div>';
+      }
+      if (proc.decision_makers && proc.decision_makers.length) {
+        h += '<div style="margin-bottom:6px"><b>👔 决策人:</b> ' + proc.decision_makers.join(', ') + '</div>';
+      }
+      
+      // Trade
+      if (trd.import_patterns) {
+        h += '<div style="margin-bottom:6px"><b>🚢 贸易:</b> ' + trd.import_patterns + '</div>';
+      }
+      if (trd.hs_codes && trd.hs_codes.length) {
+        h += '<div style="margin-bottom:6px"><b>📋 HS:</b> ' + trd.hs_codes.join(', ') + '</div>';
+      }
+      
+      // Risk
+      var riskColor = risk.payment_risk === 'high' ? '#d32f2f' : risk.payment_risk === 'medium' ? '#e6a817' : 'var(--green)';
+      h += '<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:6px">';
+      h += '<div>⚠️ 付款风险: <b style="color:' + riskColor + '">' + (risk.payment_risk || '?') + '</b></div>';
+      h += '<div>🛡️ 制裁: ' + (risk.sanctions_status || '?') + '</div>';
+      h += '<div>⭐ 声誉: ' + (risk.reputation || '?') + '</div>';
+      h += '</div>';
+      
+      // Contact
+      h += '<div style="margin-bottom:4px"><b>📧 触达:</b> ' + (ct.best_channel || '?') + '</div>';
+      if (ct.best_time) h += '<div style="margin-bottom:4px"><b>⏰ 最佳时间:</b> ' + ct.best_time + '</div>';
+      if (ct.notes) h += '<div style="margin-bottom:4px;color:var(--dim)">' + ct.notes + '</div>';
+      
+      // Match reasoning
+      if (p.match_reasoning) {
+        h += '<div style="margin-top:8px;padding:8px;background:var(--green-bg);border-radius:6px"><b>🎯 匹配理由:</b> ' + p.match_reasoning + '</div>';
+      }
+      
+      h += '</div>';
+    });
+    
+    var box = modal.querySelector('div');
+    box.innerHTML = h + '<button onclick="document.getElementById(\'bgcheckModal\').remove()" style="margin-top:8px;padding:6px 16px;border-radius:6px;border:1px solid var(--line);background:transparent;cursor:pointer">关闭</button>';
+  } catch(e) {
+    var box = modal.querySelector('div');
+    box.innerHTML = '<h3>❌ 背调失败</h3><p>' + e.message + '</p><button onclick="document.getElementById(\'bgcheckModal\').remove()" style="margin-top:8px;padding:6px 16px;border-radius:6px;border:1px solid var(--line);background:transparent;cursor:pointer">关闭</button>';
+  }
+}
 let isResizing = false;
 function startResize(e) { isResizing = true; document.body.style.cursor = 'col-resize'; }
 document.addEventListener('mousemove', (e) => {
