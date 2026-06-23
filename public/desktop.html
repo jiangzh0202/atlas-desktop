@@ -1771,7 +1771,7 @@ async function loadKnowledgeBase() {
     });
     const data = await res.json();
     if (!data.ok) {
-      tree.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted);font-size:.8rem">📂 暂无知识库<br><span style='font-size:.72rem'>点击 📤 上传 Excel/CSV/PDF 添加知识库</span></div>';
+      tree.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted);font-size:.8rem">📂 暂无知识库<br><span style="font-size:.72rem">点击 📤 上传 Excel/CSV/PDF 添加知识库</span></div>';
       return;
     }
     
@@ -2432,7 +2432,7 @@ document.addEventListener('DOMContentLoaded', function() {
     var btn = document.getElementById('browseDataBtn');
     if (btn) btn.style.display = '';
   }
-  }, 500);
+  , 500);
 });
 function browseDataFolder() {
   var input = document.getElementById('dataDirInput');
