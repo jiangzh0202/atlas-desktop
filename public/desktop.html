@@ -228,8 +228,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);height:100vh;
     <span id="sidebarTitle">知识库</span>
     <a href="https://atlas.traceclaw.cn/tutorial" target="_blank" title="教程" style="font-size:.82rem;color:var(--green);text-decoration:none">📖</a>
     <a href="https://atlas.traceclaw.cn/" title="返回官网" target="_blank" style="font-size:.82rem;color:var(--muted);text-decoration:none;margin-right:4px">🏠</a>
-    <span class="actions" title="上传参考文件到知识库" onclick="document.getElementById('kbFileInput').click()">📤</span>
-    <span class="actions" title="训练AI — 从知识库文件提取规则" onclick="document.getElementById('trainFileInput').click()" style="margin-left:4px">🧠</span>
+    <span class="actions" id="sidebarActionUpload" title="上传参考文件到知识库" onclick="document.getElementById('kbFileInput').click()">📤</span>
   </div>
   <div class="sidebar-body" id="sidebarBody">
     <div id="knowledgeTree">
@@ -1690,10 +1689,14 @@ document.querySelectorAll('.ab-item[data-view]').forEach(el => {
       document.getElementById('knowledgeTree').style.display = 'block';
       document.getElementById('agentList').style.display = 'none';
       document.getElementById('sidebarTitle').textContent = '知识库';
+      var upBtn = document.getElementById('sidebarActionUpload');
+      if (upBtn) upBtn.style.display = '';
     } else if (S.activeView === 'agents') {
       document.getElementById('knowledgeTree').style.display = 'none';
       document.getElementById('agentList').style.display = 'block';
       document.getElementById('sidebarTitle').textContent = '数字员工';
+      var upBtn = document.getElementById('sidebarActionUpload');
+      if (upBtn) upBtn.style.display = 'none';
     }
     showWelcome();
   });
@@ -1754,6 +1757,13 @@ let _trainFileInput = null;
 function trainAgentCard(agentId) {
   if (!S.user) { showLoginPrompt(); return; }
   S.selectedRulesAgent = agentId;
+  var agentNames2 = {developer:'客户开发',quoter:'报价员',buyer:'采购员',image:'图片识零件员',stock:'库存管理员',customs:'清关助理'};
+  // Brief toast to indicate training mode activated
+  var toast = document.createElement('div');
+  toast.style.cssText = 'position:fixed;top:60px;right:16px;background:var(--green);color:#fff;padding:8px 16px;border-radius:8px;font-size:.82rem;z-index:9999;animation:fadeIn .2s ease';
+  toast.textContent = '🧠 请选择训练文件（' + (agentNames2[agentId]||agentId) + '）';
+  document.body.appendChild(toast);
+  setTimeout(function(){ toast.style.opacity='0'; toast.style.transition='opacity .3s'; setTimeout(function(){ toast.remove(); },300); },2500);
   if (!_trainFileInput) {
     _trainFileInput = document.getElementById('trainFileInput');
   }
@@ -2121,7 +2131,7 @@ async function sendProspect() {
   try {
     const resp = await fetch(API + '/api/puzzler/pipeline', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (S.token || '') },
       body: JSON.stringify({ industry, country, keywords, language: 'en', channels: ['linkedin','google','b2b'] })
     });
     const data = await resp.json();
@@ -2233,7 +2243,7 @@ sendProspect = async function() {
   try {
     const resp = await fetch(API + '/api/puzzler/pipeline', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (S.token || '') },
       body: JSON.stringify({ industry, country, keywords, language: 'en', channels: ['linkedin','google','b2b'] })
     });
     const data = await resp.json();
@@ -2333,7 +2343,7 @@ async function sendQuote() {
   try {
     const resp = await fetch(API + '/api/puzzler/quote', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (S.token || '') },
       body: JSON.stringify({ inquiry: raw, destination: '', oe_numbers: [] })
     });
     const data = await resp.json();
@@ -2795,20 +2805,20 @@ function browseDataFolder() {
         if (path) { input.value = typeof path === 'string' ? path : (path.path || ''); saveDataFolder(); }
         else if (msg) msg.innerHTML = '<span style=\"color:var(--muted)\">未选择目录</span>';
       }).catch(function(e) {
-        if (msg) msg.innerHTML = '<span style=\"color:#ff4d4f\">❌ 对话框出错: ' + (e.message || e) + '</span>';
+        if (msg) msg.innerHTML = '<span style=\"color:#ff4d4f\">❌ 对话框出错（检查插件权限）: ' + (e.message || e) + '</span>';
       });
     return;
   }
 
   // 2. Tauri: __TAURI__.invoke fallback
-  if (window.__TAURI__ && typeof window.__TAURI__.invoke === 'function') {
+  if (window.__TAURI__ && window.__TAURI__.invoke && typeof window.__TAURI__.invoke === 'function') {
     window.__TAURI__.invoke('plugin:dialog|open', { directory: true, title: '选择数据存储目录', multiple: false })
       .then(function(result) {
         var path = typeof result === 'string' ? result : (result && result.path ? result.path : '');
         if (path) { input.value = path; saveDataFolder(); }
         else if (msg) msg.innerHTML = '<span style=\"color:var(--muted)\">未选择目录</span>';
       }).catch(function(e) {
-        if (msg) msg.innerHTML = '<span style=\"color:#ff4d4f\">❌ 对话框出错: ' + (e.message || e) + '</span>';
+        if (msg) msg.innerHTML = '<span style=\"color:#ff4d4f\">❌ 对话框出错（检查插件权限）: ' + (e.message || e) + '</span>';
       });
     return;
   }
@@ -2833,7 +2843,7 @@ function browseDataFolder() {
         if (path) { input.value = path; saveDataFolder(); }
         else if (msg) msg.innerHTML = '<span style=\"color:var(--muted)\">未选择目录</span>';
       }).catch(function(e) {
-        if (msg) msg.innerHTML = '<span style=\"color:#ff4d4f\">❌ 对话框出错: ' + (e.message || e) + '</span>';
+        if (msg) msg.innerHTML = '<span style=\"color:#ff4d4f\">❌ 对话框出错（检查插件权限）: ' + (e.message || e) + '</span>';
       });
     return;
   }
