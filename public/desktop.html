@@ -7,7 +7,7 @@
 <style>
 /* ═══════════════════════════════════════════
    Atlas V3 — Web 预览版
-   对齐客户端 v1.3.0 标准
+   对齐客户端 v1.6.8 标准
    暗/亮双主题 · 真实登录 · 完整设置
    ═══════════════════════════════════════════ */
 :root {
@@ -48,11 +48,11 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);height:100vh;
 .ab-spacer{flex:1}
 
 /* ═══ Sidebar ═══ */
-.sidebar{width:260px;background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column;flex-shrink:0;overflow:hidden;transition:background .3s}
+.sidebar{width:260px;background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column;flex-shrink:0;overflow:hidden;transition:background .3s;position:relative}
 .sidebar-header{padding:12px 14px;font-size:.7rem;font-weight:600;text-transform:uppercase;color:var(--dim);letter-spacing:.5px;display:flex;align-items:center;justify-content:space-between}
 .sidebar-header .actions{font-size:.9rem;cursor:pointer;padding:2px 6px;border-radius:4px;transition:background .15s}
 .sidebar-header .actions:hover{background:var(--active)}
-.sidebar-body{flex:1;overflow-y:auto;padding:4px 0}
+.sidebar-body{flex:1;overflow-y:auto;padding:4px 0 28px 0}
 .tree-item{padding:6px 14px;display:flex;align-items:center;gap:8px;cursor:pointer;font-size:.8rem;color:var(--muted);transition:all .1s;border-left:2px solid transparent}
 .tree-item:hover{background:var(--active);color:var(--ink)}
 .agent-card{display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--active);border-radius:10px;cursor:pointer;transition:all .15s;border:1px solid transparent;margin:4px 10px;min-height:52px}
@@ -74,7 +74,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);height:100vh;
 .agent-card.active{background:var(--green-bg);border-color:rgba(0,255,136,.15)}
 
 /* ═══ Main Panel ═══ */
-.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;position:relative}
 .tabs{display:flex;background:var(--panel);border-bottom:1px solid var(--line);padding:0 8px;min-height:36px;align-items:flex-end;gap:2px;transition:background .3s}
 .tab{padding:7px 14px;font-size:.78rem;color:var(--muted);cursor:pointer;border-radius:6px 6px 0 0;display:flex;align-items:center;gap:6px;transition:all .1s;white-space:nowrap;border:1px solid transparent;border-bottom:none}
 .tab:hover{color:var(--ink);background:var(--active)}
@@ -82,7 +82,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);height:100vh;
 .tab .close{font-size:.7rem;padding:2px;border-radius:3px;opacity:0;transition:opacity .1s}
 .tab:hover .close{opacity:.7}
 .tab .close:hover{opacity:1;background:var(--line)}
-.workspace{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.workspace{flex:1;display:flex;flex-direction:column;overflow:hidden;padding-bottom:28px}
 .welcome{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:40px;text-align:center}
 .welcome .logo{font-size:3rem;margin-bottom:8px}
 .welcome h1{font-size:1.4rem;font-weight:700}
@@ -109,6 +109,8 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);height:100vh;
 .chat-input-bar .send-btn{width:36px;height:36px;border-radius:50%;background:var(--green);color:var(--bg);border:none;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0;font-weight:700}
 .chat-input-bar .send-btn:hover{transform:scale(1.05)}
 .chat-input-bar .send-btn:disabled{opacity:.3;cursor:not-allowed}
+.auto-toggle-btn{padding:4px 10px;border-radius:6px;border:1px solid var(--line);background:transparent;color:var(--muted);font-size:.72rem;cursor:pointer;white-space:nowrap;flex-shrink:0;transition:all .15s;font-weight:500}
+.auto-toggle-btn:hover{background:var(--active);color:var(--ink)}
 /* ─── File Upload ─── */
 .chat-attach-btn{width:36px;height:36px;border-radius:50%;background:var(--active);border:1px solid var(--line);color:var(--muted);font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0}
 .chat-attach-btn:hover{color:var(--ink);border-color:var(--muted);background:var(--panel)}
@@ -125,9 +127,34 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);height:100vh;
 .upload-zone.drag-over{border-color:var(--green);color:var(--green);background:var(--green-bg)}
 
 /* ═══ Status Bar ═══ */
-.status-bar{height:24px;background:var(--sidebar);border-top:1px solid var(--line);display:flex;align-items:center;padding:0 12px;font-size:.7rem;color:var(--dim);gap:14px;flex-shrink:0;transition:background .3s}
+.status-bar{height:24px;background:var(--panel);border-top:1px solid var(--line);display:flex;align-items:center;padding:0 12px;font-size:.7rem;color:var(--dim);gap:14px;flex-shrink:0;transition:background .3s;position:absolute;bottom:0;left:0;right:0;z-index:10}
 .status-bar .dot{width:7px;height:7px;border-radius:50%;background:var(--green);display:inline-block}
 .status-bar .right{margin-left:auto}
+/* ═══ Universal Styled Dialogs ═══ */
+.dialog-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:10000;display:flex;align-items:center;justify-content:center;animation:fadeIn .15s ease}
+.dialog-box{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:24px;max-width:420px;width:90%;box-shadow:0 16px 48px rgba(0,0,0,.4);animation:slideUp .2s ease}
+.dialog-box .d-icon{font-size:2rem;text-align:center;margin-bottom:8px}
+.dialog-box .d-msg{font-size:.88rem;color:var(--ink);line-height:1.6;margin-bottom:20px;white-space:pre-wrap;word-break:break-word}
+.dialog-box .d-actions{display:flex;gap:8px;justify-content:flex-end}
+.dialog-box .d-btn{padding:8px 20px;border-radius:8px;font-size:.82rem;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s;border:none}
+.dialog-box .d-btn-primary{background:var(--green);color:var(--bg)}
+.dialog-box .d-btn-primary:hover{opacity:.9}
+.dialog-box .d-btn-cancel{background:var(--active);color:var(--ink);border:1px solid var(--line)}
+.dialog-box .d-btn-cancel:hover{background:var(--green-bg);border-color:var(--green)}
+.dialog-box .d-btn-danger{background:#ff4444;color:#fff}
+.dialog-box .d-btn-danger:hover{opacity:.9}
+
+/* Toast notifications */
+.toast-container{position:fixed;top:16px;right:16px;z-index:10001;display:flex;flex-direction:column;gap:8px}
+.toast-item{padding:10px 16px;border-radius:8px;font-size:.82rem;color:#fff;box-shadow:0 4px 16px rgba(0,0,0,.3);animation:slideIn .25s ease;max-width:380px;word-break:break-word}
+.toast-success{background:#2e7d32}
+.toast-error{background:#c62828}
+.toast-info{background:#1565c0}
+.toast-warn{background:#f57f17;color:#1a1a1e}
+
+@keyframes slideUp{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
+@keyframes slideIn{from{transform:translateX(100px);opacity:0}to{transform:translateX(0);opacity:1}}
+
 
 /* ═══ Overlay & Modal ═══ */
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:100;display:flex;align-items:center;justify-content:center}
@@ -141,6 +168,41 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);height:100vh;
 .modal .btn-secondary{background:var(--active);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:8px 16px;font-size:.82rem;cursor:pointer;font-family:inherit;transition:all .15s}
 .modal .btn-secondary:hover{background:var(--green-bg);border-color:var(--green)}
 .modal .btn-danger{color:#ff4444;border-color:rgba(255,68,68,.2)}
+/* ═══ Training Modal ═══ */
+.train-modal{width:520px;max-height:85vh;padding:0;display:flex;flex-direction:column;overflow:hidden}
+.train-modal .tm-header{padding:20px 24px 0;display:flex;align-items:center;justify-content:space-between}
+.train-modal .tm-header h3{margin:0;font-size:1rem;display:flex;align-items:center;gap:8px}
+.train-modal .tm-close{width:28px;height:28px;border-radius:50%;border:none;background:var(--active);color:var(--dim);font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.train-modal .tm-close:hover{background:#ff444420;color:#ff4444}
+.train-modal .tm-body{padding:16px 24px;overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:14px}
+.train-modal .tm-body .desc{font-size:.8rem;color:var(--muted);line-height:1.5}
+.train-modal .file-zone{border:2px dashed var(--line);border-radius:10px;padding:28px 20px;text-align:center;cursor:pointer;transition:all .2s;color:var(--muted);font-size:.85rem}
+.train-modal .file-zone:hover{border-color:var(--green);color:var(--green);background:var(--green-bg)}
+.train-modal .file-zone.has-file{border-style:solid;border-color:var(--green);background:var(--green-bg);color:var(--ink);cursor:default}
+.train-modal .file-info{display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--active);border-radius:8px;font-size:.82rem;margin:0}
+.train-modal .file-info .fi-icon{font-size:1.3rem}
+.train-modal .file-info .fi-name{flex:1;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.train-modal .file-info .fi-size{color:var(--dim);font-size:.75rem;white-space:nowrap}
+.train-modal .file-info .fi-remove{color:var(--dim);cursor:pointer;font-size:.9rem;padding:2px 6px;border-radius:4px;transition:all .15s}
+.train-modal .file-info .fi-remove:hover{color:#ff4444;background:#ff444410}
+.train-modal .tm-status{padding:12px 14px;border-radius:8px;font-size:.82rem;display:flex;align-items:center;gap:8px}
+.train-modal .tm-status.working{background:#7ecf5e15;color:var(--green);border:1px solid #7ecf5e30}
+.train-modal .tm-status.done{background:#e8f5e9;color:#2e7d32;border:1px solid #a5d6a7}
+.train-modal .tm-status.error{background:#ffebee;color:#c62828;border:1px solid #ef9a9a}
+.train-modal .tm-status .spinner{width:16px;height:16px;border:2px solid #7ecf5e30;border-top-color:var(--green);border-radius:50%;animation:spin .8s linear infinite;flex-shrink:0}
+.train-modal .tm-result{background:var(--active);border-radius:8px;padding:14px;font-size:.8rem;max-height:200px;overflow-y:auto;line-height:1.6}
+.train-modal .tm-result table{width:100%;border-collapse:collapse;font-size:.78rem}
+.train-modal .tm-result td,.train-modal .tm-result th{padding:4px 8px;border-bottom:1px solid var(--line);text-align:left}
+.train-modal .tm-actions{display:flex;gap:8px;justify-content:flex-end;padding:0 24px 20px}
+.train-modal .tm-actions button{padding:8px 20px;border-radius:8px;font-size:.82rem;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s;border:none}
+.train-modal .tm-actions .btn-train{background:var(--green);color:#fff}
+.train-modal .tm-actions .btn-train:hover{opacity:.9;transform:translateY(-1px)}
+.train-modal .tm-actions .btn-train:disabled{opacity:.4;cursor:not-allowed;transform:none}
+.train-modal .tm-actions .btn-cancel{background:var(--active);color:var(--ink);border:1px solid var(--line)}
+.train-modal .tm-actions .btn-cancel:hover{background:var(--green-bg);border-color:var(--green)}
+
+@keyframes spin{to{transform:rotate(360deg)}}
+
 
 /* ═══ Settings Modal ═══ */
 /* Settings layout helpers */
@@ -209,6 +271,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);height:100vh;
     .cmd-item .cmd-shortcut { font-size:.68rem; color:var(--dim); background:var(--active); padding:2px 7px; border-radius:4px; }
     .cmd-empty { padding:30px; text-align:center; color:var(--muted); font-size:.8rem; }
 </style>
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
 </head>
 <body data-theme="dark">
 
@@ -218,7 +281,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);height:100vh;
   <div class="ab-item" data-view="agents" title="数字员工">🤖</div>
   <div class="ab-spacer"></div>
   <div class="ab-item" id="userBtn" title="用户" onclick="handleUserClick()" style="margin-bottom:4px">👤</div>
-  <div style="text-align:center;padding:10px 0 6px;font-size:.68rem;color:var(--dim);letter-spacing:.3px;opacity:.6">Atlas v1.6.8</div>
+  <div style="text-align:center;padding:10px 0 6px;font-size:.68rem;color:var(--dim);letter-spacing:.3px;opacity:.6">Atlas v1.7.0</div>
   <div class="ab-item" id="settingsBtn" title="设置">⚙️</div>
 </div>
 
@@ -326,16 +389,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);height:100vh;
     <!-- Quote Agent -->
     <div class="chat-panel" id="view-quote" style="display:none">
       <div class="chat-messages" id="quoteMessages">
-        <div class="chat-msg agent">
-          <div class="label">💎 报价员 Agent</div>
-          你好！我从 <strong>2 份历史报价单（338 条记录）</strong> 中学习了你的定价规律。<br><br>
-          <strong>📊 发现的规律：</strong><br>
-          • 福田康明斯喷油器 均价 ¥3,200，波动 ±8%<br>
-          • 七星客户加价系数 1.15-1.25<br>
-          • 中东地区运费加成 ¥200-400/件<br>
-          • 50件以上批量折扣 5-8%<br><br>
-          直接粘贴询盘 👇
-        </div>
+        <div class="chat-msg agent" id="quoteGreeting"></div>
       </div>
       <div class="file-chips" id="quoteFileChips"></div>
       <div class="upload-zone" id="quoteUploadZone" onclick="document.getElementById('quoteFileInput').click()" 
@@ -356,10 +410,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);height:100vh;
     <!-- Prospect Agent -->
     <div class="chat-panel" id="view-prospect" style="display:none">
       <div class="chat-messages" id="prospectMessages">
-        <div class="chat-msg agent">
-          <div class="label">🎯 客户开发 Agent</div>
-          我能帮你三步完成客户开发：<br>① 输入行业+国家+关键词 → 多渠道搜索客户<br>② 自动背调拼图（工商/采购/社媒/风控评估）<br>③ 基于背调生成个性化开发信<br><br>试试输入 👇
-        </div>
+        <div class="chat-msg agent" id="prospectGreeting"></div>
       </div>
       <div class="file-chips" id="prospectFileChips"></div>
       <div class="upload-zone" id="prospectUploadZone" onclick="document.getElementById('prospectFileInput').click()" 
@@ -373,6 +424,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);height:100vh;
         <textarea id="prospectInput" placeholder="行业 国家 关键词，如：auto parts UAE diesel engine..." rows="1"
           onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendProspect()}"></textarea>
         <input type="file" id="prospectFileInput" multiple accept=".xlsx,.xls,.csv,.pdf,.jpg,.jpeg,.png,.webp,.txt,.md" onchange="handleFiles(this.files,'prospect')" style="display:none">
+        <button id="btnAutoToggle" class="auto-toggle-btn" onclick="toggleAutoMode()" title="半自动：搜索后手动预览发送 | 全自动：搜索后自动发送">👆 半自动</button>
         <button class="send-btn" onclick="sendProspect()">↑</button>
       </div>
     
@@ -383,18 +435,19 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);height:100vh;
     </div>
   </div>
 
+
   <!-- Status Bar -->
   <div class="status-bar">
     <span class="dot" id="statusDot"></span>
     <span>atlas.traceclaw.cn · </span>
     <span id="loginStatus" style="cursor:pointer" onclick="toggleUserPopup()">登录 / 注册 👤</span>
-    <span class="right">已学习 338 条历史 · API 0次</span>
+    <span class="right" id="statusRight">已登录</span>
   </div>
 </div>
 
 <!-- Hidden KB file input -->
 <input type="file" id="kbFileInput" multiple accept=".xlsx,.xls,.csv,.pdf,.txt,.md" onchange="handleKBFiles(this.files)" style="display:none">
-<input type="file" id="trainFileInput" accept=".xlsx,.xls" onchange="handleTrain(this.files)" style="display:none">
+<input type="file" id="trainFileInput" accept=".xlsx,.xls" multiple onchange="handleTrain(this.files)" style="display:none">
 
 <!-- ═══ Settings Modal ═══ -->
 <div class="overlay hidden" id="settingsOverlay">
@@ -434,7 +487,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);height:100vh;
 <script>
 /* ═══════════════════════════════════════════
    Atlas V3 — Web 预览版 交互逻辑
-   对齐客户端 v1.3.0 标准
+   对齐客户端 v1.6.8 标准
    ═══════════════════════════════════════════ */
 
 const API = 'https://atlas.traceclaw.cn';
@@ -730,6 +783,7 @@ function renderSmtpSettings(el) {
       document.getElementById('smtpWhatsapp').value = d.whatsapp || '';
       document.getElementById('smtpWechat').value = d.wechat || '';
       document.getElementById('smtpWebsite').value = d.website || '';
+      document.getElementById('smtpPass').value = d.password || '';
     }
   }).catch(()=>{});
 }
@@ -871,7 +925,7 @@ async function loadRulesVersion(agent) {
   const editor = document.getElementById('rulesEditor');
   const version = select ? select.value : '';
   if (!version || !editor) return;
-  if (!confirm('加载备份版本 ' + version + ' 将覆盖当前编辑器内容，确定？')) return;
+  var cf = await showConfirm('加载备份版本 ' + version + ' 将覆盖当前编辑器内容，确定？'); if (!cf) return;
   try {
     const resp = await fetch(API + '/api/rules/restore/' + version);
     const data = await resp.json();
@@ -879,10 +933,10 @@ async function loadRulesVersion(agent) {
       editor.value = data.raw || '';
       document.getElementById('rulesMsg').innerHTML = '<span style="color:var(--green)">✅ 已加载备份版本: ' + version + '</span>';
     } else {
-      alert('加载失败: ' + (data.error || ''));
+      showToast('加载失败: ' + (data.error || ''), 'error');
     }
   } catch(e) {
-    alert('加载版本失败: ' + e.message);
+    showToast('加载版本失败: ' + e.message, 'error');
   }
 }
 
@@ -1121,14 +1175,14 @@ function renderSettingsContent() {
           var cfg = _collectMcpConfig(sid, 'mcp-');
           var url = cfg.url || '';
           var key = cfg.api_key || '';
-          if (!url) { alert('请填写 API 地址'); return; }
+          if (!url) { showToast('请填写 API 地址', 'warn'); return; }
           var token = localStorage.getItem('atlas_token');
           try {
             var resp = await fetch(API + '/api/mcp/connect', { method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+(token||'')}, body:JSON.stringify({server_id:sid,name:name,url:url,api_key:key||'',config:cfg}) });
             var j = await resp.json();
-            if (j.ok) { var ov = document.getElementById('mcp-modal'); if (ov) ov.remove(); alert('✅ 已接入'); showSettings('mcp'); }
-            else { alert('❌ ' + (j.error||'保存失败')); }
-          } catch(e) { alert('网络错误'); }
+            if (j.ok) { var ov = document.getElementById('mcp-modal'); if (ov) ov.remove(); showToast('✅ 已接入', 'success'); showSettings('mcp'); }
+            else { showToast('❌ ' + (j.error||'保存失败'), 'error'); }
+          } catch(e) { showToast('网络错误', 'error'); }
         };      };
       })();
       break;
@@ -1302,7 +1356,7 @@ function renderSettingsContent() {
     case 'usage':
       (() => {
         var q = S.quota || {};
-        var hasData = !!(q.quoter_used !== undefined && q.quoter_used !== null || q.developer_used !== undefined && q.developer_used !== null);
+        var hasData = !!((q.quoter?.quota_used) !== undefined && q.quoter_used !== null || (q.developer?.quota_used) !== undefined && q.developer_used !== null);
         var fetching = false;
         var items;
         if (S.user && S.token) {
@@ -1329,8 +1383,8 @@ function renderSettingsContent() {
             ];
           } else {
             items = [
-              {label:'报价用量',val:(q.quoter_used||0)+'/'+(q.quoter_limit||0),u:'份'},
-              {label:'开发信用量',val:(q.developer_used||0)+'/'+(q.developer_limit||0),u:'封'},
+              {label:'报价用量',val:(q.quoter?.quota_used||0)+'/'+(q.quoter?.quota_limit||0),u:'份'},
+              {label:'开发信用量',val:(q.developer?.quota_used||0)+'/'+(q.developer?.quota_limit||0),u:'封'},
               {label:'套餐到期',val:q.expires_at||'—',u:''},
               {label:'订阅状态',val:q.plan||'试用',u:''},
             ];
@@ -1495,7 +1549,7 @@ async function saveChannel(id) {
 }
 
 async function testChannel(id) {
-  if (!S.token) { alert('请先登录后再测试通道连接'); return; }
+  if (!S.token) { showToast('请先登录后再测试通道连接', 'warn'); return; }
   saveChannel(id); // save first
   const configs = JSON.parse(localStorage.getItem('atlas-channels') || '{}');
   const cfg = configs[id] || {};
@@ -1507,12 +1561,12 @@ async function testChannel(id) {
     });
     const data = await res.json();
     if (data.ok) {
-      alert('✅ 连接成功！' + id + ' 通道已就绪');
+      showToast('✅ 连接成功！' + id + ' 通道已就绪', 'success');
     } else {
-      alert('❌ 连接失败：' + (data.error || '请检查配置参数'));
+      showToast('❌ 连接失败：' + (data.error || '请检查配置参数'), 'error');
     }
   } catch(e) {
-    alert('⚠️ 网络错误，请确认 atlas.traceclaw.cn 服务运行中');
+    showToast('⚠️ 网络错误，请确认 atlas.traceclaw.cn 服务运行中', 'error');
   }
 }
 
@@ -1588,6 +1642,8 @@ async function restoreSession() {
       S.user = data.user;
       S.quota = data.quota;
       updateUIForLogin();
+    restoreChatHistory();
+      filterAgentsByRole();
       loadKnowledgeBase();
       loadChannelsFromServer();
     } else {
@@ -1606,9 +1662,55 @@ function updateUIForLogin() {
   ls.style.fontWeight = '600';
 }
 
+function filterAgentsByRole() {
+  // Boss sees all agents, employees see only assigned ones
+  var isBoss = S.user && S.user.role === 'boss';
+  var q = S.quota || {};
+  var hasQuoter = isBoss || (q.quoter && q.quoter.quota_limit > 0) || (q.quoter_limit > 0) || (S.user && S.user.quota_quoter_limit > 0);
+  var hasDeveloper = isBoss || (q.developer && q.developer.quota_limit > 0) || (q.developer_limit > 0) || (S.user && S.user.quota_developer_limit > 0);
+  
+  var quoteCard = document.getElementById('agent-quote');
+  var prospectCard = document.getElementById('agent-prospect');
+  
+  if (quoteCard) {
+    if (hasQuoter) {
+      quoteCard.classList.remove('locked');
+      var st = quoteCard.querySelector('.agent-status');
+      if (st) { st.textContent = '已租赁'; st.style.background = 'var(--green-bg)'; st.style.color = 'var(--green)'; }
+      var tb = quoteCard.querySelector('.train-btn');
+      if (tb) { tb.classList.remove('locked'); tb.title = '训练报价员'; tb.textContent = '🧠'; }
+    } else {
+      quoteCard.classList.add('locked');
+      var st = quoteCard.querySelector('.agent-status');
+      if (st) { st.textContent = '未分配'; st.style.background = 'var(--line)'; st.style.color = 'var(--dim)'; }
+      var tb = quoteCard.querySelector('.train-btn');
+      if (tb) { tb.classList.add('locked'); tb.title = '未分配此角色'; tb.textContent = '🔒'; }
+    }
+  }
+  
+  if (prospectCard) {
+    if (hasDeveloper) {
+      prospectCard.classList.remove('locked');
+      var st = prospectCard.querySelector('.agent-status');
+      if (st) { st.textContent = '已租赁'; st.style.background = 'var(--green-bg)'; st.style.color = 'var(--green)'; }
+      var tb = prospectCard.querySelector('.train-btn');
+      if (tb) { tb.classList.remove('locked'); tb.title = '训练客户开发'; tb.textContent = '🧠'; }
+    } else {
+      prospectCard.classList.add('locked');
+      var st = prospectCard.querySelector('.agent-status');
+      if (st) { st.textContent = '未分配'; st.style.background = 'var(--line)'; st.style.color = 'var(--dim)'; }
+      var tb = prospectCard.querySelector('.train-btn');
+      if (tb) { tb.classList.add('locked'); tb.title = '未分配此角色'; tb.textContent = '🔒'; }
+    }
+  }
+}
+
 function logout() {
   S.token = null; S.user = null; S.quota = null;
   localStorage.removeItem('atlas_token');
+  clearChatHistory();
+  var qm = document.getElementById('quoteMessages'); if (qm) qm.innerHTML = '';
+  var pm = document.getElementById('prospectMessages'); if (pm) pm.innerHTML = '';
   const userBtn = document.getElementById('userBtn');
   if (userBtn) userBtn.style.color = '';
   document.getElementById('statusDot').style.background = 'var(--muted)';
@@ -1635,8 +1737,8 @@ function toggleUserPopup() {
     <div class="up-name">${S.user.company}</div>
     <div class="up-email">${S.user.email}</div>
     <div class="up-quota">
-      🤖 报价员 · 免费试用 (${S.quota?.quoter_used||0}/${S.quota?.quoter_limit||1})<br>
-      🔍 客户开发 · 免费试用 (${S.quota?.developer_used||0}/${S.quota?.developer_limit||1})
+      🤖 报价员 · 免费试用 (${(S.quota?.quoter?.quota_used||0)}/${(S.quota?.quoter?.quota_limit||1)})<br>
+      🔍 客户开发 · 免费试用 (${(S.quota?.developer?.quota_used||0)}/${(S.quota?.developer?.quota_limit||1)})
     </div>
     <div class="up-row">
       <button class="btn-secondary" onclick="location.href = 'https://atlas.traceclaw.cn/dashboard?token='+encodeURIComponent(S.token||'')">控制台</button>
@@ -1660,7 +1762,7 @@ function openLogin() {
 }
 
 function showLoginPrompt() {
-  alert('👤 请先登录 Atlas 账号\n\n登录后可使用：\n• 数字员工报价/客户开发\n• 知识库同步\n• 历史数据学习');
+  showAlert('👤 请先登录 Atlas 账号\n\n登录后可使用：\n• 数字员工报价/客户开发\n• 知识库同步\n• 历史数据学习');
   openLogin();
 }
 
@@ -1752,22 +1854,328 @@ function showWelcome() {
   if (wt) wt.classList.add('active');
 }
 
+
+// ═══ Universal Styled Dialogs ═══
+function showDialog(msg, opts) {
+  opts = opts || {};
+  return new Promise(function(resolve) {
+    var ov = document.createElement('div');
+    ov.className = 'dialog-overlay';
+    var icon = opts.icon || '';
+    var buttons = opts.buttons || [{text:'确定', cls:'d-btn-primary', val:true}];
+    var btnHtml = buttons.map(function(b){
+      return '<button class="d-btn ' + (b.cls||'d-btn-cancel') + '" data-val="' + b.val + '">' + b.text + '</button>';
+    }).join('');
+    ov.innerHTML = '<div class="dialog-box" onclick="event.stopPropagation()">' +
+      (icon ? '<div class="d-icon">' + icon + '</div>' : '') +
+      '<div class="d-msg">' + msg + '</div>' +
+      '<div class="d-actions">' + btnHtml + '</div>' +
+    '</div>';
+    document.body.appendChild(ov);
+    ov.onclick = function() { ov.remove(); resolve(null); };
+    ov.querySelectorAll('.d-btn').forEach(function(btn){
+      btn.onclick = function(e) { e.stopPropagation(); ov.remove(); resolve(btn.dataset.val); };
+    });
+  });
+}
+
+function showAlert(msg) {
+  return showDialog(msg, {icon:'', buttons:[{text:'确定', cls:'d-btn-primary', val:true}]});
+}
+
+function showConfirm(msg) {
+  return showDialog(msg, {
+    buttons:[
+      {text:'取消', cls:'d-btn-cancel', val:false},
+      {text:'确定', cls:'d-btn-primary', val:true}
+    ]
+  });
+}
+
+function showDeleteConfirm(msg) {
+  return showDialog(msg, {
+    icon:'⚠️',
+    buttons:[
+      {text:'取消', cls:'d-btn-cancel', val:false},
+      {text:'删除', cls:'d-btn-danger', val:true}
+    ]
+  });
+}
+
+function showToast(msg, type, duration) {
+  type = type || 'info';
+  duration = duration || 3000;
+  var container = document.querySelector('.toast-container');
+  if (!container) {
+    container = document.createElement('div');
+    container.className = 'toast-container';
+    document.body.appendChild(container);
+  }
+  var item = document.createElement('div');
+  item.className = 'toast-item toast-' + type;
+  item.textContent = msg;
+  container.appendChild(item);
+  setTimeout(function(){
+    item.style.opacity = '0';
+    item.style.transition = 'opacity .3s';
+    setTimeout(function(){ item.remove(); }, 300);
+  }, duration);
+}
+
 // ═══ Agents ═══
 let _trainFileInput = null;
 function trainAgentCard(agentId) {
   if (!S.user) { showLoginPrompt(); return; }
   S.selectedRulesAgent = agentId;
   var agentNames2 = {developer:'客户开发',quoter:'报价员',buyer:'采购员',image:'图片识零件员',stock:'库存管理员',customs:'清关助理'};
-  // Brief toast to indicate training mode activated
-  var toast = document.createElement('div');
-  toast.style.cssText = 'position:fixed;top:60px;right:16px;background:var(--green);color:#fff;padding:8px 16px;border-radius:8px;font-size:.82rem;z-index:9999;animation:fadeIn .2s ease';
-  toast.textContent = '🧠 请选择训练文件（' + (agentNames2[agentId]||agentId) + '）';
-  document.body.appendChild(toast);
-  setTimeout(function(){ toast.style.opacity='0'; toast.style.transition='opacity .3s'; setTimeout(function(){ toast.remove(); },300); },2500);
-  if (!_trainFileInput) {
-    _trainFileInput = document.getElementById('trainFileInput');
+  var agentName = agentNames2[agentId] || agentId;
+  
+  // Create overlay
+  var ov = document.createElement('div');
+  ov.className = 'overlay';
+  ov.id = 'trainOverlay';
+  
+  var args = encodeURIComponent(JSON.stringify({agentId:agentId,agentName:agentName}));
+  ov.innerHTML = '<div class="modal train-modal" onclick="event.stopPropagation()">' +
+    '<div class="tm-header"><h3>🧠 训练「' + agentName + '」</h3><button class="tm-close" onclick="closeTrainModal()">✕</button></div>' +
+    '<div class="tm-body">' +
+      '<div class="desc">上传 Excel 文件（进价表 / 报价留底 / 产品目录），AI 将自动解析数据、交叉关联、提取定价规则，写入 ' + agentName + ' 的记忆。</div>' +
+      '<div class="file-zone" id="trainDropZone" onclick="document.getElementById(\'trainFileInput\').click()">' +
+        '📂 点击选择文件<br><span style="font-size:.75rem">支持 .xlsx / .xls，最大 50MB</span>' +
+      '</div>' +
+      '<div id="trainFileInfo" style="display:none"></div>' +
+      '<div id="trainStatus" style="display:none"></div>' +
+      '<div id="trainResult" style="display:none"></div>' +
+    '</div>' +
+    '<div class="tm-actions">' +
+      '<button class="btn-cancel" onclick="closeTrainModal()">取消</button>' +
+      '<button class="btn-train" id="btnStartTrain" disabled onclick="startSmartTrain()">开始智能训练</button>' +
+    '</div>' +
+  '</div>';
+  document.body.appendChild(ov);
+  
+  // File input — reuse existing hidden input
+  var fi = document.getElementById('trainFileInput');
+  fi.value = '';
+  fi.onchange = function() { onTrainFileSelected(this.files); };
+  
+  // Drag & drop support
+  var dropZone = document.getElementById('trainDropZone');
+  dropZone.ondragover = function(e) { e.preventDefault(); dropZone.style.borderColor='var(--green)'; dropZone.style.background='var(--green-bg)'; };
+  dropZone.ondragleave = function() { dropZone.style.borderColor=''; dropZone.style.background=''; };
+  dropZone.ondrop = function(e) { e.preventDefault(); dropZone.style.borderColor=''; dropZone.style.background=''; onTrainFileSelected(e.dataTransfer.files); };
+}
+
+async function downloadTierExcel(tierIdx) {
+  var q = S._lastQuote;
+  if (!q || !q.tiers[tierIdx]) { showToast('报价数据丢失，请重新出价', 'warn'); return; }
+  var tier = q.tiers[tierIdx];
+  try {
+    var resp = await fetch(API + '/api/quote/export', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (S.token || '') },
+      body: JSON.stringify({ tiers: [tier], inquiry_summary: q.inquiry_summary })
+    });
+    if (!resp.ok) throw new Error('导出失败');
+    var blob = await resp.blob();
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = '报价_' + (tier.label||'T'+(tierIdx+1)) + '_' + new Date().toISOString().slice(0,10) + '.xlsx';
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast('✅ 已下载: ' + (tier.label||'档'+(tierIdx+1)), 'success');
+  } catch(e) { showToast('下载失败: ' + e.message, 'error'); }
+}
+
+async function downloadAllTiersExcel() {
+  var q = S._lastQuote;
+  if (!q || !q.tiers.length) { showToast('报价数据丢失，请重新出价', 'warn'); return; }
+  try {
+    var resp = await fetch(API + '/api/quote/export', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (S.token || '') },
+      body: JSON.stringify({ tiers: q.tiers, inquiry_summary: q.inquiry_summary })
+    });
+    if (!resp.ok) throw new Error('导出失败');
+    var blob = await resp.blob();
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = '报价方案_全部4档_' + new Date().toISOString().slice(0,10) + '.xlsx';
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast('✅ 已下载全部4档Excel', 'success');
+  } catch(e) { showToast('下载失败: ' + e.message, 'error'); }
+}
+
+function saveChatHistory() {
+  try {
+    var qm = document.getElementById('quoteMessages');
+    var pm = document.getElementById('prospectMessages');
+    if (qm) localStorage.setItem('atlas_chat_quote', qm.innerHTML);
+    if (pm) localStorage.setItem('atlas_chat_prospect', pm.innerHTML);
+  } catch(e) {}
+}
+
+function restoreChatHistory() {
+  try {
+    var qm = document.getElementById('quoteMessages');
+    var pm = document.getElementById('prospectMessages');
+    var qh = localStorage.getItem('atlas_chat_quote');
+    var ph = localStorage.getItem('atlas_chat_prospect');
+    if (qm && qh) { qm.innerHTML = qh; setTimeout(function(){ qm.scrollTop = qm.scrollHeight; }, 100); }
+    if (pm && ph) { pm.innerHTML = ph; setTimeout(function(){ pm.scrollTop = pm.scrollHeight; }, 100); }
+  } catch(e) {}
+}
+
+function clearChatHistory() {
+  try {
+    localStorage.removeItem('atlas_chat_quote');
+    localStorage.removeItem('atlas_chat_prospect');
+  } catch(e) {}
+}
+
+function closeTrainModal() {
+  var ov = document.getElementById('trainOverlay');
+  if (ov) ov.remove();
+  document.getElementById('trainFileInput').value = '';
+}
+
+var _selectedTrainFiles = null;
+function onTrainFileSelected(fileList) {
+  if (!fileList.length) return;
+  _selectedTrainFiles = Array.from(fileList);
+  
+  var zone = document.getElementById('trainDropZone');
+  zone.classList.add('has-file');
+  var count = _selectedTrainFiles.length;
+  var totalSize = _selectedTrainFiles.reduce(function(s,f){ return s+f.size; }, 0);
+  zone.innerHTML = '✅ 已选择 ' + count + ' 个文件 (共 ' + (totalSize/1024).toFixed(0) + ' KB)<br><span style="font-size:.75rem">点击更换文件</span>';
+  
+  var info = document.getElementById('trainFileInfo');
+  info.style.display = 'flex';
+  info.style.flexDirection = 'column';
+  info.style.gap = '6px';
+  var html = '';
+  _selectedTrainFiles.forEach(function(file, i){
+    html += '<div class="file-info">' +
+      '<span class="fi-icon">📊</span>' +
+      '<span class="fi-name">' + file.name + '</span>' +
+      '<span class="fi-size">' + (file.size/1024).toFixed(0) + ' KB</span>' +
+      '<span class="fi-remove" onclick="removeOneTrainFile(' + i + ')">✕</span>' +
+    '</div>';
+  });
+  info.innerHTML = html;
+  
+  document.getElementById('btnStartTrain').disabled = false;
+  
+  // Clear previous results
+  document.getElementById('trainStatus').style.display = 'none';
+  document.getElementById('trainResult').style.display = 'none';
+}
+
+function removeOneTrainFile(idx) {
+  if (!_selectedTrainFiles) return;
+  _selectedTrainFiles.splice(idx, 1);
+  if (_selectedTrainFiles.length === 0) {
+    removeAllTrainFiles();
+  } else {
+    onTrainFileSelected(_selectedTrainFiles);
   }
-  _trainFileInput.click();
+}
+function removeAllTrainFiles() {
+  _selectedTrainFiles = null;
+  document.getElementById('trainFileInfo').style.display = 'none';
+  var zone = document.getElementById('trainDropZone');
+  zone.classList.remove('has-file');
+  zone.innerHTML = '📂 点击选择文件<br><span style="font-size:.75rem">支持 .xlsx / .xls，最大 50MB</span>';
+  document.getElementById('btnStartTrain').disabled = true;
+  document.getElementById('trainStatus').style.display = 'none';
+  document.getElementById('trainResult').style.display = 'none';
+}
+
+async function startSmartTrain() {
+  if (!_selectedTrainFiles || !_selectedTrainFiles.length) return;
+  var files = _selectedTrainFiles;
+  var agent = S.selectedRulesAgent || 'quoter';
+  
+  // Show working status
+  var status = document.getElementById('trainStatus');
+  status.style.display = 'flex';
+  status.className = 'tm-status working';
+  status.innerHTML = '<span class="spinner"></span> 正在上传 ' + files.length + ' 个文件…';
+  
+  document.getElementById('btnStartTrain').disabled = true;
+  document.getElementById('trainResult').style.display = 'none';
+  
+  try {
+    // Step 1: Upload all files to KB
+    var uploadErrors = [];
+    for (var i = 0; i < files.length; i++) {
+      var file = files[i];
+      status.innerHTML = '<span class="spinner"></span> 上传中 (' + (i+1) + '/' + files.length + '): ' + file.name + '…';
+      
+      var formData = new FormData();
+      formData.append('file', file);
+      formData.append('agent', agent);
+      formData.append('tag', agent);
+      formData.append('source', 'train');
+      
+      try {
+        var upRes = await fetch(API + '/api/kb/upload', {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + S.token },
+          body: formData
+        });
+        var upData = await upRes.json();
+        if (!upData.ok) throw new Error(upData.error || '上传失败');
+      } catch(e) {
+        uploadErrors.push(file.name + ': ' + e.message);
+      }
+    }
+    
+    if (uploadErrors.length > 0) {
+      throw new Error('部分文件上传失败: ' + uploadErrors.join('; '));
+    }
+    
+    status.innerHTML = '<span class="spinner"></span> 全部上传完成，AI 解析中…';
+    
+    // Step 2: Smart train
+    var trainRes = await fetch(API + '/api/smart-train?agent=' + encodeURIComponent(agent), {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + S.token, 'Content-Type': 'application/json' },
+      body: '{}'
+    });
+    var trainData = await trainRes.json();
+    
+    if (trainData.ok) {
+      status.className = 'tm-status done';
+      status.innerHTML = '✅ 训练完成！扫描了 ' + trainData.filesScanned + ' 个文件';
+      
+      var result = document.getElementById('trainResult');
+      result.style.display = 'block';
+      result.innerHTML = '<div class="tm-result">' +
+        '<strong>📋 训练的文件：</strong><br>' +
+        (trainData.files || []).map(function(f){ return '• ' + f; }).join('<br>') +
+        '<br><br><em>规则已写入 ' + (trainData.agent) + ' 的记忆。下次报价时将自动应用。</em>' +
+      '</div>';
+      
+      var cancelBtn = document.querySelector('.tm-actions .btn-cancel');
+      if (cancelBtn) cancelBtn.style.display = 'none';
+      document.getElementById('btnStartTrain').textContent = '完成';
+      document.getElementById('btnStartTrain').disabled = false;
+      document.getElementById('btnStartTrain').onclick = closeTrainModal;
+      _selectedTrainFiles = null;
+    } else {
+      throw new Error(trainData.message || trainData.error || '训练失败');
+    }
+  } catch(e) {
+    status.className = 'tm-status error';
+    status.innerHTML = '❌ ' + e.message;
+    document.getElementById('btnStartTrain').disabled = false;
+    document.getElementById('btnStartTrain').textContent = '重试';
+  }
 }
 function useAgent(type) {
   if (!S.user) { showLoginPrompt(); return; }
@@ -1783,6 +2191,7 @@ function useAgent(type) {
     document.getElementById('agentList').style.display = 'block';
     document.getElementById('sidebarTitle').textContent = '数字员工';
     setTimeout(() => document.getElementById('quoteInput')?.focus(), 200);
+    loadAgentGreeting('quoter');
   } else if (type === 'prospect') {
     openTab('prospect', '🎯 客户开发');
     S.activeView = 'agents';
@@ -1792,6 +2201,7 @@ function useAgent(type) {
     document.getElementById('agentList').style.display = 'block';
     document.getElementById('sidebarTitle').textContent = '数字员工';
     setTimeout(() => document.getElementById('prospectInput')?.focus(), 200);
+    loadAgentGreeting('developer');
 
     S.activeView = 'agents';
     document.querySelectorAll('.ab-item[data-view]').forEach(e => e.classList.remove('active'));
@@ -1803,8 +2213,44 @@ function useAgent(type) {
   }
 }
 
+async function loadAgentGreeting(agent) {
+  var agentIcons = {quoter:'💎', developer:'🎯', buyer:'🛒', image:'🔍', stock:'📦', customs:'🛃'};
+  var icon = agentIcons[agent] || '🤖';
+  var elId = agent === 'quoter' ? 'quoteGreeting' : (agent === 'developer' ? 'prospectGreeting' : null);
+  if (!elId) return;
+  var el = document.getElementById(elId);
+  if (!el) return;
+  
+  el.innerHTML = '<div class="label">' + icon + ' 加载中...</div>⏳';
+  
+  try {
+    var res = await fetch(API + '/api/agent/summary?agent=' + encodeURIComponent(agent), {
+      headers: { 'Authorization': 'Bearer ' + (S.token || '') }
+    });
+    var data = await res.json();
+    
+    if (data.trained && data.summary) {
+      var s = data.summary;
+      var filesText = s.filesScanned + ' 份文件';
+      var hl = s.highlight || '';
+      // Extract first meaningful sentence from highlight
+      var firstLine = hl.split('。')[0] || hl.substring(0, 100);
+      el.innerHTML = '<div class="label">' + icon + ' ' + data.agent + '</div>' +
+        '我已经从你上传的 <strong>' + filesText + '</strong> 中学习了数据。<br><br>' +
+        '<strong>📊 训练摘要：</strong><br>' + firstLine + '。<br><br>' +
+        '上传更多文件或直接开始使用 👇';
+    } else {
+      el.innerHTML = '<div class="label">' + icon + ' ' + data.agent + '</div>' +
+        '<strong>' + data.intro + '</strong>';
+    }
+  } catch(e) {
+    el.innerHTML = '<div class="label">' + icon + ' 数字员工</div>' +
+      '加载失败，请刷新页面重试。';
+  }
+}
+
 function showLocked() {
-  alert('🔒 该数字员工需要租赁后才能使用。\n\n请前往 atlas.traceclaw.cn/dashboard 租赁。');
+  showAlert('🔒 该数字员工需要租赁后才能使用。\n\n请前往 atlas.traceclaw.cn/dashboard 租赁。');
 }
 
 function openFile(name) {
@@ -1838,6 +2284,53 @@ function handleFiles(fileList, agent) {
   }));
   S.attachedFiles[agent] = [...S.attachedFiles[agent], ...arr];
   renderFileChips(agent);
+  
+  // Auto-parse Excel for quote agent: extract OE numbers into input
+  if (agent === 'quote') {
+    arr.forEach(function(f) {
+      if (!isExcel(f.name)) return;
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          var wb = XLSX.read(e.target.result, {type: 'array'});
+          var ws = wb.Sheets[wb.SheetNames[0]];
+          var rows = XLSX.utils.sheet_to_json(ws, {header: 1, defval: ''});
+          if (rows.length < 2) return;
+          
+          // Find OE column (header contains 'OE', '件号', 'Part', '零件号')
+          var oeCol = -1, qtyCol = -1, nameCol = -1;
+          var header = rows[0];
+          for (var i = 0; i < header.length; i++) {
+            var h = String(header[i] || '').toLowerCase();
+            if (h === 'oe' || h.includes('件号') || h.includes('零件号') || h === 'part no' || h === 'part no.') oeCol = i;
+            if (h.includes('数量') || h === 'qty' || h === 'adet' || h.includes('quantity')) qtyCol = i;
+            if (h.includes('品名') || h.includes('名称') || h.includes('part name') || h.includes('parça')) nameCol = i;
+          }
+          
+          // Extract OE numbers from all data rows
+          var oes = [];
+          for (var r = 1; r < rows.length; r++) {
+            var oe = oeCol >= 0 ? String(rows[r][oeCol] || '').trim() : '';
+            // If no OE column found, scan all columns for 5+ digit numbers
+            if (!oe && oeCol < 0) {
+              for (var c = 0; c < (rows[r].length || 0); c++) {
+                var v = String(rows[r][c] || '').trim();
+                if (/^\d{5,}$/.test(v)) { oe = v; break; }
+              }
+            }
+            if (oe && oes.indexOf(oe) === -1) oes.push(oe);
+          }
+          
+          if (oes.length > 0) {
+              showToast('📎 已读取 ' + oes.length + ' 个件号，输入目的地后发送', 'success', 3000);
+            }
+        } catch(err) {
+          console.error('[handleFiles] Excel parse error:', err.message);
+        }
+      };
+      reader.readAsArrayBuffer(f.file);
+    });
+  }
 }
 
 function removeFile(agent, idx) {
@@ -1912,7 +2405,7 @@ function promptKBTag() {
   document.getElementById('kbTagCancel').onclick = function() { overlay.remove(); };
 }
 async function handleKBFiles(fileList) {
-  if (!S.token) { alert('请先登录后再上传文件'); return; }
+  if (!S.token) { showToast('请先登录后再上传文件', 'warn'); return; }
   const files = Array.from(fileList);
   const agent = S.selectedRulesAgent || 'quoter';
   const agentNames = {developer:'客户开发',quoter:'报价员',buyer:'采购员',image:'图片识零件员',stock:'库存管理员',customs:'清关助理'};
@@ -1949,9 +2442,9 @@ async function handleKBFiles(fileList) {
     var tagLabel = (S_kbTag === 'company') ? '🏢 公司通用' : ('👤 ' + agentName + '专属');
     var srcLabels = {upload:'📤 手动上传', mcp:'🔌 MCP实时', train:'🧠 训练数据'};
     var srcLabel = srcLabels[S_kbSource] || '📤 手动上传';
-    alert('📤 ' + uploaded + ' 个文件已上传\n范围：' + tagLabel + '\n来源：' + srcLabel + '\n\n点击 🧠 训练 让 AI 学习这些文件');
+    showAlert('📤 ' + uploaded + ' 个文件已上传\n范围：' + tagLabel + '\n来源：' + srcLabel + '\n\n点击 🧠 训练 让 AI 学习这些文件');
   } else {
-    alert('⚠️ 上传失败，请检查网络后重试');
+    showToast('⚠️ 上传失败，请检查网络后重试', 'error');
   }
   
   document.querySelectorAll('.ab-item[data-view]').forEach(e => e.classList.remove('active'));
@@ -2016,6 +2509,22 @@ async function loadKnowledgeBase() {
     }
     
     const files = data.files || [];
+    
+    // ─── Role-based KB permission filter ───
+    // Employees only see: company (public) + their assigned agent roles
+    // Boss sees everything (no filter)
+    if (S.user && S.user.role === 'employee') {
+      var allowedAgents = ['company'];
+      var ql = S.user.quota_quoter_limit || 0;
+      var dl = S.user.quota_developer_limit || 0;
+      if (ql > 0) allowedAgents.push('quoter');
+      if (dl > 0) allowedAgents.push('developer');
+      files = files.filter(function(f) {
+        return allowedAgents.indexOf(f.tag || 'company') >= 0 || allowedAgents.indexOf(f.agent) >= 0;
+      });
+    }
+    // ─── End permission filter ───
+    
     if (files.length === 0) {
       tree.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted);font-size:.8rem">📂 知识库为空<br><span style="font-size:.72rem">点击下方 📤 上传按钮，添加 Excel/CSV/PDF 知识库文件</span></div>';
       return;
@@ -2078,7 +2587,7 @@ function openKBFile(name, agent) {
 }
 
 async function deleteKBFile(filename) {
-  if (!confirm('确认删除「' + filename + '」？此操作不可恢复。')) return;
+  var cf = await showConfirm('确认删除「' + filename + '」？此操作不可恢复。'); if (!cf) return;
   try {
     const r = await fetch(API + '/api/kb/delete', {
       method: 'POST',
@@ -2087,16 +2596,16 @@ async function deleteKBFile(filename) {
     });
     const d = await r.json();
     if (d.ok) { loadKnowledgeBase(); }
-    else { alert(d.error || '删除失败'); }
-  } catch(e) { alert('删除失败: ' + e.message); }
+    else { showToast(d.error || '删除失败', 'error'); }
+  } catch(e) { showToast('删除失败: ' + e.message, 'error'); }
 }
 
 // ═══ Training (upload Excel → extract rules) ═══
 async function handleTrain(fileList) {
   if (!fileList.length) return;
-  if (!S.token) { alert('请先登录后再训练AI'); return; }
+  if (!S.token) { showToast('请先登录后再训练AI', 'warn'); return; }
   const file = fileList[0];
-  if (!file.name.match(/\.(xlsx|xls)$/i)) { alert('仅支持 .xlsx 格式的报价留底Excel'); return; }
+  if (!file.name.match(/\.(xlsx|xls)$/i)) { showToast('仅支持 .xlsx 格式的报价留底Excel', 'warn'); return; }
   
   const formData = new FormData();
   formData.append('file', file);
@@ -2104,7 +2613,7 @@ async function handleTrain(fileList) {
   const trainAgent = S.selectedRulesAgent || 'quoter';
   const trainAgentNames = {developer:'客户开发',quoter:'报价员',buyer:'采购员',image:'图片识零件员',stock:'库存管理员',customs:'清关助理'};
   const trainAgentName = trainAgentNames[trainAgent] || trainAgent;
-  alert(`🧠 开始训练「${trainAgentName}」\n上传: ${file.name} (${(file.size/1024).toFixed(0)}KB)\nAI 正在审视数据，提取规则...`);
+  showAlert(`🧠 开始训练「${trainAgentName}」\n上传: ${file.name} (${(file.size/1024).toFixed(0)}KB)\nAI 正在审视数据，提取规则...`);
   
   try {
     const res = await fetch(API + '/api/train?agent=' + encodeURIComponent(S.selectedRulesAgent || 'quoter'), {
@@ -2114,7 +2623,7 @@ async function handleTrain(fileList) {
     });
     const data = await res.json();
     if (data.ok) {
-      alert(`✅ 「${trainAgentName}」训练完成！\n\n📊 提取了 ${data.record_count} 条记录\n🔍 发现 ${data.patterns_found} 类模式\n📝 规则已写入 ${trainAgentName} 的记忆\n\n去「设置 → 定价规则」查看`);
+      showAlert(`✅ 「${trainAgentName}」训练完成！\n\n📊 提取了 ${data.record_count} 条记录\n🔍 发现 ${data.patterns_found} 类模式\n📝 规则已写入 ${trainAgentName} 的记忆\n\n去「设置 → 定价规则」查看`);
       // Auto switch to knowledge view
       document.querySelectorAll('.ab-item[data-view]').forEach(e => e.classList.remove('active'));
       document.querySelector('.ab-item[data-view="knowledge"]').classList.add('active');
@@ -2122,52 +2631,15 @@ async function handleTrain(fileList) {
       document.getElementById('agentList').style.display = 'none';
       document.getElementById('sidebarTitle').textContent = trainAgentName + ' · 知识库';
     } else {
-      alert('❌ 训练失败: ' + (data.error || '未知错误'));
+      showToast('❌ 训练失败: ' + (data.error || '未知错误'), 'error');
     }
   } catch(e) {
-    alert('⚠️ 网络错误\n请确认 atlas.traceclaw.cn 可访问且已登录');
+    showToast('⚠️ 网络错误，请确认 atlas.traceclaw.cn 可访问且已登录', 'error');
   }
   document.getElementById('trainFileInput').value = '';
 }
 
 // ═══ Quote Chat ═══
-function sendQuote() {
-  const input = document.getElementById('quoteInput');
-  const msg = input.value.trim();
-  const files = S.attachedFiles.quote;
-  if (!msg && files.length === 0) return;
-  const messages = document.getElementById('quoteMessages');
-  const userMsg = document.createElement('div');
-  userMsg.className = 'chat-msg user';
-  let text = msg || '';
-  if (files.length > 0) {
-    text += (text ? '\n' : '') + '📎 附件：' + files.map(f => getFileIcon(f.name)+' '+f.name).join('、');
-    S.attachedFiles.quote = [];
-    renderFileChips('quote');
-  }
-  userMsg.textContent = text;
-  messages.appendChild(userMsg);
-  input.value = '';
-  setTimeout(() => {
-    const resp = document.createElement('div');
-    resp.className = 'chat-msg agent';
-    resp.innerHTML = `<div class="label">💎 报价员 Agent</div>
-      <strong>分析完成。</strong> 基于 338 条历史报价中的<strong> 47 条康明斯喷油器</strong>记录：<br><br>
-      <div class="result-card"><table>
-        <tr><th>配件</th><td>福田康明斯喷油器 (OE: 5264231)</td></tr>
-        <tr><th>数量</th><td>50 件</td></tr>
-        <tr><th>目的地</th><td>迪拜（中东 · 运费+¥350/件）</td></tr>
-        <tr><th>历史均价</th><td>¥3,200 · 毛利率 22%</td></tr>
-        <tr><th>建议单价</th><td style="color:var(--green);font-weight:700">¥3,520</td></tr>
-        <tr><th>批量折扣</th><td>50件 → 减 6% → ¥3,309/件</td></tr>
-        <tr style="border-top:1px solid var(--line)"><th>总报价</th><td class="total">¥165,450</td></tr>
-      </table></div><br>导出 Excel？ 📥 确认报价？`;
-    messages.appendChild(resp);
-    messages.scrollTop = messages.scrollHeight;
-  }, 800);
-  messages.scrollTop = messages.scrollHeight;
-}
-
 // ═══ Prospect Chat ═══
 
 async function sendProspect() {
@@ -2177,11 +2649,21 @@ async function sendProspect() {
   const raw = input.value.trim();
   if (!raw) return;
 
-  // Parse: "industry country keywords" (space-separated)
-  const parts = raw.split(' ');
-  const industry = parts.slice(0, 2).join(' ') || raw;
-  const country = parts.length > 2 ? parts[2] : '';
-  const keywords = parts.slice(3).join(' ') || raw;
+  // Parse: auto-detect Chinese vs English input
+  // Chinese: pass raw text as keywords, let AI figure out country/industry
+  // English: "industry country keywords" (space-separated)
+  const isChinese = /[\u4e00-\u9fff]/.test(raw);
+  let industry, country, keywords;
+  if (isChinese) {
+    keywords = raw;
+    country = '';
+    industry = '汽车零部件';
+  } else {
+    const parts = raw.split(/\s+/).filter(Boolean);
+    industry = parts.slice(0, 2).join(' ') || raw;
+    country = parts.length > 2 ? parts[2] : '';
+    keywords = parts.slice(3).join(' ') || parts.join(' ');
+  }
 
   // User message
   const userMsg = document.createElement('div');
@@ -2270,12 +2752,14 @@ async function sendProspect() {
     resultMsg.innerHTML = h;
     messages.appendChild(resultMsg);
     messages.scrollTop = messages.scrollHeight;
+    saveChatHistory();
   } catch(e) {
     document.getElementById('prospectLoading')?.remove();
     const errMsg = document.createElement('div');
     errMsg.className = 'chat-msg agent';
     errMsg.innerHTML = '<div class="label">🎯 客户开发</div>❌ 网络错误: ' + e.message;
     messages.appendChild(errMsg);
+    saveChatHistory();
     messages.scrollTop = messages.scrollHeight;
   }
 }
@@ -2379,6 +2863,11 @@ sendProspect = async function() {
     resultMsg.innerHTML = h;
     messages.appendChild(resultMsg);
     messages.scrollTop = messages.scrollHeight;
+    
+    // ═══ 全自动模式：管道完成后自动发送 ═══
+    if (AUTO_MODE && data.ok && (data.emails||[]).length > 0) {
+      setTimeout(function() { sendAllEmails(true); }, 500);
+    }
   } catch(e) {
     document.getElementById('prospectLoading')?.remove();
     const errMsg = document.createElement('div');
@@ -2390,6 +2879,26 @@ sendProspect = async function() {
 };
 
 // ═══ Quote Pipeline ═══
+function extractOENumbers(text) {
+  var nums = [];
+  var m, clean = text.replace(/[\n\r\t,]+/g, ' ').replace(/\s+/g, ' ');
+  var re = /\b(\d{5,})\b/g;
+  while ((m = re.exec(clean)) !== null) {
+    if (nums.indexOf(m[1]) === -1) nums.push(m[1]);
+  }
+  var re2 = /([A-Z]{2,}[\s-]*\d{3,})/gi;
+  while ((m = re2.exec(clean)) !== null) {
+    var v = m[1].toUpperCase().replace(/\s+/g, '-');
+    if (nums.indexOf(v) === -1 && v.length > 4) nums.push(v);
+  }
+  var re3 = /\b(0\d{4,})\b/g;
+  while ((m = re3.exec(clean)) !== null) {
+    if (nums.indexOf(m[1]) === -1) nums.push(m[1]);
+  }
+  console.debug('[OEextract found:', nums.length, '|', nums.slice(0,5).join(','));
+  return nums;
+}
+
 async function sendQuote() {
   const input = document.getElementById('quoteInput');
   const messages = document.getElementById('quoteMessages');
@@ -2410,11 +2919,34 @@ async function sendQuote() {
   messages.scrollTop = messages.scrollHeight;
   input.value = '';
 
+  // Read attached Excel file as base64 (before sending quote)
+  var excelBase64 = null;
   try {
+    var attachedFiles = S.attachedFiles && S.attachedFiles.quote || [];
+    var excelFile = attachedFiles.find(function(f) { return /\.(xlsx|xls)$/i.test(f.name); });
+    if (excelFile && excelFile.file) {
+      excelBase64 = await new Promise(function(resolve, reject) {
+        var reader = new FileReader();
+        reader.onload = function() {
+          var bytes = new Uint8Array(reader.result);
+          var binary = '';
+          for (var i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
+          resolve(btoa(binary));
+        };
+        reader.onerror = function() { reject(new Error('File read failed')); };
+        reader.readAsArrayBuffer(excelFile.file);
+      });
+      console.debug('[sendQuote Attached Excel read, base64:', excelBase64.length, 'bytes');
+    }
+  } catch(e) { console.warn('[sendQuote] Could not read attached file:', e.message); }
+
+  try {
+    var reqBody = { inquiry: raw, destination: '', oe_numbers: extractOENumbers(raw) };
+    if (excelBase64) reqBody._excel_data = excelBase64;
     const resp = await fetch(API + '/api/puzzler/quote', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (S.token || '') },
-      body: JSON.stringify({ inquiry: raw, destination: '', oe_numbers: [] })
+body: JSON.stringify(reqBody)
     });
     const data = await resp.json();
     document.getElementById('quoteLoading')?.remove();
@@ -2426,36 +2958,46 @@ async function sendQuote() {
     if (!data.ok) {
       h = '<div class="label">💎 报价员</div>❌ ' + (data.error || '报价失败');
     } else {
-      const s = data.summary || {};
-      const items = data.items || [];
+      const s = data.inquiry_summary || {};
+      const tiers = data.tiers || [];
+      var allItems = [];
+      var grandTotal = 0;
+      tiers.forEach(function(t, ti) {
+        grandTotal += t.total || 0;
+        (t.products || []).forEach(function(p) {
+          allItems.push({ oe: p.oe, name: p.name, qty: p.qty, unit_price: p.unit_price, total: p.total, margin_pct: t.margin_pct, tier: t.label });
+        });
+      });
       h = '<div class="label">💎 报价员</div>';
-      h += '<b>✅ 报价完成</b> ' + s.items_count + ' 件 | 总计: <b style="color:var(--green)">¥' + (s.total_amount||0).toLocaleString() + '</b>';
-      h += '<br>📦 建议交期: ' + (s.lead_time_days||'?') + ' 天 | 付款: ' + (s.payment_suggested||'TT');
-      if (s.freight_est) h += '<br>🚚 预估运费: ¥' + s.freight_est.toLocaleString();
+      S._lastQuote = { tiers: tiers, inquiry_summary: s };
+      h += '<b>✅ 报价完成</b> ' + (s.total_items||allItems.length) + ' 件 | 总计: <b style="color:var(--green)">¥' + grandTotal.toLocaleString() + '</b>';
+      h += '<br>📦 建议交期: 30-40 天 | 付款: TT 30%预付+70%发货前付清';
       if (s.notes) h += '<br>📝 ' + s.notes;
       h += '<br><br>';
 
-      if (items.length > 0) {
-        h += '<table style="width:100%;font-size:.72rem;border-collapse:collapse;margin-bottom:8px">';
-        h += '<tr style="color:var(--dim)"><th style="text-align:left;padding:4px">OE号</th><th>名称</th><th>数量</th><th>单价</th><th>小计</th><th>利润率</th></tr>';
-        items.forEach(function(i) {
-          h += '<tr style="border-top:1px solid var(--line)">';
-          h += '<td style="padding:4px">' + (i.oe||'?') + '</td>';
-          h += '<td>' + (i.name||'?') + '</td>';
-          h += '<td style="text-align:center">' + (i.qty||0) + '</td>';
-          h += '<td style="text-align:right">¥' + (i.suggested_price||0).toLocaleString() + '</td>';
-          h += '<td style="text-align:right">¥' + (i.total||0).toLocaleString() + '</td>';
-          h += '<td style="text-align:right;color:var(--green)">' + (i.margin_pct||0) + '%</td>';
-          h += '</tr>';
+      tiers.forEach(function(t, ti) {
+        h += '<div style="background:var(--active);border-radius:8px;padding:10px;margin-bottom:8px">';
+        h += '<b>' + (t.badge||'') + ' ' + (t.label||'Tier '+(t.tier||'?')) + '</b>';
+        h += ' <span style="font-size:.72rem;color:var(--dim)">' + (t.desc||'') + '</span>';
+        h += ' · 小计: ¥' + (t.subtotal||0).toLocaleString();
+        h += ' · 利润率: ' + (t.margin_pct||0) + '%';
+        h += '<br>';
+        (t.products || []).forEach(function(p) {
+          h += '<span style="font-size:.7rem">' + (p.oe||'?') + ' ' + (p.name||'?');
+          h += ' ×' + (p.qty||0) + ' @¥' + (p.unit_price||0).toLocaleString();
+          h += ' = ¥' + (p.total||0).toLocaleString() + '</span><br>';
         });
-        h += '</table>';
-      }
-      h += '<div style="font-size:.68rem;color:var(--dim)">置信度: ' + (s.confidence||'?') + '</div>';
+        h += ' <button onclick="downloadTierExcel(' + ti + ')" style="font-size:.65rem;background:var(--green);color:#000;border:none;border-radius:4px;padding:2px 8px;cursor:pointer;float:right;margin-top:2px">📥 下载Excel</button>';
+        h += '</div>';
+      });
+      h += '<div style="margin-top:8px"><button onclick="downloadAllTiersExcel()" style="font-size:.72rem;background:var(--green);color:#000;border:none;border-radius:6px;padding:6px 16px;cursor:pointer;font-weight:600">📥 下载全部4档Excel</button></div>';
+      h += '<div style="font-size:.68rem;color:var(--dim);margin-top:4px">置信度: ' + (s.confidence||'?') + '</div>';
     }
 
     resultMsg.innerHTML = h;
     messages.appendChild(resultMsg);
     messages.scrollTop = messages.scrollHeight;
+    saveChatHistory();
   } catch(e) {
     document.getElementById('quoteLoading')?.remove();
     const errMsg = document.createElement('div');
@@ -2463,62 +3005,175 @@ async function sendQuote() {
     errMsg.innerHTML = '<div class="label">💎 报价员</div>❌ 网络错误: ' + e.message;
     messages.appendChild(errMsg);
     messages.scrollTop = messages.scrollHeight;
+    saveChatHistory();
   }
 }
 
-function sendOneClientEmail(companyName) {
-  if (!lastPipelineResult) return alert('请先运行客户搜索管道');
+async function sendOneClientEmail(companyName) {
+  if (!lastPipelineResult) return showToast('请先运行客户搜索管道', 'warn');
   const emails = lastPipelineResult.emails || [];
   const emailObj = emails.find(e => e.company === companyName);
-  if (!emailObj) return alert('未找到该客户的开发信');
+  if (!emailObj) return showToast('未找到该客户的开发信', 'warn');
   
-  const em = emailObj.email || {};
-  const to = emailObj.recipient || '';
-  if (!to) return alert('该客户没有邮箱地址');
+  const to = emailObj.to_email || '';
+  if (!to) return showToast('该客户没有邮箱地址', 'warn');
   
-  if (!confirm('确认发送开发信到 ' + to + '？\n\n主题: ' + (em.subject||''))) return;
+  var cf = await showConfirm('确认发送开发信到 ' + to + '？\n\n主题: ' + (emailObj.subject||''));
+  if (!cf) return;
   
   fetch(API + '/api/puzzler/send', {
     method: 'POST',
     headers: {'Content-Type':'application/json', 'Authorization':'Bearer ' + (S.token || '')},
-    body: JSON.stringify({to_email: to, subject: em.subject||'', body: em.body||'', to_name: companyName})
+    body: JSON.stringify({to_email: to, subject: emailObj.subject||'', body: emailObj.body||'', to_name: companyName})
   }).then(r => r.json()).then(d => {
-    alert(d.ok ? '✅ 已发送至 ' + to : '❌ ' + (d.error||'发送失败'));
-  }).catch(e => alert('❌ 网络错误: ' + e.message));
+    showToast(d.ok ? '✅ 已发送至 ' + to : '❌ ' + (d.error||'发送失败'), d.ok ? 'success' : 'error');
+  }).catch(e => showToast('❌ 网络错误: ' + e.message, 'error'));
 }
 
-async function sendAllEmails() {
-  if (!lastPipelineResult) return alert('❌ 请先运行客户搜索管道');
+// ═══ Universal Styled Dialogs & Toast ═══
+
+var _toastContainer = null;
+function showToast(msg, type, duration) {
+  // Backward compat: if type is a number, it's the old duration-only call
+  if (typeof type === 'number') { duration = type; type = 'info'; }
+  type = type || 'info';
+  duration = duration || 3000;
+  
+  if (!_toastContainer) {
+    _toastContainer = document.createElement('div');
+    _toastContainer.style.cssText = 'position:fixed;top:16px;right:16px;z-index:10001;display:flex;flex-direction:column;gap:8px;pointer-events:none';
+    document.body.appendChild(_toastContainer);
+  }
+  var item = document.createElement('div');
+  item.style.cssText = 'padding:10px 16px;border-radius:8px;font-size:.82rem;color:#fff;box-shadow:0 4px 16px rgba(0,0,0,.3);animation:slideIn .25s ease;max-width:380px;word-break:break-word;pointer-events:auto';
+  if (type === 'success') item.style.background = '#2e7d32';
+  else if (type === 'error') item.style.background = '#c62828';
+  else if (type === 'warn') { item.style.background = '#f57f17'; item.style.color = '#1a1a1e'; }
+  else item.style.background = '#1565c0';
+  item.textContent = msg;
+  _toastContainer.appendChild(item);
+  setTimeout(function(){
+    item.style.opacity = '0';
+    item.style.transition = 'opacity .3s';
+    setTimeout(function(){ item.remove(); }, 300);
+  }, duration);
+}
+
+// ═══ 开发信预览弹窗 ═══
+function showEmailPreview(payload, onConfirm) {
+  // Remove existing
+  var old = document.getElementById('emailPreviewOverlay');
+  if (old) old.remove();
+  
+  var overlay = document.createElement('div');
+  overlay.id = 'emailPreviewOverlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;display:flex;align-items:center;justify-content:center';
+  
+  var h = '<div style="background:var(--panel);border-radius:12px;padding:24px;width:560px;max-width:95vw;max-height:85vh;overflow-y:auto">';
+  h += '<div style="font-weight:700;font-size:1rem;margin-bottom:4px">📧 开发信预览</div>';
+  h += '<div style="color:var(--muted);font-size:.76rem;margin-bottom:16px">共 ' + payload.length + ' 封，请确认后发送</div>';
+  
+  payload.forEach(function(e, i) {
+    h += '<div style="margin-bottom:12px;padding:12px;background:var(--bg);border-radius:8px;border-left:3px solid var(--green)">';
+    h += '<div style="font-size:.8rem;font-weight:600;margin-bottom:4px">📨 ' + (i+1) + '. ' + (e.to_name || e.to_email) + '</div>';
+    h += '<div style="font-size:.7rem;color:var(--muted);margin-bottom:6px">📧 ' + e.to_email + '</div>';
+    h += '<div style="font-size:.76rem;color:var(--green);margin-bottom:4px">📌 ' + (e.subject || '(无主题)') + '</div>';
+    h += '<div style="font-size:.72rem;color:var(--dim);white-space:pre-wrap;max-height:120px;overflow-y:auto;line-height:1.5">' + (e.body || '(无内容)').substring(0, 300) + (e.body && e.body.length > 300 ? '...' : '') + '</div>';
+    h += '</div>';
+  });
+  
+  h += '<div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end">';
+  h += '<button id="btnCancelPreview" style="padding:10px 20px;border-radius:8px;border:1px solid var(--line);background:transparent;font-size:.82rem;cursor:pointer;color:var(--muted)">取消</button>';
+  h += '<button id="btnConfirmSend" style="padding:10px 24px;border-radius:8px;border:none;background:var(--green);color:#fff;font-size:.82rem;cursor:pointer;font-weight:600">✅ 确认发送 ' + payload.length + ' 封</button>';
+  h += '</div></div>';
+  
+  overlay.innerHTML = h;
+  document.body.appendChild(overlay);
+  
+  document.getElementById('btnConfirmSend').onclick = function() {
+    overlay.remove();
+    if (onConfirm) onConfirm();
+  };
+  document.getElementById('btnCancelPreview').onclick = function() {
+    overlay.remove();
+  };
+  
+  // Click outside to close
+  overlay.addEventListener('click', function(e) {
+    if (e.target === overlay) overlay.remove();
+  });
+}
+
+// ═══ 自动模式 ═══
+var AUTO_MODE = localStorage.getItem('atlas_auto_send') === 'true';
+
+function toggleAutoMode() {
+  AUTO_MODE = !AUTO_MODE;
+  localStorage.setItem('atlas_auto_send', AUTO_MODE ? 'true' : 'false');
+  updateAutoToggleUI();
+  showToast(AUTO_MODE ? '🔄 已切换为全自动模式 — 搜索后自动发送' : '👆 已切换为半自动模式 — 搜索后手动预览发送', 2500);
+}
+
+function updateAutoToggleUI() {
+  var btn = document.getElementById('btnAutoToggle');
+  if (btn) {
+    btn.innerHTML = AUTO_MODE ? '🔄 全自动' : '👆 半自动';
+    btn.style.background = AUTO_MODE ? 'var(--green)' : 'transparent';
+    btn.style.color = AUTO_MODE ? '#fff' : 'var(--muted)';
+  }
+}
+
+async function sendAllEmails(skipPreview) {
+  if (!lastPipelineResult) { showToast('❌ 请先运行客户搜索管道', 3000); return; }
   const emails = lastPipelineResult.emails || [];
-  if (emails.length === 0) return alert('❌ 没有可发送的开发信');
+  if (emails.length === 0) { showToast('❌ 没有可发送的开发信', 3000); return; }
   
   // Check SMTP config first
-  const statusResp = await fetch(API + '/api/puzzler/status', { headers: { 'Authorization': 'Bearer ' + (S.token || '') } }).then(r => r.json());
+  var statusResp;
+  try { statusResp = await fetch(API + '/api/puzzler/status', { headers: { 'Authorization': 'Bearer ' + (S.token || '') } }).then(r => r.json()); }
+  catch(e) { showToast('❌ 网络错误', 3000); return; }
+  
   if (!statusResp.configured) {
-    if (confirm('⚠️ 邮箱尚未配置，是否现在配置？')) { openEmailConfig(); }
+    var cf2 = await showConfirm('⚠️ 邮箱尚未配置，是否现在配置？');
+    if (cf2) { openEmailConfig(); }
     return;
   }
   
-  if (!confirm('确认群发 ' + emails.length + ' 封开发信？')) return;
-  
+  // Build payload with CORRECT field names
   const payload = emails.map(e => ({
-    to_email: e.recipient || '',
+    to_email: e.to_email || '',
     to_name: e.company || '',
-    subject: (e.email||{}).subject || '',
-    body: (e.email||{}).body || ''
-  })).filter(e => e.to_email);
+    subject: e.subject || '',
+    body: e.body || ''
+  })).filter(function(e) { return e.to_email; });
   
-  const btn = document.getElementById('btnBulkSend');
-  if (btn) { btn.disabled = true; btn.textContent = '⏳ 发送中...'; }
+  if (payload.length === 0) { showToast('❌ 没有有效的收件邮箱地址', 4000); return; }
   
-  const resp = await fetch(API + '/api/puzzler/send', {
-    method: 'POST',
-    headers: {'Content-Type':'application/json', 'Authorization':'Bearer ' + (S.token || '')},
-    body: JSON.stringify({emails: payload})
-  }).then(r => r.json());
+  // Execute send (with or without preview based on skipPreview flag)
+  async function doSend() {
+    var btn = document.getElementById('btnBulkSend');
+    if (btn) { btn.disabled = true; btn.textContent = '⏳ 发送中...'; }
+    
+    var resp;
+    try {
+      resp = await fetch(API + '/api/puzzler/send', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json', 'Authorization':'Bearer ' + (S.token || '')},
+        body: JSON.stringify({emails: payload})
+      }).then(r => r.json());
+    } catch(e) { showToast('❌ 网络错误: ' + e.message, 4000); if (btn) { btn.disabled = false; btn.textContent = '📮 一键群发 ' + emails.length + ' 封开发信'; }; return; }
+    
+    if (btn) { btn.disabled = false; btn.textContent = '📮 一键群发 ' + emails.length + ' 封开发信'; }
+    
+    var ok = resp.sent > 0;
+    showToast((ok ? '✅ ' : '⚠️ ') + '发送完成: ' + (resp.sent||0) + '/' + (resp.total||0) + ' 封成功' + (resp.error ? ' (' + resp.error + ')' : ''), ok ? 4000 : 6000);
+  }
   
-  if (btn) { btn.disabled = false; btn.textContent = '📮 一键群发 ' + emails.length + ' 封开发信'; }
-  alert('📬 发送完成: ' + (resp.sent||0) + '/' + (resp.total||0) + ' 封成功');
+  if (skipPreview) {
+    doSend();
+  } else {
+    showEmailPreview(payload, doSend);
+  }
 }
 
 function openEmailConfig() {
@@ -2548,13 +3203,13 @@ function openEmailConfig() {
         password: document.getElementById('cfgPass').value,
         from_name: document.getElementById('cfgName').value
       };
-      if (!cfg.host || !cfg.user || !cfg.password) return alert('请填写完整配置');
+      if (!cfg.host || !cfg.user || !cfg.password) { showToast('请填写完整配置', 'warn'); return; }
       const resp = await fetch(API + '/api/puzzler/config', {
         method: 'POST',
         headers: {'Content-Type':'application/json', 'Authorization':'Bearer ' + (S.token || '')},
         body: JSON.stringify(cfg)
       }).then(r => r.json());
-      alert(resp.ok ? '✅ SMTP 配置成功！' : '❌ ' + (resp.error||'配置失败'));
+      showToast(resp.ok ? '✅ SMTP 配置成功！' : '❌ ' + (resp.error||'配置失败'), resp.ok ? 'success' : 'error');
       if (resp.ok) overlay.remove();
     };
   }
