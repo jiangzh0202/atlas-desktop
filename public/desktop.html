@@ -277,8 +277,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);height:100vh;
 
 <!-- ═══ Activity Bar ═══ -->
 <div class="activity-bar" id="activityBar">
-  <div class="ab-item active" data-view="knowledge" title="知识库">📁</div>
-        <div class="ab-item" title="知识图谱" onclick="if(window.__TAURI__){window.__TAURI__.shell.open('https://ai.traceclaw.cn/knowledge.html')}else{window.open('/knowledge.html','_blank')}">📚</div>
+  <div class="ab-item" title="知识中心" onclick="if(window.__TAURI__){window.__TAURI__.shell.open('https://ai.traceclaw.cn/knowledge.html')}else{window.location.href='/knowledge.html'}">📁</div>
   <div class="ab-item" data-view="agents" title="数字员工">🤖</div>
   <div class="ab-spacer"></div>
   <div class="ab-item" id="userBtn" title="用户" onclick="handleUserClick()" style="margin-bottom:4px">👤</div>
