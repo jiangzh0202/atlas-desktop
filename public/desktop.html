@@ -273,11 +273,12 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);height:100vh;
 </style>
   <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
 </head>
-<body data-theme="dark">
+<body data-theme="light">
 
 <!-- ═══ Activity Bar ═══ -->
 <div class="activity-bar" id="activityBar">
   <div class="ab-item active" data-view="knowledge" title="知识库">📁</div>
+        <div class="ab-item" title="知识图谱" onclick="if(window.__TAURI__){window.__TAURI__.shell.open('https://ai.traceclaw.cn/knowledge.html')}else{window.open('/knowledge.html','_blank')}">📚</div>
   <div class="ab-item" data-view="agents" title="数字员工">🤖</div>
   <div class="ab-spacer"></div>
   <div class="ab-item" id="userBtn" title="用户" onclick="handleUserClick()" style="margin-bottom:4px">👤</div>
@@ -494,7 +495,7 @@ const API = 'https://atlas.traceclaw.cn';
 
 // ═══ State ═══
 const S = {
-  theme: localStorage.getItem('atlas-theme') || 'dark',
+  theme: localStorage.getItem('atlas-theme') || 'light',
   accent: localStorage.getItem('atlas-accent') || '#00ff88',
   token: localStorage.getItem('atlas_token') || null,
   user: null,
